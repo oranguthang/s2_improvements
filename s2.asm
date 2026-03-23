@@ -17,14 +17,14 @@
 ; >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ; ASSEMBLY OPTIONS:
 ;
-gameRevision = 1
+gameRevision = 2
 ;	| If 0, a REV00 ROM is built
 ;	| If 1, a REV01 ROM is built, which contains some fixes
 ;	| If 2, a (theoretical) REV02 ROM is built, which contains even more fixes
 padToPowerOfTwo = 1
 ;	| If 1, pads the end of the ROM to the next power of two bytes (for real hardware)
 ;
-fixBugs = 0
+fixBugs = 1
 ;	| If 1, enables all bug-fixes
 ;	| See also the 'FixDriverBugs' flag in 's2.sounddriver.asm'
 ;	| See also the 'FixMusicAndSFXDataBugs' flag in 'build.lua'
@@ -38870,6 +38870,14 @@ loc_1BC68:
 	bne.s	return_1BCDE
 	or.w	d0,d1
 	bne.s	return_1BCDE
+    if fixBugs
+	; When Tails respawns after being lost underwater, reset his speed
+	; to normal values. Without this, he retains his underwater speed
+	; until he enters/exits water again.
+	move.w	#$600,(Tails_top_speed).w	; set Tails' top speed
+	move.w	#$C,(Tails_acceleration).w	; set Tails' acceleration
+	move.w	#$80,(Tails_deceleration).w	; set Tails' deceleration
+    endif
 	move.w	#6,(Tails_CPU_routine).w	; => TailsCPU_Normal
 	move.b	#0,obj_control(a0)
 	move.b	#AniIDSonAni_Walk,anim(a0)
