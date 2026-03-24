@@ -36075,7 +36075,13 @@ Obj01_InWater:
 	move.w	(Water_Level_1).w,d0
 	cmp.w	y_pos(a0),d0	; is Sonic above the water?
 	bge.s	Obj01_OutWater	; if yes, branch
-
+    if fixBugs
+	; If Sonic is jumping upward, skip the water entry routine.
+	; Without this, jumping near the surface pushes Sonic slightly
+	; underwater, triggering speed reduction that kills his jump height.
+	tst.w	y_vel(a0)	; is Sonic moving upward?
+	bmi.s	return_1A18C	; if yes, skip
+    endif
 	bset	#status.player.underwater,status(a0)	; set underwater flag
 	bne.s	return_1A18C	; if already underwater, branch
 
@@ -39232,7 +39238,11 @@ Obj02_InWater:
 	move.w	(Water_Level_1).w,d0
 	cmp.w	y_pos(a0),d0	; is Sonic above the water?
 	bge.s	Obj02_OutWater	; if yes, branch
-
+    if fixBugs
+	; Same fix as Obj01_InWater: skip water entry if Tails is jumping upward.
+	tst.w	y_vel(a0)	; is Tails moving upward?
+	bmi.s	return_1BF58	; if yes, skip
+    endif
 	bset	#status.player.underwater,status(a0)	; set underwater flag
 	bne.s	return_1BF58	; if already underwater, branch
 
