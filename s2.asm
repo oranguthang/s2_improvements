@@ -11794,6 +11794,9 @@ MenuScreen:
 	clr.b	(Level_started_flag).w
 	clr.w	(Anim_Counters).w
 	clr.w	(Game_Over_2P).w
+    if fixBugs
+	clr.b	(Emerald_count).w	; reset emerald count so Super Sonic can't be activated in 2P mode
+    endif
 	lea	(Anim_SonicMilesBG).l,a2
 	jsrto	JmpTo2_Dynamic_Normal
 	moveq	#PalID_Menu,d0
@@ -36687,8 +36690,15 @@ return_1A7C4:
 Sonic_RollSpeed:
 	move.w	(Sonic_top_speed).w,d6
 	asl.w	#1,d6
+    if fixBugs
+	; Using Sonic_acceleration/2 as roll deceleration means Super Sonic
+	; (and Speed Shoes) decelerate much faster when rolling, to the point
+	; of stopping on shallow downward slopes. Use a fixed value instead.
+	moveq	#6,d5	; natural roll deceleration = 1/2 normal acceleration
+    else
 	move.w	(Sonic_acceleration).w,d5
 	asr.w	#1,d5	; natural roll deceleration = 1/2 normal acceleration
+    endif
 	move.w	#$20,d4	; controlled roll deceleration... interestingly,
 			; this should be Sonic_deceleration/4 according to Tails_RollSpeed,
 			; which means Sonic is much better than Tails at slowing down his rolling when he's underwater
@@ -37127,15 +37137,15 @@ return_1AB36:
 ; loc_1AB38: test_set_SS:
 Sonic_CheckGoSuper:
 	tst.b	(Super_Sonic_flag).w	; is Sonic already Super?
-	bne.s	return_1ABA4		; if yes, branch
+	bne.w	return_1ABA4		; if yes, branch
 	cmpi.b	#7,(Emerald_count).w	; does Sonic have exactly 7 emeralds?
-	bne.s	return_1ABA4		; if not, branch
+	bne.w	return_1ABA4		; if not, branch
 	cmpi.w	#50,(Ring_count).w	; does Sonic have at least 50 rings?
-	blo.s	return_1ABA4		; if not, branch
+	blo.w	return_1ABA4		; if not, branch
     if gameRevision>=2
 	; fixes a bug where the player can get stuck if transforming at the end of a level
 	tst.b	(Update_HUD_timer).w	; has Sonic reached the end of the act?
-	beq.s	return_1ABA4		; if yes, branch
+	beq.w	return_1ABA4		; if yes, branch
     endif
 
     if fixBugs
@@ -37155,6 +37165,16 @@ Sonic_CheckGoSuper:
 	move.w	#$A00,(Sonic_top_speed).w
 	move.w	#$30,(Sonic_acceleration).w
 	move.w	#$100,(Sonic_deceleration).w
+    if fixBugs
+	; The game doesn't check if Sonic is underwater when transforming,
+	; so the above speed values are always applied even underwater.
+	btst	#status.player.underwater,status(a0)	; is Sonic underwater?
+	beq.s	+					; if not, branch
+	move.w	#$500,(Sonic_top_speed).w
+	move.w	#$18,(Sonic_acceleration).w
+	move.w	#$80,(Sonic_deceleration).w
++
+    endif
 	move.w	#0,invincibility_time(a0)
 	bset	#status_secondary.invincible,status_secondary(a0)	; make Sonic invincible
 	move.w	#SndID_SuperTransform,d0
@@ -37178,10 +37198,23 @@ return_1ABA4:
 Sonic_Super:
 	tst.b	(Super_Sonic_flag).w	; Ignore all this code if not Super Sonic
 	beq.w	return_1AC3C
+    if fixBugs
+	; If the transformation sequence hasn't finished yet, don't start
+	; draining rings or allow reverting — prevents a rare softlock at
+	; the end of an act while the fade-in is still running.
+	cmpi.b	#1,(Super_Sonic_palette).w	; is transformation sequence still in progress?
+	beq.w	return_1AC3C			; if yes, branch
+    endif
 	tst.b	(Update_HUD_timer).w
 	beq.s	Sonic_RevertToNormal ; ?
 	subq.w	#1,(Super_Sonic_frame_count).w
+    if fixBugs
+	; The counter range was 0..60 (61 frames) instead of the intended 60.
+	; Using bhi makes the range 1..60 (60 frames) as intended.
+	bhi.w	return_1AC3C
+    else
 	bpl.w	return_1AC3C
+    endif
 	move.w	#60,(Super_Sonic_frame_count).w	; Reset frame counter to 60
 	tst.w	(Ring_count).w
 	beq.s	Sonic_RevertToNormal
