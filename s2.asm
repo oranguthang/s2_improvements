@@ -29654,6 +29654,12 @@ RunObjects_End:
 ; this skips certain objects to make enemies and things pause when Sonic dies
 ; loc_15FE6:
 RunObjectsWhenPlayerIsDead:
+    if fixBugs
+	; If Sonic has drowned (routine $C), keep running objects so bubbles
+	; continue to appear from his mouth during the drowning animation.
+	cmpi.b	#$C,(MainCharacter+routine).w
+	beq.s	RunObject
+    endif
 	moveq	#(Reserved_Object_RAM_End-Reserved_Object_RAM)/object_size-1,d7
 	bsr.s	RunObject	; run the first $10 objects normally
 	moveq	#(Dynamic_Object_RAM_End-Dynamic_Object_RAM)/object_size-1,d7
@@ -35873,6 +35879,9 @@ Obj01_Index:	offsetTable
 		offsetTableEntry.w Obj01_Dead		;  6
 		offsetTableEntry.w Obj01_Gone		;  8
 		offsetTableEntry.w Obj01_Respawning	; $A
+    if fixBugs
+		offsetTableEntry.w Obj01_Drowned	; $C
+    endif
 ; ===========================================================================
 ; loc_19F76: Obj_01_Sub_0: Obj01_Main:
 Obj01_Init:
@@ -38077,6 +38086,19 @@ Obj01_Respawning:
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 
 ; loc_1B350:
+    if fixBugs
+; ---------------------------------------------------------------------------
+; Sonic when he's drowning
+; ---------------------------------------------------------------------------
+Obj01_Drowned:
+	bsr.w	ObjectMove		; apply velocity
+	addi.w	#$10,y_vel(a0)		; apply gravity
+	bsr.w	Sonic_RecordPos		; record position for Tails to follow
+	bsr.w	Sonic_Animate		; animate Sonic
+	bsr.w	LoadSonicDynPLC		; load Sonic's DPLCs
+	bra.w	DisplaySprite		; display Sonic
+; ---------------------------------------------------------------------------
+    endif
 Sonic_Animate:
 	lea	(SonicAniData).l,a1
 	tst.b	(Super_Sonic_flag).w
@@ -38595,6 +38617,9 @@ Obj02_Index:	offsetTable
 		offsetTableEntry.w Obj02_Dead		;  6
 		offsetTableEntry.w Obj02_Gone		;  8
 		offsetTableEntry.w Obj02_Respawning	; $A
+    if fixBugs
+		offsetTableEntry.w Obj02_Drowned	; $C
+    endif
 ; ===========================================================================
 ; loc_1B8D8: Obj02_Main:
 Obj02_Init:
@@ -40947,6 +40972,19 @@ Obj02_Respawning:
 
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 
+    if fixBugs
+; ---------------------------------------------------------------------------
+; Tails when he's drowning
+; ---------------------------------------------------------------------------
+Obj02_Drowned:
+	bsr.w	ObjectMove		; apply velocity
+	addi.w	#$10,y_vel(a0)		; apply gravity
+	bsr.w	Tails_RecordPos		; record position
+	bsr.s	Tails_Animate		; animate Tails
+	bsr.w	LoadTailsDynPLC		; load Tails' DPLCs
+	bra.w	DisplaySprite		; display Tails
+; ---------------------------------------------------------------------------
+    endif
 ; loc_1CDC4:
 Tails_Animate:
 	lea	(TailsAniData).l,a1
@@ -41847,10 +41885,16 @@ Obj0A_ReduceAir:
 	move.w	#0,y_vel(a0)
 	move.w	#0,x_vel(a0)
 	move.w	#0,inertia(a0)
+    if fixBugs
+	move.b	#$C,routine(a0)	; force the character into the drowned state
+    endif
 	movea.l	(sp)+,a0 ; load 0bj address ; restore a0 = obj0A
 	cmpa.w	#MainCharacter,a2
 	bne.s	+	; if it isn't player 1, branch
 	move.b	#1,(Deform_lock).w
+    if fixBugs
+	clr.b	(Update_HUD_timer).w	; stop the timer immediately so Time Over can't occur while drowning
+    endif
 +
 	rts
 ; ===========================================================================
@@ -41862,12 +41906,16 @@ Obj0A_PlayerHasDrowned:
 	move.b	#6,routine(a2)
 	rts
 ; ---------------------------------------------------------------------------
-+	; Move the player downwards as they drown.
++
+    if ~~fixBugs
+	; Move the player downwards as they drown.
+	; With fixBugs, movement is handled by Obj01_Drowned/Obj02_Drowned instead.
 	move.l	a0,-(sp)
 	movea.l	a2,a0
 	jsr	(ObjectMove).l
 	addi.w	#$10,y_vel(a0)
 	movea.l	(sp)+,a0 ; load 0bj address
+    endif
 	bra.s	Obj0A_MakeBubbleMaybe
 ; ===========================================================================
 ; BranchTo_Obj0A_MakeItem
