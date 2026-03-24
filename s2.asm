@@ -37066,8 +37066,14 @@ Sonic_Jump:
 	clr.b	stick_to_convex(a0)
 	move.w	#SndID_Jump,d0
 	jsr	(PlaySound).l	; play jumping sound
+    if ~~fixBugs
+	; These two lines set Sonic to standing height before checking if he
+	; was rolling. If he was rolling, they are immediately overwritten,
+	; but the brief assignment to standing height can cause Sonic to be
+	; pushed upward when landing, temporarily preventing another jump.
 	move.b	#$13,y_radius(a0)
 	move.b	#9,x_radius(a0)
+    endif
 	btst	#status.player.rolling,status(a0)
 	bne.s	Sonic_RollJump
 	move.b	#$E,y_radius(a0)
