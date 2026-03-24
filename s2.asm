@@ -4925,6 +4925,9 @@ Level_TtlCard:
 	moveq	#PalID_BGND,d0
 	bsr.w	PalLoad_ForFade	; load Sonic's palette line
 	bsr.w	LevelSizeLoad
+    if fixBugs
+	bsr.w	InitPlayers
+    endif
 	jsrto	JmpTo_DeformBgLayer
 	clr.w	(Vscroll_Factor_FG).w
 	move.w	#-screen_height,(Vscroll_Factor_P2_FG).w
@@ -4938,7 +4941,9 @@ Level_TtlCard:
 	jsr	(ConvertCollisionArray).l
 	bsr.w	LoadCollisionIndexes
 	bsr.w	WaterEffects
+    if ~~fixBugs
 	bsr.w	InitPlayers
+    endif
 	move.w	#0,(Ctrl_1_Logical).w
 	move.w	#0,(Ctrl_2_Logical).w
 	move.w	#0,(Ctrl_1).w
@@ -5176,6 +5181,9 @@ InitPlayers:
 
 	move.b	#ObjID_Sonic,(MainCharacter+id).w ; load Obj01 Sonic object at $FFFFB000
 	move.b	#ObjID_SpindashDust,(Sonic_Dust+id).w ; load Obj08 Sonic's spindash dust/splash object at $FFFFD100
+    if fixBugs
+	move.b	#$13,(MainCharacter+y_radius).w	; Set Sonic's y-radius
+    endif
 
 	cmpi.b	#wing_fortress_zone,(Current_Zone).w
 	beq.s	+ ; skip loading Tails if this is WFZ
@@ -5200,12 +5208,18 @@ InitPlayers_Alone: ; either Sonic or Tails but not both
 
 	move.b	#ObjID_Sonic,(MainCharacter+id).w ; load Obj01 Sonic object at $FFFFB000
 	move.b	#ObjID_SpindashDust,(Sonic_Dust+id).w ; load Obj08 Sonic's spindash dust/splash object at $FFFFD100
+    if fixBugs
+	move.b	#$13,(MainCharacter+y_radius).w	; Set Sonic's y-radius
+    endif
 	rts
 ; ===========================================================================
 ; loc_44D0:
 InitPlayers_TailsAlone:
 	move.b	#ObjID_Tails,(MainCharacter+id).w ; load Obj02 Tails object at $FFFFB000
 	move.b	#ObjID_SpindashDust,(Tails_Dust+id).w ; load Obj08 Tails' spindash dust/splash object at $FFFFD100
+    if fixBugs
+	move.b	#$F,(MainCharacter+y_radius).w	; Set Tails' y-radius
+    endif
 	addi_.w	#4,(MainCharacter+y_pos).w
 	rts
 ; End of function InitPlayers
@@ -18125,24 +18139,21 @@ ScrollHoriz:
 ScrollVerti:
 	moveq	#0,d1
 	move.w	y_pos(a0),d0
+    if fixBugs
+	moveq	#$13,d2		; set default character height
+	sub.b	y_radius(a0),d2
+	sub.w	d2,d0		; get difference to character's actual height
+    endif
 	sub.w	(a1),d0		; subtract camera Y pos
 	cmpi.w	#-$100,(Camera_Min_Y_pos).w ; does the level wrap vertically?
 	bne.s	.noWrap		; if not, branch
 	andi.w	#$7FF,d0
 ; loc_D78E:
 .noWrap:
+    if ~~fixBugs
 	btst	#status.player.rolling,status(a0)	; is the player rolling?
 	beq.s	.notRolling	; if not, branch
 	subq.w	#5,d0		; subtract difference between standing and rolling heights
-    if fixBugs
-	; Tails is shorter than Sonic, so the above subtraction actually
-	; causes the camera to jolt slightly when he goes from standing to
-	; rolling, and vice versa. Not even Sonic 3 & Knuckles fixed this.
-	; To fix this, just adjust the subtraction to suit Tails (who is four
-	; pixels shorter).
-	cmpi.b	#ObjID_Tails,id(a0)
-	bne.s	.notRolling
-	addq.w	#4,d0
     endif
 ; loc_D798:
 .notRolling:
