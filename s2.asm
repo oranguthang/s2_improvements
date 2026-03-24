@@ -41493,8 +41493,23 @@ Obj05_Main:
 	lea	(Obj05AniData).l,a1
 	bsr.w	Tails_Animate_Part2
 	bsr.w	LoadTailsTailsDynPLC
+    if fixBugs
+	movea.w	parent(a0),a1			; get Tails' object
+	move.w	invulnerable_time(a1),d0	; get Tails' invulnerability timer
+	beq.s	.showTails			; if not invulnerable, always show tails
+	addq.w	#1,d0
+	lsr.w	#3,d0
+	bcc.s	.hideTails			; hide tails on every other 4-frame interval
+
+.showTails:
+	jmp	(DisplaySprite).l
+
+.hideTails:
+	rts
+    else
 	jsr	(DisplaySprite).l
 	rts
+    endif
 ; ===========================================================================
 ; animation master script table for the tails
 ; chooses which animation script to run depending on what Tails is doing
@@ -41505,8 +41520,13 @@ Obj05AniSelection:
 	dc.b	3	; TailsAni_Roll2	-> Directional
 	dc.b	9	; TailsAni_Push		-> Pushing
 	dc.b	1	; TailsAni_Wait		-> Swish
+    if fixBugs
+	dc.b	$A	; TailsAni_Balance	-> Balance
+	dc.b	1	; TailsAni_LookUp	-> Swish
+    else
 	dc.b	0	; TailsAni_Balance	-> Blank
 	dc.b	2	; TailsAni_LookUp	-> Flick
+    endif
 	dc.b	1	; TailsAni_Duck		-> Swish
 	dc.b	7	; TailsAni_Spindash	-> Spindash
 	dc.b	0,0,0	; TailsAni_Dummy1,2,3	->
