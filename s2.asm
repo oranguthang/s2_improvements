@@ -37354,6 +37354,20 @@ Sonic_UpdateSpindash:
 	move.b	#0,(Sonic_Dust+anim).w
 	move.w	#SndID_SpindashRelease,d0	; spindash zoom sound
 	jsr	(PlaySound).l
+    if fixBugs
+	; Set x_vel/y_vel from inertia before Sonic_LevelBound runs.
+	; Without this, if Sonic is at the screen boundary, LevelBound
+	; zeroes inertia before Obj01_UpdateSpeedOnGround can convert it
+	; to velocity, cancelling the spindash entirely.
+	move.b	angle(a0),d0
+	jsr	(CalcSine).l
+	muls.w	inertia(a0),d1
+	asr.l	#8,d1
+	move.w	d1,x_vel(a0)
+	muls.w	inertia(a0),d0
+	asr.l	#8,d0
+	move.w	d0,y_vel(a0)
+    endif
 	bra.s	Obj01_Spindash_ResetScr
 ; ===========================================================================
 ; word_1AD0C:
@@ -40186,7 +40200,7 @@ return_1C75C:
 Tails_UpdateSpindash:
 	move.b	(Ctrl_2_Held_Logical).w,d0
 	btst	#button_down,d0
-	bne.s	Tails_ChargingSpindash
+	bne.w	Tails_ChargingSpindash
 
 	; unleash the charged spindash and start rolling quickly:
 	move.b	#$E,y_radius(a0)
@@ -40232,6 +40246,17 @@ Tails_UpdateSpindash:
 	move.b	#0,(Tails_Dust+anim).w
 	move.w	#SndID_SpindashRelease,d0	; spindash zoom sound
 	jsr	(PlaySound).l
+    if fixBugs
+	; Same fix as Sonic: set x_vel/y_vel from inertia before LevelBound runs.
+	move.b	angle(a0),d0
+	jsr	(CalcSine).l
+	muls.w	inertia(a0),d1
+	asr.l	#8,d1
+	move.w	d1,x_vel(a0)
+	muls.w	inertia(a0),d0
+	asr.l	#8,d0
+	move.w	d0,y_vel(a0)
+    endif
 	bra.s	loc_1C828
 ; ===========================================================================
 ; word_1C7CE:
