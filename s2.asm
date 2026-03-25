@@ -84953,9 +84953,14 @@ Touch_Monitor:
 	move.w	y_pos(a0),d0
 	subi.w	#$10,d0
 	cmp.w	y_pos(a1),d0
+    if fixBugs
+	; Branch to break the monitor instead of phasing through it.
+	blo.s	.breakMonitor
+    else
 	; Return. This means that if Sonic jumps upwards into the side of a
 	; monitor, then he'll just phase through it.
 	blo.s	return_3F78A
+    endif
 
 	; If we've gotten this far, then Sonic has just jumped into the
 	; bottom of this monitor: knock it down.
@@ -84975,7 +84980,12 @@ Touch_Monitor:
 +
 	cmpi.b	#AniIDSonAni_Roll,anim(a0)
 	bne.s	return_3F78A
-	neg.w	y_vel(a0)	; reverse Sonic's y-motion
+    if fixBugs
+	tst.w	y_vel(a0)		; is Sonic moving upwards?
+	blt.s	+			; if so, keep going up (don't negate)
+    endif
+	neg.w	y_vel(a0)		; reverse Sonic's y-motion
++
 	move.b	#4,routine(a1)
 	move.w	a0,parent(a1)
 
