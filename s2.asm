@@ -64525,7 +64525,11 @@ Obj89_Init_RaisePillars:
 	move.l	#Obj89_MapUnc_30D68,mappings(a1)
 	ori.b	#1<<render_flags.level_fg,render_flags(a1)
 	move.w	#make_art_tile(ArtTile_ArtNem_ARZBoss,0,0),art_tile(a1)
+    if fixBugs
+	move.b	#$1E,width_pixels(a1)		; fix balancing/landing on poles
+    else
 	move.b	#$10,width_pixels(a1)
+    endif
 	move.b	#4,priority(a1)
 	move.w	#$2A50,x_pos(a1)
 	move.w	#$510,y_pos(a1)
@@ -65254,6 +65258,9 @@ Obj89_Arrow_Init:
 	move.w	#make_art_tile(ArtTile_ArtNem_ARZBoss,0,0),art_tile(a0)
 	ori.b	#1<<render_flags.level_fg,render_flags(a0)
 	move.b	#-$70,mainspr_width(a0)
+    if fixBugs
+	move.b	#$10,width_pixels(a0)		; fix balancing animation on arrows
+    endif
 	move.b	#4,priority(a0)
 	addq.b	#2,obj89_arrow_routine(a0)	; => Obj89_Arrow_Sub2
 	movea.l	obj89_arrow_parent2(a0),a1 ; a1=object
@@ -65343,13 +65350,24 @@ BranchTo_JmpTo55_DeleteObject ; BranchTo
 ; ===========================================================================
 ; loc_30CCC:
 Obj89_Arrow_Platform:
-	tst.w	obj89_arrow_timer(a0)		; is timer set?
-	bne.s	Obj89_Arrow_Platform_Decay	; if yes, branch
+    if fixBugs
+	; Run platform check every frame so standing bit is always updated,
+	; preventing the walking-in-air glitch when Sonic walks off the edge.
 	move.w	#$1B,d1
 	move.w	#1,d2
 	move.w	#2,d3
 	move.w	x_pos(a0),d4
 	jsrto	JmpTo8_PlatformObject
+    endif
+	tst.w	obj89_arrow_timer(a0)		; is timer set?
+	bne.s	Obj89_Arrow_Platform_Decay	; if yes, branch
+    if ~~fixBugs
+	move.w	#$1B,d1
+	move.w	#1,d2
+	move.w	#2,d3
+	move.w	x_pos(a0),d4
+	jsrto	JmpTo8_PlatformObject
+    endif
     if fixBugs
 	; AI Tails normally does not cause the arrow they are standing on
 	; to fall, this fixes that.
