@@ -25095,6 +25095,10 @@ loc_121B8:
 
 	tst.b	(Ring_spill_anim_counter).w
 	beq.s	Obj37_Delete
+    if fixBugs
+	cmpi.w	#-$100,(Camera_Min_Y_pos).w	; is vertical wrapping enabled?
+	beq.w	DisplaySprite			; if so, don't delete rings at level bottom
+    endif
 	move.w	(Camera_Max_Y_pos).w,d0
 	addi.w	#screen_height,d0
 	cmp.w	y_pos(a0),d0
