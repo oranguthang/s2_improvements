@@ -25256,6 +25256,10 @@ Obj37_CheckBoundary:
 	; the bottom of the screen, however it does not take into account vertical
 	; wrapping, leading to a situation where the player will unfairly lose all
 	; their rings immediately if they happen to take damage near the boundary.
+    if fixBugs
+	cmpi.w	#-$100,(Camera_Min_Y_pos).w	; is vertical wrapping enabled?
+	beq.w	DisplaySprite			; if so, don't delete rings at level bottom
+    endif
 	move.w	(Camera_Max_Y_pos).w,d0
 	addi.w	#screen_height,d0
 	cmp.w	y_pos(a0),d0			; has object moved below the level boundary?
