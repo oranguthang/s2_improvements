@@ -4804,6 +4804,9 @@ Level:
 	bsr.w	LoadPLC
 ; loc_3F48:
 Level_ClrRam:
+    if fixBugs
+	clr.b	(Super_Sonic_flag).w
+    endif
 	clearRAM Object_Display_Lists,Object_Display_Lists_End
 	clearRAM Object_RAM,LevelOnly_Object_RAM_End ; clear object RAM and level-only object RAM
 	clearRAM MiscLevelVariables,MiscLevelVariables_End
@@ -25948,6 +25951,17 @@ super_shoes:
 	addq.w	#1,(a2)
 	bset	#status_secondary.speed_shoes,status_secondary(a1)	; give super sneakers status
 	move.w	#20*60,speedshoes_time(a1)
+    if fixBugs
+	movem.l	a0-a2,-(sp)
+	lea	(MainCharacter).w,a0
+	cmpa.w	a0,a1			; did the main character break the monitor?
+	bne.s	super_shoes_Tails	; if not, branch
+	cmpi.w	#2,(Player_mode).w	; is player using Tails?
+	beq.s	super_shoes_Tails	; if yes, branch
+	lea	(Sonic_top_speed).w,a2
+	jsr	(ApplySpeedSettings).l
+	movem.l	(sp)+,a0-a2
+    else
 	cmpa.w	#MainCharacter,a1	; did the main character break the monitor?
 	bne.s	super_shoes_Tails	; if not, branch
 	cmpi.w	#2,(Player_mode).w	; is player using Tails?
@@ -25955,13 +25969,24 @@ super_shoes:
 	move.w	#$C00,(Sonic_top_speed).w	; set stats
 	move.w	#$18,(Sonic_acceleration).w
 	move.w	#$80,(Sonic_deceleration).w
+    endif
 	bra.s	+
 ; ---------------------------------------------------------------------------
 ;loc_12A10:
 super_shoes_Tails:
+    if fixBugs
+	tst.w	(Two_player_mode).w		; Is this two-player mode?
+	beq.s	super_shoes_NotTwoP		; If not, branch
+	lea	(Sidekick).w,a0			; If so, use Sidekick's RAM
+super_shoes_NotTwoP:
+	lea	(Tails_top_speed).w,a2
+	jsr	(ApplySpeedSettings).l
+	movem.l	(sp)+,a0-a2
+    else
 	move.w	#$C00,(Tails_top_speed).w
 	move.w	#$18,(Tails_acceleration).w
 	move.w	#$80,(Tails_deceleration).w
+    endif
 +
 	move.w	#MusID_SpeedUp,d0
 	jmp	(PlayMusic).l	; Speed up tempo
@@ -36208,16 +36233,22 @@ Obj01_Index:	offsetTable
 Obj01_Init:
 	addq.b	#2,routine(a0)	; => Obj01_Control
 	move.b	#$13,y_radius(a0)	; this sets Sonic's collision height (2*pixels)
-	move.b	#9,x_radius(a0) 	; this sets Sonic's Collision width (2*pixels)
+	move.b	#9,x_radius(a0)	; this sets Sonic's Collision width (2*pixels)
 	move.l	#MapUnc_Sonic,mappings(a0)	; load Sonic's mappings
-	move.b	#2,priority(a0)				; set sprite priority
-	move.b	#$18,width_pixels(a0)		; set render width
+	move.b	#2,priority(a0)	; set sprite priority
+	move.b	#$18,width_pixels(a0)	; set render width
 	move.b	#1<<render_flags.level_fg,render_flags(a0)	; set to playfield-positioned mode
+    if fixBugs
+	lea	(Sonic_top_speed).w,a2
+	bsr.w	ApplySpeedSettings
+    else
 	move.w	#$600,(Sonic_top_speed).w	; set Sonic's top speed
 	move.w	#$C,(Sonic_acceleration).w	; set Sonic's acceleration
 	move.w	#$80,(Sonic_deceleration).w	; set Sonic's deceleration
+    endif
 	tst.b	(Last_star_pole_hit).w	; is Sonic starting at a checkpoint?
 	bne.s	Obj01_Init_Continued	; if so, branch
+	; only happens when not starting at a checkpoint:
 	move.w	#make_art_tile(ArtTile_ArtUnc_Sonic,0,0),art_tile(a0)	; load Sonic's art
 	bsr.w	Adjust2PArtPointer	; adjust Sonic's art pointer if in 2-player mode
 	move.b	#$C,top_solid_bit(a0)
@@ -36333,21 +36364,26 @@ Obj01_ChkInvin:
 Obj01_RmvInvin:
 	bclr	#status_secondary.invincible,status_secondary(a0)	; remove invincibility
 ; loc_1A10C:
-Obj01_ChkShoes:
+Obj01_ChkShoes:		; Checks if Speed Shoes have expired and disables them if they have.
 	btst	#status_secondary.speed_shoes,status_secondary(a0)	; does Sonic have speed shoes?
-	beq.s	Obj01_ExitChk					; if not, branch
-	tst.w	speedshoes_time(a0)				; is there time remaining for speed shoes?
-	beq.s	Obj01_ExitChk					; if not, branch
-	subq.w	#1,speedshoes_time(a0)			; subtract 1 from time
-	bne.s	Obj01_ExitChk					; if time remains, branch
-	move.w	#$600,(Sonic_top_speed).w		; restore Sonic's default top speed
-	move.w	#$C,(Sonic_acceleration).w 		; restore Sonic's default acceleration
-	move.w	#$80,(Sonic_deceleration).w		; restore Sonic's default deceleration
-	tst.b	(Super_Sonic_flag).w			; is Sonic in his Super form?
-	beq.s	Obj01_RmvSpeed					; if not, branch
-	move.w	#$A00,(Sonic_top_speed).w		; restore Super Sonic's top speed
-	move.w	#$30,(Sonic_acceleration).w		; restore Super Sonic's acceleration
+	beq.s	Obj01_ExitChk	; if not, branch
+	tst.w	speedshoes_time(a0)	; is there time remaining for speed shoes?
+	beq.s	Obj01_ExitChk	; if not, branch
+	subq.w	#1,speedshoes_time(a0)	; subtract 1 from time
+	bne.s	Obj01_ExitChk	; if time remains, branch
+    if fixBugs
+	lea	(Sonic_top_speed).w,a2
+	bsr.w	ApplySpeedSettings
+    else
+	move.w	#$600,(Sonic_top_speed).w	; restore Sonic's default top speed
+	move.w	#$C,(Sonic_acceleration).w	; restore Sonic's default acceleration
+	move.w	#$80,(Sonic_deceleration).w	; restore Sonic's default deceleration
+	tst.b	(Super_Sonic_flag).w	; is Sonic in his Super form?
+	beq.s	Obj01_RmvSpeed	; if not, branch
+	move.w	#$A00,(Sonic_top_speed).w	; restore Super Sonic's top speed
+	move.w	#$30,(Sonic_acceleration).w	; restore Super Sonic's acceleration
 	move.w	#$100,(Sonic_deceleration).w	; restore Super Sonic's deceleration
+    endif
 ; loc_1A14A:
 Obj01_RmvSpeed:
 	bclr	#status_secondary.speed_shoes,status_secondary(a0)	; remove speed shoes
@@ -36419,22 +36455,27 @@ Obj01_InWater:
 	move.b	#ObjID_SmallBubbles,(Sonic_BreathingBubbles+id).w ; load Obj0A (Sonic's breathing bubbles) at $FFFFD080
 	move.b	#$81,(Sonic_BreathingBubbles+subtype).w	; prepare subtype so it sets itself to Drown_Countdown
 	move.l	a0,(Sonic_BreathingBubbles+obj0a_character).w
+    if fixBugs
+	lea	(Sonic_top_speed).w,a2
+	bsr.w	ApplySpeedSettings
+    else
 	move.w	#$300,(Sonic_top_speed).w	; change Sonic's top speed
 	move.w	#6,(Sonic_acceleration).w	; change Sonic's acceleration
 	move.w	#$40,(Sonic_deceleration).w	; change Sonic's deceleration
-	tst.b	(Super_Sonic_flag).w		; is Sonic in his Super form?
-	beq.s	+							; if not, branch
+	tst.b	(Super_Sonic_flag).w	; is Sonic in his Super form?
+	beq.s	+	; if not, branch
 	move.w	#$500,(Sonic_top_speed).w	; change Super Sonic's top speed
 	move.w	#$18,(Sonic_acceleration).w	; change Super Sonic's acceleration
 	move.w	#$80,(Sonic_deceleration).w	; change Super Sonic's deceleration
 +
-	asr.w	x_vel(a0)		; half X-speed when entering water
-	asr.w	y_vel(a0)		; divide Y-speed by 4 when entering water
-	asr.w	y_vel(a0)		; (memory operands can only be shifted one bit at a time)
+    endif
+	asr.w	x_vel(a0)	; half X-speed when entering water
+	asr.w	y_vel(a0)	; (memory operands can only be shifted one bit at a time)
+	asr.w	y_vel(a0)	; (memory operands can only be shifted one bit at a time)
 	beq.s	return_1A18C	; if Sonic's new Y-speed is 0, don't load splash object
 	move.w	#(1<<8)|(0<<0),(Sonic_Dust+anim).w	; load splash animation from Obj08
 	move.w	#SndID_Splash,d0	; load splash sound
-	jmp	(PlaySound).l			; play splash sound
+	jmp	(PlaySound).l	; play splash sound
 ; ---------------------------------------------------------------------------
 ; loc_1A1FE:
 Obj01_OutWater:
@@ -36443,15 +36484,20 @@ Obj01_OutWater:
 
 	movea.l	a0,a1
 	bsr.w	ResumeMusic	; replenish air and resume music if necessary
-	move.w	#$600,(Sonic_top_speed).w		; restore Sonic's default top speed
-	move.w	#$C,(Sonic_acceleration).w		; restore Sonic's default acceleration
-	move.w	#$80,(Sonic_deceleration).w		; restore Sonic's default deceleration
-	tst.b	(Super_Sonic_flag).w			; is Sonic in his Super form?
-	beq.s	+								; if not, branch
-	move.w	#$A00,(Sonic_top_speed).w		; restore Super Sonic's top speed
-	move.w	#$30,(Sonic_acceleration).w		; restore Super Sonic's acceleration
+    if fixBugs
+	lea	(Sonic_top_speed).w,a2
+	bsr.w	ApplySpeedSettings
+    else
+	move.w	#$600,(Sonic_top_speed).w	; restore Sonic's default top speed
+	move.w	#$C,(Sonic_acceleration).w	; restore Sonic's default acceleration
+	move.w	#$80,(Sonic_deceleration).w	; restore Sonic's default deceleration
+	tst.b	(Super_Sonic_flag).w	; is Sonic in his Super form?
+	beq.s	+	; if not, branch
+	move.w	#$A00,(Sonic_top_speed).w	; restore Super Sonic's top speed
+	move.w	#$30,(Sonic_acceleration).w	; restore Super Sonic's acceleration
 	move.w	#$100,(Sonic_deceleration).w	; restore Super Sonic's deceleration
 +
+    endif
 	cmpi.b	#4,routine(a0)	; is Sonic falling back from getting hurt?
 	beq.s	+		; if yes, branch
 	asl	y_vel(a0)	; double Y-speed while exiting water
@@ -37522,18 +37568,13 @@ Sonic_CheckGoSuper:
 	move.b	#$81,obj_control(a0)
 	move.b	#AniIDSupSonAni_Transform,anim(a0)			; use transformation animation
 	move.b	#ObjID_SuperSonicStars,(SuperSonicStars+id).w ; load Obj7E (Super Sonic stars object) at $FFFFD040
+    if fixBugs
+	lea	(Sonic_top_speed).w,a2
+	bsr.w	ApplySpeedSettings
+    else
 	move.w	#$A00,(Sonic_top_speed).w
 	move.w	#$30,(Sonic_acceleration).w
 	move.w	#$100,(Sonic_deceleration).w
-    if fixBugs
-	; The game doesn't check if Sonic is underwater when transforming,
-	; so the above speed values are always applied even underwater.
-	btst	#status.player.underwater,status(a0)	; is Sonic underwater?
-	beq.s	+					; if not, branch
-	move.w	#$500,(Sonic_top_speed).w
-	move.w	#$18,(Sonic_acceleration).w
-	move.w	#$80,(Sonic_deceleration).w
-+
     endif
 	move.w	#0,invincibility_time(a0)
 	bset	#status_secondary.invincible,status_secondary(a0)	; make Sonic invincible
@@ -37597,6 +37638,10 @@ Sonic_RevertToNormal:
 	move.b	#0,(Super_Sonic_flag).w
 	move.b	#AniIDSonAni_Run,prev_anim(a0)	; Force Sonic's animation to restart
 	move.w	#1,invincibility_time(a0)	; Remove invincibility
+    if fixBugs
+	lea	(Sonic_top_speed).w,a2
+	bra.w	ApplySpeedSettings
+    else
 	move.w	#$600,(Sonic_top_speed).w
 	move.w	#$C,(Sonic_acceleration).w
 	move.w	#$80,(Sonic_deceleration).w
@@ -37605,6 +37650,7 @@ Sonic_RevertToNormal:
 	move.w	#$300,(Sonic_top_speed).w
 	move.w	#6,(Sonic_acceleration).w
 	move.w	#$40,(Sonic_deceleration).w
+    endif
 
 return_1AC3C:
 	rts
@@ -38961,6 +39007,55 @@ return_1B89A:
 
 
 ; ===========================================================================
+    if fixBugs
+; ---------------------------------------------------------------------------
+; Subroutine to apply the correct speed settings for a character
+; a0 = character object
+; a2 = address of character's top_speed RAM variable (modified in place)
+; trashes: d0, a1
+; ---------------------------------------------------------------------------
+
+; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
+
+ApplySpeedSettings:
+	moveq	#0,d0
+	tst.w	speedshoes_time(a0)		; does the character have speed shoes?
+	beq.s	+
+	addq.b	#6,d0				; if so, +6
++
+	btst	#status.player.underwater,status(a0)	; is the character underwater?
+	beq.s	+
+	addi.b	#12,d0				; if so, +12
++
+	cmpa.w	#MainCharacter,a0		; is this Sonic (not Tails)?
+	bne.s	+
+	tst.b	(Super_Sonic_flag).w		; is Sonic Super?
+	beq.s	+
+	addi.b	#24,d0				; if so, +24
++
+	lea	Speedsettings(pc,d0.w),a1
+	move.l	(a1)+,(a2)+			; set top_speed and acceleration
+	move.w	(a1),(a2)			; set deceleration
+	rts
+; ===========================================================================
+
+; ----------------------------------------------------------------------------
+; Speed settings table
+; Each entry: top_speed (word), acceleration (word), deceleration (word) = 6 bytes
+; Index: +0=normal, +6=speedshoes, +12=underwater, +18=uw+shoes,
+;        +24=super,  +30=super+shoes, +36=super+uw, +42=super+uw+shoes
+; ----------------------------------------------------------------------------
+Speedsettings:
+	dc.w	$600,	$C,		$80		; Normal
+	dc.w	$C00,	$18,	$80		; Normal + Speed Shoes
+	dc.w	$300,	$6,		$40		; Normal Underwater
+	dc.w	$600,	$C,		$40		; Normal Underwater + Speed Shoes
+	dc.w	$A00,	$30,	$100	; Super
+	dc.w	$C00,	$30,	$100	; Super + Speed Shoes
+	dc.w	$500,	$18,	$80		; Super Underwater
+	dc.w	$A00,	$30,	$80		; Super Underwater + Speed Shoes
+    endif
+; ===========================================================================
 ; ----------------------------------------------------------------------------
 ; Object 02 - Tails
 ; ----------------------------------------------------------------------------
@@ -38999,9 +39094,14 @@ Obj02_Init:
 	move.b	#2,priority(a0)
 	move.b	#$18,width_pixels(a0)
 	move.b	#1<<render_flags.on_screen|1<<render_flags.level_fg,render_flags(a0) ; render_flags(Tails) = $80 | initial render_flags(Sonic)
+    if fixBugs
+	lea	(Tails_top_speed).w,a2
+	bsr.w	ApplySpeedSettings
+    else
 	move.w	#$600,(Tails_top_speed).w	; set Tails' top speed
 	move.w	#$C,(Tails_acceleration).w	; set Tails' acceleration
 	move.w	#$80,(Tails_deceleration).w	; set Tails' deceleration
+    endif
 	cmpi.w	#2,(Player_mode).w
 	bne.s	Obj02_Init_2Pmode
 	tst.b	(Last_star_pole_hit).w
@@ -39142,9 +39242,14 @@ Obj02_ChkShoes:		; Checks if Speed Shoes have expired and disables them if they 
 	beq.s	Obj02_ExitChk
 	subq.w	#1,speedshoes_time(a0)
 	bne.s	Obj02_ExitChk
+    if fixBugs
+	lea	(Tails_top_speed).w,a2
+	bsr.w	ApplySpeedSettings
+    else
 	move.w	#$600,(Tails_top_speed).w
 	move.w	#$C,(Tails_acceleration).w
 	move.w	#$80,(Tails_deceleration).w
+    endif
 ; Obj02_RmvSpeed:
 	bclr	#status_secondary.speed_shoes,status_secondary(a0)
 	move.w	#MusID_SlowDown,d0	; Slow down tempo
@@ -39327,9 +39432,10 @@ loc_1BC68:
 	; When Tails respawns after being lost underwater, reset his speed
 	; to normal values. Without this, he retains his underwater speed
 	; until he enters/exits water again.
-	move.w	#$600,(Tails_top_speed).w	; set Tails' top speed
-	move.w	#$C,(Tails_acceleration).w	; set Tails' acceleration
-	move.w	#$80,(Tails_deceleration).w	; set Tails' deceleration
+	move.l	a1,-(sp)
+	lea	(Tails_top_speed).w,a2
+	bsr.w	ApplySpeedSettings
+	move.l	(sp)+,a1
     endif
 	move.w	#6,(Tails_CPU_routine).w	; => TailsCPU_Normal
 	move.b	#0,obj_control(a0)
@@ -39659,9 +39765,14 @@ Obj02_InWater:
 	move.b	#ObjID_SmallBubbles,(Tails_BreathingBubbles+id).w ; load Obj0A (tail's breathing bubbles) at $FFFFD0C0
 	move.b	#$81,(Tails_BreathingBubbles+subtype).w
 	move.l	a0,(Tails_BreathingBubbles+obj0a_character).w ; set its parent to be this (obj0A uses $3C instead of $3E for some reason)
+    if fixBugs
+	lea	(Tails_top_speed).w,a2
+	bsr.w	ApplySpeedSettings
+    else
 	move.w	#$300,(Tails_top_speed).w
 	move.w	#6,(Tails_acceleration).w
 	move.w	#$40,(Tails_deceleration).w
+    endif
 	asr	x_vel(a0)
 	asr	y_vel(a0)
 	asr	y_vel(a0)
@@ -39677,9 +39788,14 @@ Obj02_OutWater:
 
 	movea.l	a0,a1
 	bsr.w	ResumeMusic
+    if fixBugs
+	lea	(Tails_top_speed).w,a2
+	bsr.w	ApplySpeedSettings
+    else
 	move.w	#$600,(Tails_top_speed).w
 	move.w	#$C,(Tails_acceleration).w
 	move.w	#$80,(Tails_deceleration).w
+    endif
 
 	cmpi.b	#4,routine(a0)	; is Tails falling back from getting hurt?
 	beq.s	+		; if yes, branch
