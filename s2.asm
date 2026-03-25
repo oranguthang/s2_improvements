@@ -25034,7 +25034,9 @@ Obj37_Init:
 	move.b	#3,priority(a1)
 	move.b	#$47,collision_flags(a1)
 	move.b	#8,width_pixels(a1)
+    if ~~fixBugs
 	move.b	#-1,(Ring_spill_anim_counter).w
+    endif
 	tst.w	d4
 	bmi.s	+
 	move.w	d4,d0
@@ -25057,6 +25059,11 @@ Obj37_Init:
 	neg.w	d4
 	dbf	d5,-
 +
+    if fixBugs
+	moveq	#-1,d0
+	move.b	d0,objoff_1F(a0)		; set personal ring timer
+	move.b	d0,(Ring_spill_anim_counter).w	; set global timer (for animation)
+    endif
 	move.w	#SndID_RingSpill,d0
 	jsr	(PlaySound2).l
 	tst.b	parent+1(a0)
@@ -25093,17 +25100,28 @@ Obj37_Main:
 
 loc_121B8:
 
-	tst.b	(Ring_spill_anim_counter).w
-	beq.s	Obj37_Delete
     if fixBugs
+	subq.b	#1,objoff_1F(a0)		; count down personal ring timer
+	beq.w	Obj37_Delete			; if expired, delete
 	cmpi.w	#-$100,(Camera_Min_Y_pos).w	; is vertical wrapping enabled?
 	beq.w	DisplaySprite			; if so, don't delete rings at level bottom
+    else
+	tst.b	(Ring_spill_anim_counter).w
+	beq.s	Obj37_Delete
     endif
 	move.w	(Camera_Max_Y_pos).w,d0
 	addi.w	#screen_height,d0
 	cmp.w	y_pos(a0),d0
 	blo.s	Obj37_Delete
+    if fixBugs
+	btst	#0,objoff_1F(a0)		; test lowest bit of timer (alternates every frame)
+	beq.w	DisplaySprite			; if bit is 0, show ring
+	cmpi.b	#80,objoff_1F(a0)		; are we in the last 80 frames of the ring's life?
+	bhi.w	DisplaySprite			; if not, always show ring
+	rts					; hide ring (flash effect)
+    else
 	bra.w	DisplaySprite
+    endif
 ; ===========================================================================
 
 loc_121D0:
