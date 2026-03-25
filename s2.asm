@@ -83414,6 +83414,10 @@ ObjC7_CheckHit:
 	subq.b	#1,collision_property(a0)
 	beq.s	ObjC7_Beaten
 +
+    if fixBugs
+	movea.w	objoff_36(a0),a1	; a1=Eggrobo's head
+	clr.b	collision_flags(a1)	; remove collision from head so Sonic rebounds correctly
+    endif
 	move.b	#60,objoff_2A(a0)
 	move.w	#SndID_BossHit,d0
 	jsr	(PlaySound).l
