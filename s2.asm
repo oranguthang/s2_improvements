@@ -50829,10 +50829,19 @@ loc_24F84:
 loc_24FAA:
 	cmpi.w	#$10,d1
 	bhs.w	return_25034
+    if fixBugs
+	tst.w	(Debug_placement_mode).w
+	bne.w	return_25034
+    endif
 	cmpa.w	#Sidekick,a1
-	bne.s	loc_24FC2
+	bne.s	+
 	cmpi.w	#4,(Tails_CPU_routine).w ; TailsCPU_Flying
 	beq.w	return_25034
++
+    if fixBugs
+	cmpi.b	#4,routine(a1)		; is Sonic hurt or dead?
+	bhs.w	return_25034
+    endif
 
 loc_24FC2:
 	addq.b	#2,(a4)
@@ -51032,10 +51041,16 @@ loc_252F0:
 	cmpi.w	#4,(Tails_CPU_routine).w	; TailsCPU_Flying
 	beq.w	return_253C4
 +
+    if fixBugs
+	cmpi.b	#4,routine(a1)		; is Sonic hurt or dead?
+    else
 	cmpi.b	#6,routine(a1)
+    endif
 	bhs.w	return_253C4
-	tst.w	(Debug_placement_mode).w
+    if ~~fixBugs
+	tst.w	(Debug_placement_mode).w	; redundant debug check
 	bne.w	return_253C4
+    endif
 	btst	#status.player.on_object,status(a1)
 	beq.s	+
 	moveq	#0,d0
