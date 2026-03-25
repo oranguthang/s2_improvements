@@ -85745,8 +85745,17 @@ Dynamic_HTZ:
 	neg.w	d1
 	asr.w	#3,d1
 	move.w	(Camera_X_pos).w,d0
+    if fixBugs
+	move.w	d0,d2
+	andi.w	#$F,d2		; is the lower nibble zero?
+	seq.b	d2		; if yes, set low byte to $FF
+	ext.w	d2		; sign-extend: d2 = -1 or 0
+    endif
 	lsr.w	#4,d0
 	add.w	d1,d0
+    if fixBugs
+	add.w	d2,d0		; subtract 1 when camera X is a multiple of 16
+    endif
 	subi.w	#$10,d0
 	divu.w	#$30,d0
 	swap	d0
