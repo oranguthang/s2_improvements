@@ -25245,26 +25245,28 @@ Obj37_Main:
 	neg.w	y_vel(a0)
 ; loc_121B8:
 Obj37_CheckBoundary:
-  if fixBugs
-	subq.b	#1,lostrings_timer(a0)		; has the timer finished?
-	beq.s	Obj37_Delete			; if yes, branch
-  else
-	tst.b	(Ring_spill_anim_counter).w	; has the animation finished?
-	beq.s	Obj37_Delete			; if yes, branch
-  endif
-	; The code below is programmed to automatically delete rings if they hit
-	; the bottom of the screen, however it does not take into account vertical
-	; wrapping, leading to a situation where the player will unfairly lose all
-	; their rings immediately if they happen to take damage near the boundary.
     if fixBugs
+	subq.b	#1,objoff_1F(a0)		; count down personal ring timer
+	beq.w	Obj37_Delete			; if expired, delete
 	cmpi.w	#-$100,(Camera_Min_Y_pos).w	; is vertical wrapping enabled?
 	beq.w	DisplaySprite			; if so, don't delete rings at level bottom
+    else
+	tst.b	(Ring_spill_anim_counter).w
+	beq.s	Obj37_Delete
     endif
 	move.w	(Camera_Max_Y_pos).w,d0
 	addi.w	#screen_height,d0
 	cmp.w	y_pos(a0),d0			; has object moved below the level boundary?
 	blo.s	Obj37_Delete			; if yes, branch
+    if fixBugs
+	btst	#0,objoff_1F(a0)		; test lowest bit of timer (alternates every frame)
+	beq.w	DisplaySprite			; if bit is 0, show ring
+	cmpi.b	#80,objoff_1F(a0)		; are we in the last 80 frames of the ring's life?
+	bhi.w	DisplaySprite			; if not, always show ring
+	rts					; hide ring (flash effect)
+    else
 	bra.w	DisplaySprite
+    endif
 ; ===========================================================================
 
 loc_121D0:
