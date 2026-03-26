@@ -37196,7 +37196,7 @@ return_1AAE6:
 ; loc_1AAF0:
 Sonic_JumpHeight:
 	tst.b	jumping(a0)	; is Sonic jumping?
-	beq.s	Sonic_UpVelCap	; if not, branch
+	beq.w	Sonic_UpVelCap	; if not, branch
 
 	move.w	#-$400,d1
 	btst	#status.player.underwater,status(a0)	; is Sonic underwater?
@@ -37210,9 +37210,7 @@ Sonic_JumpHeight:
 	bne.s	+		; if yes, branch
 	move.w	d1,y_vel(a0)	; immediately reduce Sonic's upward speed to d1
 +
-	tst.b	y_vel(a0)		; is Sonic exactly at the height of his jump?
-	beq.s	Sonic_CheckGoSuper	; if yes, test for turning into Super Sonic
-	rts
+	bra.s	Sonic_ToggleSuper		; check for Super Sonic transformation combo
 ; ---------------------------------------------------------------------------
 ; loc_1AB22:
 Sonic_UpVelCap:
@@ -37227,6 +37225,65 @@ return_1AB36:
 ; End of subroutine Sonic_JumpHeight
 
 ; ---------------------------------------------------------------------------
+; Subroutine detecting A+B or B+C combo (within a 6-frame window) to trigger
+; Super Sonic transformation. Based on the Sonic 1 toggle implementation.
+; ---------------------------------------------------------------------------
+
+; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
+
+Sonic_ToggleSuper:
+	tst.b	(Control_Locked).w		; are controls locked? (e.g. WFZ cutscene)
+	bne.s	Sonic_ComboReturn		; if yes, skip super toggle entirely
+	; If lock bit is set, wait until all jump buttons are released
+	btst	#7,transform_combo_buttons(a0)
+	beq.s	Sonic_ComboCheckTimer
+	move.b	(Ctrl_1_Held_Logical).w,d0
+	andi.b	#button_A_mask|button_B_mask|button_C_mask,d0
+	bne.s	Sonic_ComboReturn		; still held, keep lock
+	clr.b	transform_combo_timer(a0)
+	clr.b	transform_combo_buttons(a0)
+	rts
+
+Sonic_ComboCheckTimer:
+	tst.b	transform_combo_timer(a0)
+	beq.s	Sonic_ComboCheckPress		; timer at 0, just check for new press
+	subq.b	#1,transform_combo_timer(a0)
+	bne.s	Sonic_ComboCheckPress		; timer still running
+	clr.b	transform_combo_buttons(a0)	; window expired, clear button history
+
+Sonic_ComboCheckPress:
+	move.b	(Ctrl_1_Press_Logical).w,d0
+	andi.b	#button_A_mask|button_B_mask|button_C_mask,d0
+	beq.s	Sonic_ComboReturn		; no jump button pressed this frame
+
+	; Accumulate button into history and restart 6-frame window
+	move.b	transform_combo_buttons(a0),d1
+	andi.b	#button_A_mask|button_B_mask|button_C_mask,d1
+	or.b	d0,d1
+	move.b	d1,transform_combo_buttons(a0)
+	move.b	#6,transform_combo_timer(a0)
+
+	; Check A+B combo
+	move.b	d1,d2
+	andi.b	#button_A_mask|button_B_mask,d2
+	cmpi.b	#button_A_mask|button_B_mask,d2
+	beq.s	Sonic_ComboTriggered
+
+	; Check B+C combo
+	andi.b	#button_B_mask|button_C_mask,d1
+	cmpi.b	#button_B_mask|button_C_mask,d1
+	bne.s	Sonic_ComboReturn
+
+Sonic_ComboTriggered:
+	clr.b	transform_combo_timer(a0)
+	move.b	#$80,transform_combo_buttons(a0)	; lock until buttons released
+	bra.s	Sonic_CheckGoSuper
+
+Sonic_ComboReturn:
+	rts
+; End of subroutine Sonic_ToggleSuper
+
+; ---------------------------------------------------------------------------
 ; Subroutine called at the peak of a jump that transforms Sonic into Super Sonic
 ; if he has enough rings and emeralds
 ; ---------------------------------------------------------------------------
@@ -37236,7 +37293,7 @@ return_1AB36:
 ; loc_1AB38: test_set_SS:
 Sonic_CheckGoSuper:
 	tst.b	(Super_Sonic_flag).w	; is Sonic already Super?
-	bne.w	return_1ABA4		; if yes, branch
+	bne.w	Sonic_RevertToNormal	; if yes, revert to normal manually
 	cmpi.b	#7,(Emerald_count).w	; does Sonic have exactly 7 emeralds?
 	bne.w	return_1ABA4		; if not, branch
 	cmpi.w	#50,(Ring_count).w	; does Sonic have at least 50 rings?
@@ -37326,6 +37383,7 @@ Sonic_Super:
 	bne.s	return_1AC3C
 ; loc_1ABF2:
 Sonic_RevertToNormal:
+	move.b	#0,(MainCharacter+obj_control).w	; restore Sonic's movement
 	move.b	#2,(Super_Sonic_palette).w	; Remove rotating palette
 	move.w	#$28,(Palette_frame).w
 	move.b	#0,(Super_Sonic_flag).w
@@ -37928,6 +37986,8 @@ Sonic_ResetOnFloor_Part2:
 	subq.w	#5,y_pos(a0)	; move Sonic up 5 pixels so the increased height doesn't push him into the ground
 ; loc_1B0DA:
 Sonic_ResetOnFloor_Part3:
+	clr.b	transform_combo_timer(a0)
+	clr.b	transform_combo_buttons(a0)
 	bclr	#status.player.in_air,status(a0)
 	bclr	#status.player.pushing,status(a0)
 	move.b	#0,jumping(a0)

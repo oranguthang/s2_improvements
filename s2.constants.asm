@@ -45,7 +45,10 @@ respawn_index =		$23
 subtype =		$28
 ; ---------------------------------------------------------------------------
 ; conventions specific to Sonic/Tails (Obj01, Obj02, and ObjDB):
-; note: $1F, $20, and $21 are unused and available (however, $1F is cleared by loc_A53A and ObjB2_Landed_on_plane)
+; note: $1F and $21 are unused and available (however, $1F is cleared by loc_A53A and ObjB2_Landed_on_plane)
+; $20 is used for transform_combo_timer
+transform_combo_timer =   $20 ; Countdown timer for Super Sonic A+B / B+C combo window (6 frames).
+transform_combo_buttons = $21 ; Bitmask of jump buttons pressed within window. Bit 7 = lock until release.
 inertia =		$14 ; and $15 ; directionless representation of speed... not updated in the air
 flip_angle =		$27 ; angle about the x axis (360 degrees = 256) (twist/tumble)
 air_left =		$28
