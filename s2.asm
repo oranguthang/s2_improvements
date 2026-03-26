@@ -36497,11 +36497,8 @@ Obj01_OutWater:
 	move.w	#$100,(Sonic_deceleration).w	; restore Super Sonic's deceleration
 +
     endif
-	cmpi.b	#4,routine(a0)	; is Sonic falling back from getting hurt?
-	beq.s	+		; if yes, branch
 	asl	y_vel(a0)	; double Y-speed while exiting water
-+
-	tst.w	y_vel(a0)		; test Sonic's Y-speed
+	tst.w	y_vel(a0)	; test Sonic's Y-speed
 	beq.w	return_1A18C	; branch if 0
 	move.w	#(1<<8)|(0<<0),(Sonic_Dust+anim).w	; load splash animation from Obj08
 	movea.l	a0,a1
@@ -38371,6 +38368,7 @@ Obj01_Hurt_Normal:
 	bsr.w	Sonic_HurtStop
 	bsr.w	Sonic_LevelBound
 	bsr.w	Sonic_RecordPos
+	bsr.w	Sonic_Water
 	bsr.w	Sonic_Animate
 	bsr.w	LoadSonicDynPLC
 	jmp	(DisplaySprite).l
@@ -39856,10 +39854,7 @@ Obj02_OutWater:
 	move.w	#$80,(Tails_deceleration).w
     endif
 
-	cmpi.b	#4,routine(a0)	; is Tails falling back from getting hurt?
-	beq.s	+		; if yes, branch
 	asl	y_vel(a0)
-+
 	tst.w	y_vel(a0)
 	beq.w	return_1BF58
 	move.w	#(1<<8)|(0<<0),(Tails_Dust+anim).w	; splash animation
@@ -41353,6 +41348,7 @@ Obj02_Hurt:
 	bsr.w	Tails_HurtStop
 	bsr.w	Tails_LevelBound
 	bsr.w	Tails_RecordPos
+	bsr.w	Tails_Water
 	bsr.w	Tails_Animate
 	bsr.w	LoadTailsDynPLC
 	jmp	(DisplaySprite).l
