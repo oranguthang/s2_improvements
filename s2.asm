@@ -32919,7 +32919,6 @@ loc_177F2:
 	bra.w	loc_177FA
 loc_177FA:
 	bset	#status.player.in_air,status(a0)
-	bclr	#status.player.rolljumping,status(a0)
 	bclr	#status.player.pushing,status(a0)
 	clr.b	jumping(a0)
 	move.w	#SndID_LargeBumper,d0
@@ -37247,8 +37246,6 @@ Sonic_ChgJumpDir:
 	move.w	(Sonic_top_speed).w,d6
 	move.w	(Sonic_acceleration).w,d5
 	asl.w	#1,d5
-	btst	#status.player.rolljumping,status(a0)	; did Sonic jump from rolling?
-	bne.s	Obj01_Jump_ResetScr			; if yes, branch to skip midair control
 	move.w	x_vel(a0),d0
 	btst	#button_left,(Ctrl_1_Held_Logical).w
 	beq.s	+	; if not holding left, branch
@@ -37279,7 +37276,6 @@ Sonic_ChgJumpDir:
 +	move.w	d0,x_vel(a0)
 
 ; loc_1A932: Obj01_ResetScr2:
-Obj01_Jump_ResetScr:
 	cmpi.w	#(screen_height/2)-16,(Camera_Y_pos_bias).w	; is screen in its default position?
 	beq.s	Sonic_JumpPeakDecelerate	; if yes, branch
 	bhs.s	+				; depending on the sign of the difference,
@@ -37481,7 +37477,7 @@ Sonic_Jump:
 	move.b	#9,x_radius(a0)
     endif
 	btst	#status.player.rolling,status(a0)
-	bne.s	Sonic_RollJump
+	bne.s	return_1AAE6
 	move.b	#$E,y_radius(a0)
 	move.b	#7,x_radius(a0)
 	move.b	#AniIDSonAni_Roll,anim(a0)	; use "jumping" animation
@@ -37489,11 +37485,6 @@ Sonic_Jump:
 	addq.w	#5,y_pos(a0)
 
 return_1AAE6:
-	rts
-; ---------------------------------------------------------------------------
-; loc_1AAE8:
-Sonic_RollJump:
-	bset	#status.player.rolljumping,status(a0)	; set the rolling+jumping flag
 	rts
 ; End of function Sonic_Jump
 
@@ -37564,7 +37555,7 @@ Sonic_CheckGoSuper:
 	; If Sonic was executing a roll-jump when he turned Super, then this
 	; will remove him from that state. The original code forgot to do
 	; this.
-	andi.b	#~(1<<status.player.rolling|1<<status.player.rolljumping),status(a0)	; Clear bits 2 and 4
+	bclr	#status.player.rolling,status(a0)	; Clear bit 2
 	move.b	#$13,y_radius(a0)
 	move.b	#9,x_radius(a0)
     endif
@@ -38273,7 +38264,6 @@ Sonic_ResetOnFloor_Part2:
 Sonic_ResetOnFloor_Part3:
 	bclr	#status.player.in_air,status(a0)
 	bclr	#status.player.pushing,status(a0)
-	bclr	#status.player.rolljumping,status(a0)
 	move.b	#0,jumping(a0)
 	move.w	#0,(Chain_Bonus_counter).w
 	move.b	#0,flip_angle(a0)
@@ -39322,7 +39312,7 @@ TailsCPU_Spawning:
 	tst.b	obj_control(a1)
 	bne.s	return_1BB88
 	move.b	status(a1),d0
-	andi.b	#1<<status.player.in_air|1<<status.player.rolljumping|1<<status.player.underwater|1<<status.player.prevent_tails_respawn,d0
+	andi.b	#1<<status.player.in_air|1<<status.player.underwater|1<<status.player.prevent_tails_respawn,d0
 	bne.s	return_1BB88
 ; loc_1BB54:
 TailsCPU_Respawn:
@@ -40414,8 +40404,6 @@ Tails_ChgJumpDir:
 	move.w	(Tails_top_speed).w,d6
 	move.w	(Tails_acceleration).w,d5
 	asl.w	#1,d5
-	btst	#status.player.rolljumping,status(a0)		; did Tails jump from rolling?
-	bne.s	Obj02_Jump_ResetScr	; if yes, branch to skip midair control
 	move.w	x_vel(a0),d0
 	btst	#button_left,(Ctrl_2_Held_Logical).w
 	beq.s	+	; if not holding left, branch
@@ -40440,7 +40428,6 @@ Tails_ChgJumpDir:
 +	move.w	d0,x_vel(a0)
 
 ; loc_1C518: Obj02_ResetScr2:
-Obj02_Jump_ResetScr:
 	cmpi.w	#(screen_height/2)-16,(Camera_Y_pos_bias_P2).w	; is screen in its default position?
 	beq.s	Tails_JumpPeakDecelerate			; if yes, branch
 	bhs.s	+				; depending on the sign of the difference,
@@ -40629,16 +40616,8 @@ Tails_Jump:
 	clr.b	stick_to_convex(a0)
 	move.w	#SndID_Jump,d0
 	jsr	(PlaySound).l	; play jumping sound
-    if ~~fixBugs
-	; These lines are a remnant of the victory animation that would play
-	; when jumping at the end of a stage in the Sonic 1 prototype. Not only
-	; are these two lines now useless, they also cause Tails to incorrectly
-	; reset to his standing collision when roll-jumping.
-	move.b	#$F,y_radius(a0)
-	move.b	#9,x_radius(a0)
-    endif
 	btst	#status.player.rolling,status(a0)
-	bne.s	Tails_RollJump
+	bne.s	return_1C6C2
 	move.b	#$E,y_radius(a0)
 	move.b	#7,x_radius(a0)
 	move.b	#AniIDSonAni_Roll,anim(a0)	; use "jumping" animation
@@ -40646,11 +40625,6 @@ Tails_Jump:
 	addq.w	#1,y_pos(a0)
 
 return_1C6C2:
-	rts
-; ---------------------------------------------------------------------------
-; loc_1C6C4:
-Tails_RollJump:
-	bset	#status.player.rolljumping,status(a0) ; set the rolling+jumping flag
 	rts
 ; End of function Tails_Jump
 
@@ -41273,7 +41247,6 @@ Tails_ResetOnFloor_Part2:
 Tails_ResetOnFloor_Part3:
 	bclr	#status.player.in_air,status(a0)
 	bclr	#status.player.pushing,status(a0)
-	bclr	#status.player.rolljumping,status(a0)
 	move.b	#0,jumping(a0)
     if fixBugs
 	; Without this check, AI Tails will ruin the player's
@@ -45409,7 +45382,6 @@ Obj44_BumpCharacter:
 	asr.l	#8,d0
 	move.w	d0,y_vel(a1)
 	bset	#status.player.in_air,status(a1)
-	bclr	#status.player.rolljumping,status(a1)
 	bclr	#status.player.pushing,status(a1)
 	clr.b	jumping(a1)
 	move.b	#1,anim(a0)
@@ -45724,7 +45696,6 @@ loc_1FB0C:
 	move.w	#$23,move_lock(a1)
 	move.b	#0,jumping(a1)
 	bclr	#status.player.pushing,status(a1)
-	bclr	#status.player.rolljumping,status(a1)
 	btst	#status.player.rolling,status(a1)
 	beq.w	loc_1FBB8
 	cmpi.b	#1,(a1)
@@ -53687,11 +53658,6 @@ loc_270DC:
 +
 	bclr	#p1_pushing_bit,status(a0)
 	bclr	#p2_pushing_bit,status(a0)
-    if fixBugs
-	; Clear the player's 'roll-jumping' flag, to unlock their controls
-	; and prevent them from getting stuck.
-	bclr	#status.player.rolljumping,status(a1)
-    endif
 	bclr	#status.player.pushing,status(a1)
 	move.w	#SndID_Spring,d0
 	jmp	(PlaySound).l
@@ -60335,7 +60301,6 @@ ObjD7_BounceUp:
 ; loc_2C55E:
 ObjD7_BounceEnd:
 	bset	#status.player.in_air,status(a1)
-	bclr	#status.player.rolljumping,status(a1)
 	bclr	#status.player.pushing,status(a1)
 	clr.b	jumping(a1)
 	move.w	#SndID_Bumper,d0
@@ -60574,7 +60539,6 @@ loc_2C7EC:
 
 loc_2C806:
 	bset	#status.player.in_air,status(a1)
-	bclr	#status.player.rolljumping,status(a1)
 	bclr	#status.player.pushing,status(a1)
 	clr.b	jumping(a1)
 	move.w	#SndID_BonusBumper,d0
@@ -82916,7 +82880,6 @@ loc_3D3A4:
 	asr.l	#8,d0
 	move.w	d0,y_vel(a1)
 	bset	#status.player.in_air,status(a1)
-	bclr	#status.player.rolljumping,status(a1)
 	bclr	#status.player.pushing,status(a1)
 	clr.b	jumping(a1)
 	move.w	#SndID_Bumper,d0
