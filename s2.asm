@@ -37364,6 +37364,9 @@ Sonic_Boundary_Bottom: ;;
 	; a2 needs to be set here, otherwise KillCharacter
 	; will access a dangling pointer!
 	movea.l	a0,a2
+	; Skip the caller's remaining code (floor collision etc.) for this frame
+	; so Sonic doesn't get stuck against a platform above him while dying.
+	addq.l	#4,sp
     endif
 	jmpto	JmpTo_KillCharacter
 ; ===========================================================================
@@ -40516,6 +40519,9 @@ Tails_Boundary_Bottom: ;;
 	; a2 needs to be set here, otherwise KillCharacter
 	; will access a dangling pointer!
 	movea.l	a0,a2
+	; Skip the caller's remaining code (floor collision etc.) for this frame
+	; so Tails doesn't get stuck against a platform above him while dying.
+	addq.l	#4,sp
     endif
 	jmpto	JmpTo2_KillCharacter
 ; ===========================================================================
