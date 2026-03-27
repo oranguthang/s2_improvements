@@ -15241,7 +15241,7 @@ SwScrl_Index: zoneOrderedOffsetTable 2,1	; JmpTbl_SwScrlMgr
 	zoneOffsetTableEntry.w SwScrl_OOZ	; OOZ
 	zoneOffsetTableEntry.w SwScrl_MCZ	; MCZ
 	zoneOffsetTableEntry.w SwScrl_CNZ	; CNZ
-	zoneOffsetTableEntry.w SwScrl_CPZ	; CPZ
+	zoneOffsetTableEntry.w SwScrl_CPZ_Water	; CPZ
 	zoneOffsetTableEntry.w SwScrl_DEZ	; DEZ
 	zoneOffsetTableEntry.w SwScrl_ARZ	; ARZ
 	zoneOffsetTableEntry.w SwScrl_SCZ	; SCZ
@@ -17291,6 +17291,13 @@ SwScrl_CNZ2P_RowHeights_P2:
 	even
 ; ===========================================================================
 ; loc_D27C:
+SwScrl_CPZ_Water:
+	; Wrapper: run CPZ scrolling then add water ripple in act 2
+	bsr.w	SwScrl_CPZ
+	tst.b	(Current_Act).w		; is this act 1?
+	bne.w	SwScrl_Water		; if not (act 2), add water ripple
+	rts
+; ===========================================================================
 SwScrl_CPZ:
 	; Update scroll flags, to dynamically load more of the background as
 	; the player moves around.
@@ -17839,7 +17846,7 @@ SwScrl_ARZ:
 	neg.w	d0
 +	dbf	d2,-		; Loop until Horiz_Scroll_Buf is full
 
-	rts
+	bra.w	SwScrl_Water
 ; ===========================================================================
 ; byte_D5CE:
 SwScrl_ARZ_RowHeights:
@@ -17859,6 +17866,69 @@ SwScrl_ARZ_RowHeights:
 	dc.b 240	; 13
 	dc.b 240	; 14
 	dc.b 240	; 15
+	even
+; ===========================================================================
+SwScrl_Water:
+	; Add the LZ water ripple effect to any level
+	lea	(Deform_LZ_Data1).l,a3
+	lea	(Obj0A_WobbleData).l,a2
+
+	move.b	(Water_Ripple_Phase).w,d2	; load ripple phase for BG
+	move.b	d2,d3				; copy for FG
+	addi.w	#$80,(Water_Ripple_Phase).w	; advance phase (high byte increments every 2 frames)
+
+	add.w	(Camera_BG_Y_pos).w,d2		; add BG camera Y to BG phase
+	andi.w	#$FF,d2				; keep in table bounds
+
+	add.w	(Camera_Y_pos).w,d3		; add FG camera Y to FG phase
+	andi.w	#$FF,d3				; keep in table bounds
+
+	lea	(Horiz_Scroll_Buf).w,a1
+	move.w	#$DF,d1				; 224 lines - 1
+	move.w	(Water_Level_1).w,d4
+	move.w	(Camera_Y_pos).w,d5
+
+	; scan lines above the water surface — skip them without modifying scroll
+-	cmp.w	d4,d5				; is camera line at or below water level?
+	bge.s	SwScrl_Water_doRipple		; if so, start applying ripple
+	addq.w	#4,a1				; skip this scroll entry (FG + BG word pair)
+	addq.w	#1,d5				; next screen line
+	addq.b	#1,d2
+	addq.b	#1,d3
+	dbf	d1,-
+	rts
+
+SwScrl_Water_doRipple:
+	move.b	(a3,d3.w),d4			; FG ripple value from Deform_LZ_Data1
+	ext.w	d4
+	add.w	d4,(a1)+			; apply to FG scroll entry
+
+	move.b	(a2,d2.w),d4			; BG ripple value from Obj0A_WobbleData
+	ext.w	d4
+	add.w	d4,(a1)+			; apply to BG scroll entry
+
+	addq.b	#1,d2
+	addq.b	#1,d3
+	dbf	d1,SwScrl_Water_doRipple
+	rts
+; ===========================================================================
+Deform_LZ_Data1:
+	dc.b   1,  1,  2,  2,  3,  3,  3,  3,  2,  2,  1,  1,  0,  0,  0,  0	; 0
+	dc.b   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0	; 16
+	dc.b   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0	; 32
+	dc.b   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0	; 48
+	dc.b   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0	; 64
+	dc.b   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0	; 80
+	dc.b   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0	; 96
+	dc.b   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0	; 112
+	dc.b  -1, -1, -2, -2, -3, -3, -3, -3, -2, -2, -1, -1,  0,  0,  0,  0	; 128
+	dc.b   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0	; 144
+	dc.b   1,  1,  2,  2,  3,  3,  3,  3,  2,  2,  1,  1,  0,  0,  0,  0	; 160
+	dc.b   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0	; 176
+	dc.b   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0	; 192
+	dc.b   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0	; 208
+	dc.b   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0	; 224
+	dc.b   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0	; 240
 	even
 ; ===========================================================================
 ; loc_D5DE:
