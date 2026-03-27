@@ -25066,6 +25066,14 @@ Obj37_Init:
 	jsrto	JmpTo4_CalcSine
 	move.w	d4,d2
 	lsr.w	#8,d2
+	tst.b	(Water_flag).w				; does the level have water?
+	beq.s	Obj37_SkipHalvingVel		; if not, branch
+	move.w	(Water_Level_2).w,d6		; move water level to d6
+	cmp.w	y_pos(a0),d6				; is the ring underneath the water level?
+	bgt.s	Obj37_SkipHalvingVel		; if not, branch
+	asr.w	d0				; halve x_vel for underwater effect
+	asr.w	d1				; halve y_vel for underwater effect
+Obj37_SkipHalvingVel:
 	asl.w	d2,d0
 	asl.w	d2,d1
 	move.w	d0,d2
@@ -25105,6 +25113,13 @@ Obj37_Main:
 	move.b	(Ring_spill_anim_frame).w,mapping_frame(a0)
 	bsr.w	ObjectMove
 	addi.w	#$18,y_vel(a0)
+	tst.b	(Water_flag).w				; does the level have water?
+	beq.s	Obj37_SkipBounceSlow		; if not, branch
+	move.w	(Water_Level_2).w,d6		; move water level to d6
+	cmp.w	y_pos(a0),d6				; is the ring underneath the water level?
+	bgt.s	Obj37_SkipBounceSlow		; if not, branch
+	subi.w	#$E,y_vel(a0)				; reduce gravity ($18-$E=$A) for underwater effect
+Obj37_SkipBounceSlow:
 	bmi.s	loc_121B8
 	move.b	(Vint_runcount+3).w,d0
 	add.b	d7,d0
