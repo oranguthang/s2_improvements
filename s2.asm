@@ -21,7 +21,7 @@ gameRevision = 2
 ;	| If 0, a REV00 ROM is built
 ;	| If 1, a REV01 ROM is built, which contains some fixes
 ;	| If 2, a (theoretical) REV02 ROM is built, which contains even more fixes
-padToPowerOfTwo = 1
+padToPowerOfTwo = 0
 ;	| If 1, pads the end of the ROM to the next power of two bytes (for real hardware)
 ;
 fixBugs = 1
@@ -78787,6 +78787,23 @@ ObjB2_Main_SCZ:
 	move.w	#9,d3
 	move.w	(sp)+,d4
 	jsrto	JmpTo27_SolidObject
+    if fixBugs
+	; Cap the player's inertia while on the tornado to prevent high-speed
+	; jitter in the plane's tracking (spin dash is still possible but limited)
+	btst	#status.npc.p1_standing,status(a0)
+	beq.s	+
+	lea	(MainCharacter).w,a1
+	move.w	inertia(a1),d0
+	cmpi.w	#$800,d0
+	blt.s	+
+	move.w	#$800,inertia(a1)
+	bra.s	++
++
+	cmpi.w	#-$800,d0
+	bgt.s	+
+	move.w	#-$800,inertia(a1)
++
+    endif
 	bsr.w	ObjB2_Move_obbey_player
 	move.b	objoff_2E(a0),d0
 	move.b	status(a0),d1
