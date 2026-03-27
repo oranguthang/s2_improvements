@@ -61724,6 +61724,7 @@ Obj5D_Main_Pos_and_Collision:
 	move.w	#$EEE,d0	; color white
 +
 	move.w	d0,(a1)		; set color for flashing effect
+	bset	#1,Obj5D_status(a0)	; show chemical-spill animation while flashing
 
 	subq.b	#1,Obj5D_invulnerable_time(a0)
 	bne.s	return_2DAE8
@@ -62817,6 +62818,17 @@ Obj5D_Gunk_OffScreen:
 ; ===========================================================================
 
 Obj5D_Gunk_6:
+	; Fix: keep the spill sprite horizontally aligned with Robotnik's ship
+	cmpi.b	#$25,mapping_frame(a0)		; has the spill animation started?
+	blt.s	Obj5D_Gunk_6_SkipFlip		; if not, skip flip check
+	move.w	(MainCharacter+x_pos).w,d0
+	sub.w	x_pos(a0),d0			; d0 = player X - gunk X (negative if player is left of gunk)
+	bgt.s	Obj5D_Gunk_6_FlipRight
+	bclr	#render_flags.x_flip,render_flags(a0)	; face left
+	bra.s	Obj5D_Gunk_6_SkipFlip
+Obj5D_Gunk_6_FlipRight:
+	bset	#render_flags.x_flip,render_flags(a0)	; face right
+Obj5D_Gunk_6_SkipFlip:
 	subi_.w	#1,Obj5D_timer2(a0)
 	bpl.s	+
 	move.b	#2,priority(a0)

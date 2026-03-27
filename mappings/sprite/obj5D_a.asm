@@ -209,15 +209,15 @@ Map_obj5D_a_0258:	spriteHeader
 Map_obj5D_a_0258_End
 
 Map_obj5D_a_0262:	spriteHeader
-	spritePiece	-$10, -$20, 3, 3, $4A, 0, 0, 0, 0
+	spritePiece	-$13, -$20, 3, 3, $4A, 0, 0, 0, 0
 Map_obj5D_a_0262_End
 
 Map_obj5D_a_026C:	spriteHeader
-	spritePiece	-$10, -$18, 4, 2, $53, 0, 0, 0, 0
+	spritePiece	-$13, -$18, 4, 2, $53, 0, 0, 0, 0
 Map_obj5D_a_026C_End
 
 Map_obj5D_a_0276:	spriteHeader
-	spritePiece	-$10, -$18, 4, 2, $5B, 0, 0, 0, 0
+	spritePiece	-$13, -$18, 4, 2, $5B, 0, 0, 0, 0
 Map_obj5D_a_0276_End
 
 	even
