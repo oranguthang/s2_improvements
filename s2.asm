@@ -69725,6 +69725,10 @@ SSHurt_Animation:
 +
 	tst.w	(Ring_count_2P).w
 	beq.s	return_33A90
+	tst.b	(SS_2p_Flag).w		; are we in VS mode?
+	bne.s	+			; if yes, proceed to ring spill
+	tst.w	(Player_mode).w		; are we in Sonic & Tails mode?
+	beq.s	return_33A90		; if yes (co-op), Tails keeps his rings
 +
 	jsrto	JmpTo_SSAllocateObject
 	bne.s	return_33A90
@@ -70084,6 +70088,10 @@ SSPlayer_Collision:
 	clr.b	(SS_Swap_Positions_Flag).w
 	tst.w	(Ring_count_2P).w
 	beq.s	loc_33E38
+	tst.b	(SS_2p_Flag).w		; are we in VS mode?
+	bne.s	+			; if yes, proceed to ring spill sound
+	tst.w	(Player_mode).w		; are we in Sonic & Tails mode?
+	beq.s	loc_33E38		; if yes (co-op), Tails keeps his rings (no sound)
 +
 	move.w	#SndID_RingSpill,d0
 	jsr	(PlaySound).l
