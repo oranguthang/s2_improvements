@@ -24302,11 +24302,7 @@ Obj2D_Main:
 	move.w	d2,d3
 	addq.w	#1,d3
 	move.w	x_pos(a0),d4
-    if removeJmpTos
-	bsr.w	SolidObject
-    else
-	bsr.w	JmpTo2_SolidObject
-    endif
+	jsrto	JmpTo2_SolidObject
 	bra.w	MarkObjGone                          ; delete object if off screen
 
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
@@ -25040,13 +25036,19 @@ Obj37_Init:
 	beq.s	+
 	move.w	(Ring_count_2P).w,d5
 +
-	moveq	#$20,d0
+	lea	SpillRingData,a3		; load ring velocity table
+	moveq	#20,d0				; lose a max of 20 rings
+	lea	(MainCharacter).w,a2		; a2=character
+	btst	#status.player.underwater,status(a2)	; is Sonic underwater?
+	beq.s	+				; if not, branch
+	lea	SpillRingDataU,a3		; load underwater ring velocity table
+	moveq	#8,d0				; lose a max of 8 rings when underwater
++
 	cmp.w	d0,d5
 	blo.s	+
 	move.w	d0,d5
 +
 	subq.w	#1,d5
-	move.w	#$288,d4
 	bra.s	+
 ; ===========================================================================
 
@@ -25063,40 +25065,13 @@ Obj37_Init:
 	move.w	#make_art_tile(ArtTile_ArtNem_Ring,1,0),art_tile(a1)
 	bsr.w	Adjust2PArtPointer2
 	move.b	#1<<render_flags.on_screen|1<<render_flags.level_fg,render_flags(a1)
-	move.b	#3,priority(a1)
 	move.b	#$47,collision_flags(a1)
 	move.b	#8,width_pixels(a1)
     if ~~fixBugs
 	move.b	#-1,(Ring_spill_anim_counter).w
     endif
-	tst.w	d4
-	bmi.s	+
-	move.w	d4,d0
-	jsrto	JmpTo4_CalcSine
-	move.w	d4,d2
-	lsr.w	#8,d2
-	tst.b	(Water_flag).w				; does the level have water?
-	beq.s	Obj37_SkipHalvingVel		; if not, branch
-	move.w	(Water_Level_2).w,d6		; move water level to d6
-	cmp.w	y_pos(a0),d6				; is the ring underneath the water level?
-	bgt.s	Obj37_SkipHalvingVel		; if not, branch
-	asr.w	d0				; halve x_vel for underwater effect
-	asr.w	d1				; halve y_vel for underwater effect
-Obj37_SkipHalvingVel:
-	asl.w	d2,d0
-	asl.w	d2,d1
-	move.w	d0,d2
-	move.w	d1,d3
-	addi.b	#$10,d4
-	bcc.s	+
-	subi.w	#$80,d4
-	bcc.s	+
-	move.w	#$288,d4
-+
-	move.w	d2,x_vel(a1)
-	move.w	d3,y_vel(a1)
-	neg.w	d2
-	neg.w	d4
+	move.w	(a3)+,x_vel(a1)		; load x velocity from table
+	move.w	(a3)+,y_vel(a1)		; load y velocity from table
 	dbf	d5,-
 +
     if fixBugs
@@ -25162,13 +25137,21 @@ loc_121B8:
 	blo.s	Obj37_Delete
     if fixBugs
 	btst	#0,objoff_1F(a0)		; test lowest bit of timer (alternates every frame)
-	beq.w	DisplaySprite			; if bit is 0, show ring
+	beq.s	.display			; if bit is 0, show ring
 	cmpi.b	#80,objoff_1F(a0)		; are we in the last 80 frames of the ring's life?
-	bhi.w	DisplaySprite			; if not, always show ring
-	rts					; hide ring (flash effect)
+	bls.s	.return				; if so, hide ring (flash effect)
     else
-	bra.w	DisplaySprite
+	bra.s	.display
     endif
+.display:
+	lea	Object_Display_Lists+$180,a1	; priority 3 offset pre-calculated (skip runtime calc)
+	cmpi.w	#object_display_list_size-2,(a1)
+	bhs.s	.return
+	addq.w	#2,(a1)
+	adda.w	(a1),a1
+	move.w	a0,(a1)
+.return:
+	rts
 ; ===========================================================================
 
 loc_121D0:
@@ -25180,17 +25163,43 @@ loc_121D0:
 Obj37_Collect:
 	addq.b	#2,routine(a0)
 	move.b	#0,collision_flags(a0)
-	move.b	#1,priority(a0)
 	bsr.w	CollectRing
 ; Obj_37_sub_6:
 Obj37_Sparkle:
 	lea	(Ani_Ring).l,a1
 	bsr.w	AnimateSprite
-	bra.w	DisplaySprite
+	lea	Object_Display_Lists+$80,a1	; priority 1 offset pre-calculated (skip runtime calc)
+	cmpi.w	#object_display_list_size-2,(a1)
+	bhs.s	+
+	addq.w	#2,(a1)
+	adda.w	(a1),a1
+	move.w	a0,(a1)
++
+	rts
 ; ===========================================================================
 ; BranchTo5_DeleteObject
 Obj37_Delete:
 	bra.w	DeleteObject
+
+; ---------------------------------------------------------------------------
+; Ring velocity table (above water, max 20 rings)
+; x_vel, y_vel pairs pre-calculated for each spilled ring
+; ---------------------------------------------------------------------------
+SpillRingData:
+	dc.w	$00C4,$FC14, $FF3C,$FC14, $0238,$FCB0, $FDC8,$FCB0	; 4
+	dc.w	$0350,$FDC8, $FCB0,$FDC8, $03EC,$FF3C, $FC14,$FF3C	; 8
+	dc.w	$03EC,$00C4, $FC14,$00C4, $0350,$0238, $FCB0,$0238	; 12
+	dc.w	$0238,$0350, $FDC8,$0350, $00C4,$03EC, $FF3C,$03EC	; 16
+	dc.w	$0062,$FE0A, $FF9E,$FE0A, $011C,$FE58, $FEE4,$FE58	; 20
+	even
+
+; ---------------------------------------------------------------------------
+; Ring velocity table (underwater, max 8 rings)
+; ---------------------------------------------------------------------------
+SpillRingDataU:
+	dc.w	$0064,$FE08, $FF9C,$FE08, $011C,$FE58, $FEE4,$FE58	; 4
+	dc.w	$01A8,$FEE4, $FE58,$FEE4, $01F8,$FF9C, $FE08,$FF9C	; 8
+	even
 
 ; Unused - dead code/data S1 big ring:
 ; ===========================================================================
