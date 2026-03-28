@@ -69145,11 +69145,6 @@ byte_33A92:
 	dc.b   0,  FALSE<<render_flags.x_flip| TRUE<<render_flags.y_flip	; 10
 	dc.b   4,   TRUE<<render_flags.x_flip| TRUE<<render_flags.y_flip	; 12
 	dc.b  $C,   TRUE<<render_flags.x_flip|FALSE<<render_flags.y_flip	; 14
-dword_33AA2:
-	dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($000)		; Sonic in upright position, $58 tiles
-	dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($058)		; Sonic in diagonal position, $CC tiles
-	dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($124)		; Sonic in horizontal position, $4D tiles
-	dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($171)		; Sonic in ball form, $12 tiles
 ; ===========================================================================
 
 LoadSSSonicDynPLC:
@@ -69163,10 +69158,10 @@ LoadSSSonicDynPLC:
 ; ===========================================================================
 +
 	jsrto	JmpTo42_DisplaySprite
-	lea	dword_33AA2(pc),a3
+	move.l	#$FF0000,d6
+	lea	(Obj09_MapRUnc).l,a2
 	lea	(Sonic_LastLoadedDPLC).w,a4
 	move.w	#tiles_to_bytes(ArtTile_ArtNem_SpecialSonic),d4
-	moveq	#0,d1
 
 LoadSSPlayerDynPLC:
 	moveq	#0,d0
@@ -69174,28 +69169,12 @@ LoadSSPlayerDynPLC:
 	cmp.b	(a4),d0
 	beq.s	return_33B3E
 	move.b	d0,(a4)
-	moveq	#0,d6
-	cmpi.b	#4,d0
-	blt.s	loc_33AFE
-	addq.w	#4,d6
-	cmpi.b	#$C,d0
-	blt.s	loc_33AFE
-	addq.w	#4,d6
-	cmpi.b	#$10,d0
-	blt.s	loc_33AFE
-	addq.b	#4,d6
-
-loc_33AFE:
-	move.l	(a3,d6.w),d6
-	add.w	d1,d0
 	add.w	d0,d0
-	lea	(Obj09_MapRUnc_345FA).l,a2
 	adda.w	(a2,d0.w),a2
 	move.w	(a2)+,d5
 	subq.w	#1,d5
 	bmi.s	return_33B3E
-
-SSPLC_ReadEntry:
+-
 	moveq	#0,d1
 	move.w	(a2)+,d1
 	move.w	d1,d3
@@ -69203,13 +69182,13 @@ SSPLC_ReadEntry:
 	andi.w	#$F0,d3
 	addi.w	#$10,d3
 	andi.w	#$FFF,d1
-	lsl.w	#1,d1
+	lsl.w	#5,d1
 	add.l	d6,d1
 	move.w	d4,d2
 	add.w	d3,d4
 	add.w	d3,d4
 	jsr	(QueueDMATransfer).l
-	dbf	d5,SSPLC_ReadEntry
+	dbf	d5,-
 
 return_33B3E:
 	rts
@@ -69891,410 +69870,15 @@ Obj09_MapUnc_34212:	include "mappings/sprite/obj09.asm"
 ; ----------------------------------------------------------------------------
 Obj63_MapUnc_34492:	include "mappings/sprite/obj63.asm"
 ; ----------------------------------------------------------------------------
-; custom dynamic pattern loading cues for special stage Sonic, Tails and
-; Tails' tails
-; The first $12 frames are for Sonic, and the next $12 frames are for Tails.
-; The last $15 frames are for Tails' tails.
-; The first $24 frames are almost normal dplcs -- the only difference being
-; that the art tile to load is pre-shifted left by 4 bits.
-; The same applies to the last $15 frames, but they have yet another difference:
-; a small space optimization. These frames only have one dplc per frame ever,
-; hence the two-byte dplc count is removed from each frame.
+; dynamic pattern loading cues for special stage Sonic (18 frames),
+; Tails (18 frames), and Tails' tails (21 frames)
 ; ----------------------------------------------------------------------------
-	pushv ,SonicDplcVer	; Backup previous value of SonicDplcVer
-SonicDplcVer := 4		; Switch to custom DPLC format
-
-Obj09_MapRUnc_345FA:	mappingsTable
-	mappingsTableEntry.w	.sonic_0
-	mappingsTableEntry.w	.sonic_1
-	mappingsTableEntry.w	.sonic_2
-	mappingsTableEntry.w	.sonic_3
-	mappingsTableEntry.w	.sonic_4
-	mappingsTableEntry.w	.sonic_5
-	mappingsTableEntry.w	.sonic_6
-	mappingsTableEntry.w	.sonic_7
-	mappingsTableEntry.w	.sonic_8
-	mappingsTableEntry.w	.sonic_9
-	mappingsTableEntry.w	.sonic_10
-	mappingsTableEntry.w	.sonic_11
-	mappingsTableEntry.w	.sonic_12
-	mappingsTableEntry.w	.sonic_13
-	mappingsTableEntry.w	.sonic_14
-	mappingsTableEntry.w	.sonic_15
-	mappingsTableEntry.w	.sonic_16
-	mappingsTableEntry.w	.sonic_17
-
-	mappingsTableEntry.w	.tails_0
-	mappingsTableEntry.w	.tails_1
-	mappingsTableEntry.w	.tails_2
-	mappingsTableEntry.w	.tails_3
-	mappingsTableEntry.w	.tails_4
-	mappingsTableEntry.w	.tails_5
-	mappingsTableEntry.w	.tails_6
-	mappingsTableEntry.w	.tails_7
-	mappingsTableEntry.w	.tails_8
-	mappingsTableEntry.w	.tails_9
-	mappingsTableEntry.w	.tails_10
-	mappingsTableEntry.w	.tails_11
-	mappingsTableEntry.w	.tails_12
-	mappingsTableEntry.w	.tails_13
-	mappingsTableEntry.w	.tails_14
-	mappingsTableEntry.w	.tails_15
-	mappingsTableEntry.w	.tails_16
-	mappingsTableEntry.w	.tails_17
-
-	mappingsTableEntry.w	.tails_tails_0
-	mappingsTableEntry.w	.tails_tails_1
-	mappingsTableEntry.w	.tails_tails_2
-	mappingsTableEntry.w	.tails_tails_3
-	mappingsTableEntry.w	.tails_tails_4
-	mappingsTableEntry.w	.tails_tails_5
-	mappingsTableEntry.w	.tails_tails_6
-	mappingsTableEntry.w	.tails_tails_7
-	mappingsTableEntry.w	.tails_tails_8
-	mappingsTableEntry.w	.tails_tails_9
-	mappingsTableEntry.w	.tails_tails_10
-	mappingsTableEntry.w	.tails_tails_11
-	mappingsTableEntry.w	.tails_tails_12
-	mappingsTableEntry.w	.tails_tails_13
-	mappingsTableEntry.w	.tails_tails_14
-	mappingsTableEntry.w	.tails_tails_15
-	mappingsTableEntry.w	.tails_tails_16
-	mappingsTableEntry.w	.tails_tails_17
-	mappingsTableEntry.w	.tails_tails_18
-	mappingsTableEntry.w	.tails_tails_19
-	mappingsTableEntry.w	.tails_tails_20
-
-.sonic_0:	dplcHeader
-	dplcEntry	$10, 0
-	dplcEntry	9, $10
-	dplcEntry	2, $19
-.sonic_0_End
-
-.sonic_1:	dplcHeader
-	dplcEntry	9, $1B
-	dplcEntry	8, $24
-	dplcEntry	4, $2C
-.sonic_1_End
-
-.sonic_2:	dplcHeader
-	dplcEntry	$C, $30
-	dplcEntry	8, $3C
-	dplcEntry	6, $44
-.sonic_2_End
-
-.sonic_3:	dplcHeader
-	dplcEntry	9, $1B
-	dplcEntry	8, $4A
-	dplcEntry	6, $52
-.sonic_3_End
-
-.sonic_4:	dplcHeader
-	dplcEntry	9, 0
-	dplcEntry	4, 9
-	dplcEntry	2, $D
-	dplcEntry	$C, $F
-.sonic_4_End
-
-.sonic_5:	dplcHeader
-	dplcEntry	6, $1B
-	dplcEntry	2, $21
-	dplcEntry	8, $23
-	dplcEntry	8, $2B
-	dplcEntry	1, $33
-.sonic_5_End
-
-.sonic_6:	dplcHeader
-	dplcEntry	2, $34
-	dplcEntry	$C, $36
-	dplcEntry	3, $42
-	dplcEntry	6, $45
-	dplcEntry	4, $4B
-.sonic_6_End
-
-.sonic_7:	dplcHeader
-	dplcEntry	2, $4F
-	dplcEntry	$10, $51
-	dplcEntry	3, $61
-	dplcEntry	1, $64
-	dplcEntry	4, $65
-.sonic_7_End
-
-.sonic_8:	dplcHeader
-	dplcEntry	4, $69
-	dplcEntry	4, $6D
-	dplcEntry	$C, $71
-	dplcEntry	4, $7D
-.sonic_8_End
-
-.sonic_9:	dplcHeader
-	dplcEntry	4, $81
-	dplcEntry	3, $85
-	dplcEntry	8, $88
-	dplcEntry	8, $90
-	dplcEntry	1, $98
-.sonic_9_End
-
-.sonic_10:	dplcHeader
-	dplcEntry	6, $99
-	dplcEntry	2, $9F
-	dplcEntry	8, $A1
-	dplcEntry	8, $A9
-	dplcEntry	1, $B1
-.sonic_10_End
-
-.sonic_11:	dplcHeader
-	dplcEntry	1, $B2
-	dplcEntry	8, $B3
-	dplcEntry	1, $BB
-	dplcEntry	2, $BC
-	dplcEntry	8, $BE
-	dplcEntry	6, $C6
-.sonic_11_End
-
-.sonic_12:	dplcHeader
-	dplcEntry	6, 0
-	dplcEntry	1, 6
-	dplcEntry	$10, 7
-.sonic_12_End
-
-.sonic_13:	dplcHeader
-	dplcEntry	6, $17
-	dplcEntry	4, $1D
-	dplcEntry	$C, $21
-.sonic_13_End
-
-.sonic_14:	dplcHeader
-	dplcEntry	3, $2D
-	dplcEntry	3, $30
-	dplcEntry	$10, $33
-.sonic_14_End
-
-.sonic_15:	dplcHeader
-	dplcEntry	6, $43
-	dplcEntry	4, $49
-	dplcEntry	$C, $21
-.sonic_15_End
-
-.sonic_16:	dplcHeader
-	dplcEntry	8, 0
-	dplcEntry	2, 8
-.sonic_16_End
-
-.sonic_17:	dplcHeader
-	dplcEntry	8, $A
-	dplcEntry	2, 8
-.sonic_17_End
-
-.tails_0:	dplcHeader
-	dplcEntry	9, 0
-	dplcEntry	6, 9
-	dplcEntry	1, $F
-.tails_0_End
-
-.tails_1:	dplcHeader
-	dplcEntry	4, $10
-	dplcEntry	6, $14
-	dplcEntry	4, $1A
-	dplcEntry	4, $1E
-.tails_1_End
-
-.tails_2:	dplcHeader
-	dplcEntry	4, $22
-	dplcEntry	6, $26
-	dplcEntry	4, $2C
-	dplcEntry	4, $30
-.tails_2_End
-
-.tails_3:	dplcHeader
-	dplcEntry	4, $10
-	dplcEntry	6, $14
-	dplcEntry	4, $34
-	dplcEntry	4, $38
-	dplcEntry	1, $3C
-.tails_3_End
-
-.tails_4:	dplcHeader
-	dplcEntry	4, 0
-	dplcEntry	8, 4
-	dplcEntry	8, $C
-.tails_4_End
-
-.tails_5:	dplcHeader
-	dplcEntry	2, $14
-	dplcEntry	8, $16
-	dplcEntry	9, $1E
-	dplcEntry	2, $27
-.tails_5_End
-
-.tails_6:	dplcHeader
-	dplcEntry	1, $29
-	dplcEntry	3, $2A
-	dplcEntry	8, $2D
-	dplcEntry	1, $35
-	dplcEntry	6, $36
-.tails_6_End
-
-.tails_7:	dplcHeader
-	dplcEntry	1, $3C
-	dplcEntry	$10, $3D
-	dplcEntry	1, $4D
-	dplcEntry	2, $4E
-.tails_7_End
-
-.tails_8:	dplcHeader
-	dplcEntry	4, $50
-	dplcEntry	4, $54
-	dplcEntry	8, $58
-	dplcEntry	6, $60
-.tails_8_End
-
-.tails_9:	dplcHeader
-	dplcEntry	1, $66
-	dplcEntry	8, $67
-	dplcEntry	1, $6F
-	dplcEntry	8, $70
-	dplcEntry	2, $78
-.tails_9_End
-
-.tails_10:	dplcHeader
-	dplcEntry	1, $7A
-	dplcEntry	$C, $7B
-	dplcEntry	1, $87
-	dplcEntry	4, $88
-	dplcEntry	2, $8C
-.tails_10_End
-
-.tails_11:	dplcHeader
-	dplcEntry	1, $8E
-	dplcEntry	$C, $8F
-	dplcEntry	1, $9B
-	dplcEntry	8, $9C
-.tails_11_End
-
-.tails_12:	dplcHeader
-	dplcEntry	9, 0
-	dplcEntry	8, 9
-.tails_12_End
-
-.tails_13:	dplcHeader
-	dplcEntry	4, $11
-	dplcEntry	1, $15
-	dplcEntry	$C, $16
-.tails_13_End
-
-.tails_14:	dplcHeader
-	dplcEntry	2, $22
-	dplcEntry	$10, $24
-.tails_14_End
-
-.tails_15:	dplcHeader
-	dplcEntry	3, $34
-	dplcEntry	3, $37
-	dplcEntry	$C, $16
-.tails_15_End
-
-.tails_16:	dplcHeader
-	dplcEntry	8, 0
-.tails_16_End
-
-.tails_17:	dplcHeader
-	dplcEntry	8, 8
-.tails_17_End
-
-.tails_tails_0:	;dplcHeader
-	dplcEntry	6, 0
-.tails_tails_0_End
-
-.tails_tails_1:	;dplcHeader
-	dplcEntry	9, 6
-.tails_tails_1_End
-
-.tails_tails_2:	;dplcHeader
-	dplcEntry	6, $F
-.tails_tails_2_End
-
-.tails_tails_3:	;dplcHeader
-	dplcEntry	6, $15
-.tails_tails_3_End
-
-.tails_tails_4:	;dplcHeader
-	dplcEntry	8, $1B
-.tails_tails_4_End
-
-.tails_tails_5:	;dplcHeader
-	dplcEntry	9, $23
-.tails_tails_5_End
-
-.tails_tails_6:	;dplcHeader
-	dplcEntry	9, $2C
-.tails_tails_6_End
-
-.tails_tails_7:	;dplcHeader
-	dplcEntry	9, 0
-.tails_tails_7_End
-
-.tails_tails_8:	;dplcHeader
-	dplcEntry	6, 9
-.tails_tails_8_End
-
-.tails_tails_9:	;dplcHeader
-	dplcEntry	6, $F
-.tails_tails_9_End
-
-.tails_tails_10:	;dplcHeader
-	dplcEntry	8, $15
-.tails_tails_10_End
-
-.tails_tails_11:	;dplcHeader
-	dplcEntry	$C, $1D
-.tails_tails_11_End
-
-.tails_tails_12:	;dplcHeader
-	dplcEntry	9, $29
-.tails_tails_12_End
-
-.tails_tails_13:	;dplcHeader
-	dplcEntry	9, $32
-.tails_tails_13_End
-
-.tails_tails_14:	;dplcHeader
-	dplcEntry	6, 0
-.tails_tails_14_End
-
-.tails_tails_15:	;dplcHeader
-	dplcEntry	9, 6
-.tails_tails_15_End
-
-.tails_tails_16:	;dplcHeader
-	dplcEntry	6, $F
-.tails_tails_16_End
-
-.tails_tails_17:	;dplcHeader
-	dplcEntry	6, $15
-.tails_tails_17_End
-
-.tails_tails_18:	;dplcHeader
-	dplcEntry	8, $1B
-.tails_tails_18_End
-
-.tails_tails_19:	;dplcHeader
-	dplcEntry	9, $23
-.tails_tails_19_End
-
-.tails_tails_20:	;dplcHeader
-	dplcEntry	9, $2C
-.tails_tails_20_End
-
-	even
-
-	popv ,SonicDplcVer	; Switch back to the previous DPLC format
+Obj09_MapRUnc:		include	"mappings/spriteDPLC/obj09_ss.asm"
+Obj10_MapRUnc:		include	"mappings/spriteDPLC/obj10_ss.asm"
+Obj88_MapRUnc:		include	"mappings/spriteDPLC/obj88_ss.asm"
 ; ===========================================================================
 
 	jmpTos JmpTo42_DisplaySprite,JmpTo_SSAllocateObject
-
-
-
 
 ; ===========================================================================
 ; ----------------------------------------------------------------------------
@@ -70448,11 +70032,6 @@ SSTailsCPU_Control:
 	move.w	(a1),(Ctrl_2_Logical).w
 	rts
 ; ===========================================================================
-dword_349B8:
-	dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($183)		; Tails in upright position, $3D tiles
-	dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($1C0)		; Tails in diagonal position, $A4 tiles
-	dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($264)		; Tails in horizontal position, $3A tiles
-	dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($29E)		; Tails in ball form, $10 tiles
 ; ===========================================================================
 
 LoadSSTailsDynPLC:
@@ -70466,10 +70045,11 @@ LoadSSTailsDynPLC:
 ; ===========================================================================
 +
 	jsrto	JmpTo43_DisplaySprite
-	lea	dword_349B8(pc),a3
+	move.l	#$FF0000,d6
+	lea	(Obj10_MapRUnc).l,a2
 	lea	(Tails_LastLoadedDPLC).w,a4
 	move.w	#tiles_to_bytes(ArtTile_ArtNem_SpecialTails),d4
-	moveq	#$12,d1
+	moveq	#0,d1
 	bra.w	LoadSSPlayerDynPLC
 ; ===========================================================================
 
@@ -70531,10 +70111,6 @@ Obj88:
 return_34A9E:
 	rts
 ; ===========================================================================
-dword_34AA0:
-	dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($2AE)		; Tails' tails when he is in upright position, $35 tiles
-	dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($2E3)		; Tails' tails when he is in diagonal position, $3B tiles
-	dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($31E)		; Tails' tails when he is in horizontal position, $35 tiles
 ; ===========================================================================
 
 LoadSSTailsTailsDynPLC:
@@ -70547,39 +70123,12 @@ LoadSSTailsTailsDynPLC:
 ; ===========================================================================
 +
 	jsrto	JmpTo43_DisplaySprite
-	moveq	#0,d0
-	move.b	mapping_frame(a0),d0
-	cmp.b	(TailsTails_LastLoadedDPLC).w,d0
-	beq.s	return_34B1A
-	move.b	d0,(TailsTails_LastLoadedDPLC).w
-	moveq	#0,d6
-	cmpi.b	#7,d0
-	blt.s	loc_34AE4
-	addq.w	#4,d6
-	cmpi.b	#$E,d0
-	blt.s	loc_34AE4
-	addq.w	#4,d6
-
-loc_34AE4:
-	move.l	dword_34AA0(pc,d6.w),d6
-	addi.w	#$24,d0
-	add.w	d0,d0
-	lea	(Obj09_MapRUnc_345FA).l,a2
-	adda.w	(a2,d0.w),a2
-	move.w	#tiles_to_bytes(ArtTile_ArtNem_SpecialTails_Tails),d2
+	move.l	#$FF0000,d6
+	lea	(Obj88_MapRUnc).l,a2
+	lea	(TailsTails_LastLoadedDPLC).w,a4
+	move.w	#tiles_to_bytes(ArtTile_ArtNem_SpecialTails_Tails),d4
 	moveq	#0,d1
-	move.w	(a2)+,d1
-	move.w	d1,d3
-	lsr.w	#8,d3
-	andi.w	#$F0,d3
-	addi.w	#$10,d3
-	andi.w	#$FFF,d1
-	lsl.w	#1,d1
-	add.l	d6,d1
-	jsr	(QueueDMATransfer).l
-
-return_34B1A:
-	rts
+	bra.w	LoadSSPlayerDynPLC
 ; ===========================================================================
 off_34B1C:	offsetTable
 		offsetTableEntry.w byte_34B24	; 0
