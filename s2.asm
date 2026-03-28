@@ -36337,6 +36337,7 @@ return_1A2DE:
 ; Called if Sonic is airborne, but not in a ball (thus, probably not jumping)
 ; loc_1A2E0: Obj01_MdJump
 Obj01_MdAir:
+	bsr.w	AirRoll
 	bsr.w	Sonic_JumpHeight
 	bsr.w	Sonic_ChgJumpDir
 	bsr.w	Sonic_LevelBound
@@ -36373,6 +36374,7 @@ Obj01_MdRoll:
 ;        Why they gave it a separate copy of the code, I don't know.
 ; loc_1A330: Obj01_MdJump2:
 Obj01_MdJump:
+	bsr.w	AirRoll
 	bsr.w	Sonic_JumpHeight
 	bsr.w	Sonic_ChgJumpDir
 	bsr.w	Sonic_LevelBound
@@ -36385,6 +36387,31 @@ Obj01_MdJump:
 	bsr.w	Sonic_DoLevelCollision
 	rts
 ; End of subroutine Obj01_MdJump
+
+; ---------------------------------------------------------------------------
+; Subroutine to perform an Air Roll from any non-ball airborne state
+; ---------------------------------------------------------------------------
+
+; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
+
+AirRoll:
+	moveq	#button_A_mask|button_B_mask|button_C_mask,d0
+	and.b	(Ctrl_1_Press_Logical).w,d0	; is A, B, or C pressed?
+	beq.s	.return			; if not, branch
+
+	bset	#status.player.rolling,status(a0)	; set rolling flag (Z=1 if was clear)
+	bne.s	.was_rolling		; if already rolling, skip hitbox/position adjust
+	move.b	#$E,y_radius(a0)	; set hitbox height to ball size
+	move.b	#7,x_radius(a0)		; set hitbox width to ball size
+	move.b	#AniIDSonAni_Roll,anim(a0)	; enter roll animation
+	addq.w	#5,y_pos(a0)		; adjust Y for new height difference ($13-$E pixels)
+
+.was_rolling:
+	move.b	#1,jumping(a0)		; set jump state so height-cut applies if button released early
+
+.return:
+	rts
+; End of function AirRoll
 
 ; ---------------------------------------------------------------------------
 ; Subroutine to make Sonic walk/run
@@ -39596,6 +39623,7 @@ Obj02_MdNormal:
 ; Called if Tails is airborne, but not in a ball (thus, probably not jumping)
 ; loc_1C032: Obj02_MdJump
 Obj02_MdAir:
+	bsr.w	Tails_AirRoll
 	bsr.w	Tails_JumpHeight
 	bsr.w	Tails_ChgJumpDir
 	bsr.w	Tails_LevelBound
@@ -39632,6 +39660,7 @@ Obj02_MdRoll:
 ;        Why they gave it a separate copy of the code, I don't know.
 ; loc_1C082: Obj02_MdJump2:
 Obj02_MdJump:
+	bsr.w	Tails_AirRoll
 	bsr.w	Tails_JumpHeight
 	bsr.w	Tails_ChgJumpDir
 	bsr.w	Tails_LevelBound
@@ -39644,6 +39673,31 @@ Obj02_MdJump:
 	bsr.w	Tails_DoLevelCollision
 	rts
 ; End of subroutine Obj02_MdJump
+
+; ---------------------------------------------------------------------------
+; Subroutine to perform an Air Roll from any non-ball airborne state (Tails)
+; ---------------------------------------------------------------------------
+
+; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
+
+Tails_AirRoll:
+	moveq	#button_A_mask|button_B_mask|button_C_mask,d0
+	and.b	(Ctrl_2_Press_Logical).w,d0	; is A, B, or C pressed?
+	beq.s	.return			; if not, branch
+
+	bset	#status.player.rolling,status(a0)	; set rolling flag (Z=1 if was clear)
+	bne.s	.was_rolling		; if already rolling, skip hitbox/position adjust
+	move.b	#$E,y_radius(a0)	; set hitbox height to ball size
+	move.b	#7,x_radius(a0)		; set hitbox width to ball size
+	move.b	#AniIDSonAni_Roll,anim(a0)	; enter roll animation
+	addq.w	#1,y_pos(a0)		; adjust Y for new height difference ($F-$E pixels)
+
+.was_rolling:
+	move.b	#1,jumping(a0)		; set jump state so height-cut applies if button released early
+
+.return:
+	rts
+; End of function Tails_AirRoll
 
 ; ---------------------------------------------------------------------------
 ; Subroutine to make Tails walk/run
