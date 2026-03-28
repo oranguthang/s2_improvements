@@ -12285,7 +12285,7 @@ OptionScreen_Controls:
 ; word_917A:
 OptionScreen_Choices:
 	dc.l (3-1)<<24|(Player_option&$FFFFFF)
-	dc.l (2-1)<<24|(Two_player_items&$FFFFFF)
+	dc.l (4-1)<<24|(Two_player_items&$FFFFFF)
 	dc.l ($80-1)<<24|(Sound_test_sound&$FFFFFF)
 
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
@@ -12431,6 +12431,8 @@ off_92DE:
 off_92EA:
 	dc.l TextOptScr_AllKindsItems
 	dc.l TextOptScr_TeleportOnly
+	dc.l TextOptScr_NormalItems
+	dc.l TextOptScr_NoItems
 off_92F2:
 	dc.l TextOptScr_0
 ; ===========================================================================
@@ -12998,6 +13000,8 @@ TextOptScr_TailsAlone:		menutxt	"TAILS ALONE    "	; byte_981C:
 TextOptScr_VsModeItems:		menutxt	"* VS MODE ITEMS *"	; byte_982C:
 TextOptScr_AllKindsItems:	menutxt	"ALL KINDS ITEMS"	; byte_983E:
 TextOptScr_TeleportOnly:	menutxt	"TELEPORT ONLY  "	; byte_984E:
+TextOptScr_NormalItems:		menutxt	"NORMAL ITEMS   "
+TextOptScr_NoItems:			menutxt	"NO ITEMS       "
 TextOptScr_SoundTest:		menutxt	"*  SOUND TEST   *"	; byte_985E:
 TextOptScr_0:			menutxt	"      00       "	; byte_9870:
 
@@ -22850,11 +22854,7 @@ Obj15_State4:
 	beq.w	BranchTo_loc_1000C
 	tst.b	(Oscillating_Data+$18).w
 	bne.w	BranchTo_loc_1000C
-    if removeJmpTos
-	bsr.w	AllocateObjectAfterCurrent
-    else
-	bsr.w	JmpTo2_AllocateObjectAfterCurrent
-    endif
+	jsrto	JmpTo2_AllocateObjectAfterCurrent
 	bne.s	loc_100E4
 	moveq	#0,d0
 
@@ -25496,6 +25496,12 @@ Ani_objDC:	offsetTable
 ; ----------------------------------------------------------------------------
 ; Obj_Monitor:
 Obj26:
+	tst.w	(Two_player_mode).w	; is it two player mode?
+	beq.s	+			; if not, branch
+	cmp.w	#3,(Two_player_items).w	; is it no items?
+	bne.s	+
+	rts				; if so, skip monitor entirely
++
 	moveq	#0,d0
 	move.b	routine(a0),d0
 	move.w	Obj26_Index(pc,d0.w),d1
@@ -25546,6 +25552,8 @@ Obj26_Init:
 	move.b	subtype(a0),anim(a0)	; subtype = icon to display
 	tst.w	(Two_player_mode).w	; is it two player mode?
 	beq.s	Obj26_Main		; if not, branch
+	cmp.w	#2,(Two_player_items).w	; is it fixed items?
+	beq.s	Obj26_Main		; if so, show the real icon
 	move.b	#9,anim(a0)		; use '?' icon
 ;obj_26_sub_2:
 Obj26_Main:
@@ -25721,6 +25729,8 @@ Obj2E_Init:
 
 	tst.w	(Two_player_mode).w	; is it two player mode?
 	beq.s	loc_128C6		; if not, branch
+	cmp.w	#2,(Two_player_items).w	; is it fixed items?
+	beq.s	loc_128C6		; if so, use the monitor's original contents
 	; give 'random' item in two player mode
 	move.w	(Level_frame_counter).w,d0	; use the timer to determine which item
 	andi.w	#7,d0	; and 7 means there are 8 different items
@@ -25806,6 +25816,11 @@ robotnik_monitor:
 ; gives Sonic an extra life, or Tails in a 'Tails alone' game
 ; ---------------------------------------------------------------------------
 sonic_1up:
+	cmp.w	#2,(Two_player_items).w	; is it fixed items?
+	bne.s	+
+	cmpa.w	#MainCharacter,a1	; did Sonic break it?
+	bne.s	tails_1up		; if not, give Tails the 1-up instead
++
 	addq.w	#1,(Monitors_Broken).w
 	addq.b	#1,(Life_count).w
 	addq.b	#1,(Update_HUD_lives).w
@@ -25817,6 +25832,11 @@ sonic_1up:
 ; gives Tails an extra life in two player mode
 ; ---------------------------------------------------------------------------
 tails_1up:
+	cmp.w	#2,(Two_player_items).w	; is it fixed items?
+	bne.s	+
+	cmpa.w	#Sidekick,a1		; did Tails break it?
+	bne.s	sonic_1up		; if not, give Sonic the 1-up instead
++
 	addq.w	#1,(Monitors_Broken_2P).w
 	addq.b	#1,(Life_count_2P).w
 	addq.b	#1,(Update_HUD_lives_2P).w
