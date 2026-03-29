@@ -27836,7 +27836,13 @@ loc_1418E:
 
 loc_14194:
 	move.b	d0,mapping_frame(a0)
-	bra.w	Obj34_MoveTowardsTargetPosition
+	move.w	x_pixel(a0),d0
+	cmp.w	titlecard_x_target(a0),d0
+	bne.w	Obj34_MoveTowardsTargetPosition
+	move.b	#4,routine(a0)
+	move.w	#MusID_EndLevel,d0
+	jsr	(PlayMusic).l
+	bra.w	DisplaySprite
 ; ===========================================================================
 
 loc_1419C:
@@ -27851,6 +27857,21 @@ BranchTo18_DisplaySprite ; BranchTo
 loc_141AA:
 	bsr.w	DisplaySprite
 	move.b	#1,(Update_Bonus_score).w
+	moveq	#button_A_mask|button_B_mask|button_C_mask,d0
+	and.b	(Ctrl_1_Held).w,d0		; is A, B, or C held? (use raw input; Ctrl_1_Held_Logical is frozen during locked control)
+	beq.s	+				; if not, proceed normally
+	moveq	#0,d0
+	add.w	(Bonus_Countdown_1).w,d0	; sum all remaining bonuses
+	add.w	(Bonus_Countdown_2).w,d0
+	add.w	(Bonus_Countdown_3).w,d0
+	clr.w	(Bonus_Countdown_1).w		; clear all bonus counters
+	clr.w	(Bonus_Countdown_2).w
+	clr.w	(Bonus_Countdown_3).w
+	add.w	d0,(Total_Bonus_Countdown).w	; update running total (for perfect bonus check)
+	jsr	(AddPoints).l			; add sum to score
+	moveq	#0,d0
+	bra.s	loc_141E6			; skip regular countdown logic
++
 	moveq	#0,d0
 	tst.w	(Bonus_Countdown_1).w
 	beq.s	loc_141C6
@@ -34811,8 +34832,8 @@ Load_EndOfAct:
 	bne.s	+
 	move.w	#5000,(Bonus_Countdown_3).w
 +
-	move.w	#MusID_EndLevel,d0
-	jsr	(PlayMusic).l
+	move.b	#MusID_FadeOut,d0
+	jsr	(PlaySound).l	; fade out music before the results jingle starts
 
 return_194D0:
 	rts
