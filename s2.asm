@@ -36398,6 +36398,7 @@ Obj01_MdRoll:
 ;        Why they gave it a separate copy of the code, I don't know.
 ; loc_1A330: Obj01_MdJump2:
 Obj01_MdJump:
+	bsr.w	Sonic_HomingAttack
 	bsr.w	AirRoll
 	bsr.w	Sonic_JumpHeight
 	bsr.w	Sonic_ChgJumpDir
@@ -36506,6 +36507,127 @@ Sonic_PanCamera:
 	move.w	d1,(Camera_pan).w	; update camera pan value
 	rts
 ; End of function Sonic_PanCamera
+
+; ---------------------------------------------------------------------------
+; Subroutine for the homing attack ability
+; ---------------------------------------------------------------------------
+
+; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
+
+Sonic_HomingAttack:
+	tst.b	(Control_Locked).w		; are Sonic's controls locked (cutscene)?
+	bne.s	.homeend			; if yes, branch
+	btst	#4,status(a0)			; was the homing attack already used this jump?
+	bne.s	.homeend			; if yes, branch
+	moveq	#button_A_mask|button_B_mask|button_C_mask,d0
+	and.b	(Ctrl_1_Press_Logical).w,d0	; is A, B, or C pressed?
+	beq.s	.homeend			; if not, branch
+	bset	#4,status(a0)			; set homing attack flag
+	move.w	#SndID_SpindashRelease,d0
+	jsr	(PlaySound).l			; play spindash release sound
+
+	bsr.s	FindHomingTarget		; check if any homing targets are in range
+	beq.s	RegularJumpdash			; if not, do a regular jumpdash instead
+
+	move.w	x_pos(a2),d1			; load target object's X coordinate
+	move.w	y_pos(a2),d2			; load target object's Y coordinate
+	sub.w	x_pos(a0),d1			; subtract Sonic's X-pos from target X coordinate
+	sub.w	y_pos(a0),d2			; subtract Sonic's Y-pos from target Y coordinate
+	jsr	(CalcAngle).l			; calculate angle from Sonic to target (atan2 of dx,dy)
+	jsr	(CalcSine).l			; calculate sine (d0=Y-part) and cosine (d1=X-part) of angle
+	asl.w	#3,d0				; multiply Y-speed by 8
+	asl.w	#3,d1				; multiply X-speed by 8
+	move.w	d0,y_vel(a0)			; set final result to Sonic's Y-speed
+	move.w	d1,x_vel(a0)			; set final result to Sonic's X-speed
+
+.homeend:
+	rts
+; ================================================================================================================
+
+RegularJumpdash:
+	clr.w	y_vel(a0)			; reset Sonic's fall speed
+	move.w	#$800,d0			; jumpdash X-speed
+	btst	#status.player.x_flip,status(a0)	; is Sonic facing left?
+	beq.s	.notleft			; if not, branch
+	neg.w	d0				; negate speed for left direction
+.notleft:
+	move.w	d0,x_vel(a0)			; set Sonic's X-speed
+	rts
+; ================================================================================================================
+
+FindHomingTarget:
+	moveq	#-1,d3				; initialize closest object distance to maximum
+	lea	(Dynamic_Object_RAM).w,a1	; set a1 to the start of dynamic object RAM
+	moveq	#(Dynamic_Object_RAM_End-Dynamic_Object_RAM)/object_size-1,d0
+
+.loop:
+	tst.b	(a1)				; is the current object initialized? (ID not 0)
+	beq.s	.next				; if not, skip this entry
+	move.b	collision_flags(a1),d1		; load object's collision type
+	beq.s	.next				; no collision type = invalid object
+	cmpi.b	#$E,d1				; is this a badnik (collision type $E or lower)?
+	bls.s	.targetfound			; if yes, target found
+	cmpi.b	#$46,d1				; is this a monitor?
+	bne.s	.next				; if not, skip
+	cmpi.b	#2,routine(a1)			; is the monitor still unbroken?
+	bhi.s	.next				; if not, skip
+
+.targetfound:
+	; X distance check
+	move.w	x_pos(a1),d1
+	sub.w	x_pos(a0),d1
+	bpl.s	.xpos
+	neg.w	d1
+.xpos:
+	cmpi.w	#150,d1				; is X distance within range?
+	bhi.s	.next				; if too far, skip
+
+	; Y distance check
+	move.w	y_pos(a1),d1
+	sub.w	y_pos(a0),d1
+	bpl.s	.ypos
+	neg.w	d1
+.ypos:
+	cmpi.w	#150,d1				; is Y distance within range?
+	bhi.s	.next				; if too far, skip
+
+	; Direction check: skip objects that are behind Sonic
+	move.w	x_pos(a1),d1
+	sub.w	x_pos(a0),d1
+	bpl.s	.objright
+	; object is to the left of Sonic
+	btst	#status.player.x_flip,status(a0)	; is Sonic facing left?
+	beq.s	.next				; if not, skip (wrong direction)
+	bra.s	.targetvalid
+.objright:
+	; object is to the right of Sonic
+	btst	#status.player.x_flip,status(a0)	; is Sonic facing left?
+	bne.s	.next				; if yes, skip (wrong direction)
+
+.targetvalid:
+	; Squared Euclidean distance: dx^2 + dy^2
+	move.w	x_pos(a1),d1
+	sub.w	x_pos(a0),d1
+	muls.w	d1,d1				; dx^2
+	move.w	y_pos(a1),d2
+	sub.w	y_pos(a0),d2
+	muls.w	d2,d2				; dy^2
+	add.l	d2,d1				; d1 = dx^2 + dy^2
+	bpl.s	.checkcloser
+	neg.l	d1				; make positive (abs)
+.checkcloser:
+	cmp.l	d3,d1				; is this closer than the previous best?
+	bhs.s	.next				; if not, skip
+	move.l	d1,d3				; remember new closest distance
+	movea.l	a1,a2				; remember this object's address
+
+.next:
+	adda.w	#object_size,a1			; advance to next object
+	dbf	d0,.loop			; loop through all objects
+
+	addq.l	#1,d3				; Z=1 if no target found (d3=$FFFFFFFF), Z=0 if found
+	rts
+; End of function Sonic_HomingAttack
 
 ; ---------------------------------------------------------------------------
 ; Subroutine to make Sonic walk/run
@@ -38171,6 +38293,7 @@ Sonic_ResetOnFloor_Part3:
 	clr.b	transform_combo_buttons(a0)
 	bclr	#status.player.in_air,status(a0)
 	bclr	#status.player.pushing,status(a0)
+	bclr	#4,status(a0)			; clear homing attack flag
 	move.b	#0,jumping(a0)
 	move.w	#0,(Chain_Bonus_counter).w
 	move.b	#0,flip_angle(a0)
@@ -84907,6 +85030,7 @@ Touch_Monitor:
 +
 	move.b	#4,routine(a1)
 	move.w	a0,parent(a1)
+	bsr.w	ResetHomingAttack
 
 return_3F78A:
 	rts
@@ -84948,6 +85072,7 @@ return_3F7E8:
 ; ===========================================================================
 ; loc_3F7EA:
 Touch_KillEnemy:
+	bsr.w	ResetHomingAttack
 	bset	#status.npc.no_balancing,status(a1)
 	moveq	#0,d0
 	move.w	(Chain_Bonus_counter).w,d0
@@ -84999,6 +85124,23 @@ loc_3F84C:
 ; ===========================================================================
 ; byte_3F854:
 Enemy_Points:	dc.w 10, 20, 50, 100
+
+; ---------------------------------------------------------------------------
+; Subroutine to reset the homing attack flag and bounce Sonic upwards
+; Called when Sonic destroys an enemy or a monitor via the homing attack
+; ---------------------------------------------------------------------------
+
+; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
+
+ResetHomingAttack:
+	btst	#4,status(a0)			; was the homing attack flag set?
+	beq.s	.nohoming			; if not, nothing to do
+	clr.w	x_vel(a0)			; clear Sonic's X-speed
+	move.w	#-$500,y_vel(a0)		; bounce Sonic upwards from the impact
+	bclr	#4,status(a0)			; reset homing attack flag
+.nohoming:
+	rts
+; End of function ResetHomingAttack
 ; ===========================================================================
 
 loc_3F85C:
