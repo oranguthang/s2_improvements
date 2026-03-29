@@ -45,6 +45,7 @@ See also:
 - [Speed Up Ring Loss Process (With Underwater)](https://info.sonicretro.org/SCHG_How-to:Speed_Up_Ring_Loss_Process_(With_Underwater))
 - [Add the Air Roll/Flying Spin Attack](https://info.sonicretro.org/SCHG_How-to:Add_the_Air_Roll/Flying_Spin_Attack)
 - [Skip Score Tallies](https://info.sonicretro.org/SCHG_How-to:Skip_Score_Tallies)
+- [Add Extended Camera to Sonic 1](https://info.sonicretro.org/SCHG_How-to:Add_Extended_Camera_to_Sonic_1)
 
 ## Custom fixes
 
@@ -53,7 +54,6 @@ See also:
 ## Work in progress
 
 - [Create a Homing Attack from scratch](https://info.sonicretro.org/SCHG_How-to:Create_a_Homing_Attack_from_scratch) is currently `WIP` and lives on the `homing_attack` branch for now.
-- [Add Extended Camera to Sonic 1](https://info.sonicretro.org/SCHG_How-to:Add_Extended_Camera_to_Sonic_1) is currently `WIP` and lives on the `extended_camera` branch for now.
 
 ## Disclaimer
 
