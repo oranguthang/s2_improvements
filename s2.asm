@@ -14784,6 +14784,7 @@ LevelSize: zoneOrderedTable 2,8	; WrdArr_LvlSize
 +
 	move.w	d0,(Camera_Y_pos).w
 	move.w	d0,(Camera_Y_pos_P2).w
+	move.w	#(screen_width/2),(Camera_pan).w	; reset extended camera pan to center
 	bsr.w	InitCameraValues
 	rts
 ; End of function LevelSizeLoad
@@ -18120,9 +18121,10 @@ ScrollHoriz:
 ; loc_D732:
 .checkIfShouldScroll:
 	sub.w	(a1),d0
-	subi.w	#(screen_width/2)-16,d0		; is the player less than 144 pixels from the screen edge?
+	sub.w	(Camera_pan).w,d0	; apply extended camera pan offset
+	addi.w	#16,d0			; is the player less than (Camera_pan-16) pixels from the screen edge?
 	blt.s	.scrollLeft	; if he is, scroll left
-	subi.w	#16,d0		; is the player more than 159 pixels from the screen edge?
+	subi.w	#16,d0		; is the player more than Camera_pan pixels from the screen edge?
 	bge.s	.scrollRight	; if he is, scroll right
 	clr.w	(a4)		; otherwise, don't scroll
 ; return_D742:
@@ -36076,6 +36078,7 @@ Obj01_Init_Continued:
 ; ---------------------------------------------------------------------------
 ; loc_1A030: Obj_01_Sub_2:
 Obj01_Control:
+	bsr.w	Sonic_PanCamera		; run extended camera panning calculations
 	tst.w	(Debug_mode_flag).w	; is debug cheat enabled?
 	beq.s	+			; if not, branch
 	btst	#button_B,(Ctrl_1_Press).w	; is button B pressed?
@@ -36433,6 +36436,76 @@ AirRoll:
 .return:
 	rts
 ; End of function AirRoll
+
+; ---------------------------------------------------------------------------
+; Subroutine to horizontally pan the camera view ahead of the player.
+; (Ported from Sonic CD's camera code, adapted for Sonic 2
+;  by Naoto/Selbi, with airborne improvement included)
+; ---------------------------------------------------------------------------
+
+Sonic_PanCamera:
+	move.w	(Camera_pan).w,d1	; get current camera pan value
+
+	tst.b	spindash_flag(a0)	; is Sonic charging up a spin dash?
+	beq.s	.NoSpindash		; if not, branch
+	btst	#status.player.x_flip,status(a0)	; check the direction Sonic is facing
+	beq.s	.MovingRight		; if facing right, pan the camera to the right
+	bra.s	.MovingLeft		; otherwise, pan the camera to the left
+.NoSpindash:
+
+	move.w	inertia(a0),d0		; get Sonic's ground speed
+	btst	#status.player.in_air,status(a0)	; is Sonic airborne?
+	beq.s	.IsGrounded		; if not, branch
+	move.w	x_vel(a0),d0		; use X velocity instead if airborne
+
+.IsGrounded:
+	tst.w	d0			; check if speed is positive
+	spl.b	d2			; remember whether speed was positive or negative
+	bpl.s	.PosInertia		; if positive, branch
+	neg.w	d0			; convert speed to absolute value
+
+.PosInertia:
+	cmpi.w	#$480,d0		; are we going at max regular speed?
+	bcs.s	.BelowMax		; if not, branch
+
+	tst.b	d2			; check direction (positive = moving right)
+	bne.s	.MovingRight		; if moving right, branch
+
+.MovingLeft:
+	addq.w	#2,d1			; pan the camera to the right
+	cmpi.w	#(320/2)+64,d1		; has it panned far enough?
+	bcs.s	.SetPanVal		; if not, branch
+	move.w	#(320/2)+64,d1		; cap the camera's position
+	bra.s	.SetPanVal
+
+.MovingRight:
+	subq.w	#2,d1			; pan the camera to the left
+	cmpi.w	#(320/2)-64,d1		; has it panned far enough?
+	bcc.s	.SetPanVal		; if not, branch
+	move.w	#(320/2)-64,d1		; cap the camera's position
+	bra.s	.SetPanVal
+
+.BelowMax:
+	cmpi.w	#$3A0,d0		; have we dropped ~20% below max speed?
+	bcs.s	.ResetPan		; if yes, start resetting pan
+	rts				; otherwise hold current pan value
+
+.ResetPan:
+	cmpi.w	#320/2,d1		; has the camera panned back to the middle?
+	beq.s	.SetPanVal		; if so, branch
+	bcc.s	.ResetLeft		; if it's left of center, branch
+
+.ResetRight:
+	addq.w	#2,d1			; pan back to the right
+	bra.s	.SetPanVal
+
+.ResetLeft:
+	subq.w	#2,d1			; pan back to the left
+
+.SetPanVal:
+	move.w	d1,(Camera_pan).w	; update camera pan value
+	rts
+; End of function Sonic_PanCamera
 
 ; ---------------------------------------------------------------------------
 ; Subroutine to make Sonic walk/run

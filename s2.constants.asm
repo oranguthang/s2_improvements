@@ -1347,7 +1347,8 @@ Camera_BG_X_offset:		ds.w	1	; Used to control background scrolling in X in WFZ e
 Camera_BG_Y_offset:		ds.w	1	; Used to control background scrolling in Y in WFZ ending and HTZ screen shake
 HTZ_Terrain_Delay:		ds.w	1	; During HTZ screen shake, this is a delay between rising and sinking terrain during which there is no shaking
 HTZ_Terrain_Direction:		ds.b	1	; During HTZ screen shake, 0 if terrain/lava is rising, 1 if lowering
-				ds.b	3	; $FFFFEEE9-$FFFFEEEB ; seems unused
+				ds.b	1	; $FFFFEEE9 ; padding (alignment)
+Camera_pan:			ds.w	1	; $FFFFEEEA ; Extended Camera - how far the camera/view is panned left or right
 Vscroll_Factor_P2_HInt:		ds.l	1
 Camera_X_pos_copy:		ds.l	1
 Camera_Y_pos_copy:		ds.l	1
