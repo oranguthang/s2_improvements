@@ -4947,7 +4947,7 @@ Level_TtlCard:
 +
 	moveq	#PalID_BGND,d0
 	bsr.w	PalLoad_ForFade	; load Sonic's palette line
-	bsr.w	LevelSizeLoad
+	jsr	(LevelSizeLoad).l
     if fixBugs
 	bsr.w	InitPlayers
     endif
@@ -12218,8 +12218,9 @@ OptionScreen_Controls:
 +
 	move.b	d2,(Options_menu_box).w
 	lsl.w	#2,d2
-	move.b	OptionScreen_Choices(pc,d2.w),d3 ; number of choices for the option
-	movea.l	OptionScreen_Choices(pc,d2.w),a1 ; location where the choice is stored (in RAM)
+	lea	OptionScreen_Choices(pc),a1
+	move.b	(a1,d2.w),d3 ; number of choices for the option
+	movea.l	(a1,d2.w),a1 ; location where the choice is stored (in RAM)
 	move.w	(a1),d2
 	btst	#button_left,d0
 	beq.s	+
@@ -12260,6 +12261,7 @@ OptionScreen_Controls:
 
 +
 	move.w	d2,(a1)
+	bsr.w	OptionScreen_CycleCountdown
 	cmpi.b	#2,(Options_menu_box).w
 	bne.s	+	; rts
 	andi.w	#button_B_mask|button_C_mask,d0
@@ -12276,6 +12278,37 @@ OptionScreen_Controls:
 +
 	rts
 ; End of function OptionScreen_Controls
+
+; A cycles the countdown while VS MODE ITEMS is selected, on either pad.
+OptionScreen_CycleCountdown:
+	cmpi.b	#1,(Options_menu_box).w
+	bne.s	.return
+	btst	#button_A,d0
+	beq.s	.return
+	addq.w	#1,(VS_countdown_option).w
+	cmpi.w	#3,(VS_countdown_option).w
+	blo.s	.return
+	clr.w	(VS_countdown_option).w
+.return:
+	rts
+
+; a2 = spare sixth row in the selected/unselected VS option box.
+OptionScreen_DrawCountdown:
+	cmpi.b	#1,(Options_menu_box).w
+	bne.s	.return
+	move.w	(VS_countdown_option).w,d1
+	cmpi.w	#2,d1
+	bls.s	.valid
+	moveq	#0,d1
+.valid:
+	lsl.w	#2,d1
+	lea	OptionScreen_CountdownText(pc),a1
+	movea.l	(a1,d1.w),a1
+	bra.w	MenuScreenTextToRAM
+.return:
+	rts
+OptionScreen_CountdownText:
+	dc.l TextOptScr_Countdown60,TextOptScr_Countdown90,TextOptScr_CountdownOff
 
 ; ===========================================================================
 ; word_917A:
@@ -12317,6 +12350,9 @@ OptionScreen_DrawSelected:
 	lea	(Chunk_Table+$C2).l,a2
 	bsr.w	OptionScreen_HexDumpSoundTest
 +
+	lea	(Chunk_Table+22*6*2+2*2).l,a2
+	move.w	#palette_line_3,d0
+	bsr.w	OptionScreen_DrawCountdown
 	lea	(Chunk_Table).l,a1
 	move.l	(a3)+,d0
 	moveq	#22-1,d1
@@ -12356,6 +12392,9 @@ OptionScreen_DrawUnselected:
 	bsr.w	OptionScreen_HexDumpSoundTest
 
 +
+	lea	(Chunk_Table+$160+22*6*2+2*2).l,a2
+	moveq	#palette_line_0,d0
+	bsr.w	OptionScreen_DrawCountdown
 	lea	(Chunk_Table+$160).l,a1
 	move.l	(a3)+,d0
 	moveq	#22-1,d1
@@ -12998,6 +13037,9 @@ TextOptScr_AllKindsItems:	menutxt	"ALL KINDS ITEMS"	; byte_983E:
 TextOptScr_TeleportOnly:	menutxt	"TELEPORT ONLY  "	; byte_984E:
 TextOptScr_NormalItems:		menutxt	"NORMAL ITEMS   "
 TextOptScr_NoItems:			menutxt	"NO ITEMS       "
+TextOptScr_Countdown60:		menutxt "A COUNTDOWN 60 SEC  "
+TextOptScr_Countdown90:		menutxt "A COUNTDOWN 90 SEC  "
+TextOptScr_CountdownOff:		menutxt "A COUNTDOWN OFF     "
 TextOptScr_SoundTest:		menutxt	"*  SOUND TEST   *"	; byte_985E:
 TextOptScr_0:			menutxt	"      00       "	; byte_9870:
 
@@ -34854,9 +34896,26 @@ loc_1922C:
 	move.b	#1<<render_flags.level_fg,render_flags(a0)
 	move.b	#$18,width_pixels(a0)
 	move.b	#4,priority(a0)
-	move.w	#$3C3C,(Loser_Time_Left).w
+	bsr.w	VS_StartCountdown
+	bra.s	Obj0D_Main
 
 ; loc_1924C: Obj_0D_sub_2:
+VS_StartCountdown:
+	movem.l d0-d1,-(sp)
+	move.w	(VS_countdown_option).w,d0
+	move.w	#$3C3C,d1
+	cmpi.w	#1,d0
+	bne.s	.notLong
+	move.w	#$5A3C,d1
+.notLong:
+	cmpi.w	#2,d0
+	bne.s	.store
+	moveq	#0,d1
+.store:
+	move.w	d1,(Loser_Time_Left).w
+	movem.l (sp)+,d0-d1
+	rts
+
 Obj0D_Main:
 	tst.b	(Update_HUD_timer).w
 	beq.w	loc_192D6
@@ -34889,7 +34948,7 @@ loc_192A0:
 loc_192BC:
 	tst.w	(Two_player_mode).w
 	beq.w	loc_19350
-	move.w	#$3C3C,(Loser_Time_Left).w
+	bsr.w	VS_StartCountdown
 	move.w	#SndID_Signpost2P,d0	; play different spinning sound
 	jsr	(PlaySound).l
 	bra.s	loc_19350
@@ -34924,7 +34983,7 @@ loc_1932E:
 	move.b	#4,obj0D_finalanim(a0)
 	tst.w	(Two_player_mode).w
 	beq.s	loc_19350
-	move.w	#$3C3C,(Loser_Time_Left).w
+	bsr.w	VS_StartCountdown
 	move.w	#SndID_Signpost2P,d0
 	jsr	(PlaySound).l
 
@@ -87933,6 +87992,8 @@ BuildHUD_P1_Continued:
 	bne.s	+
 	tst.b	(Update_HUD_timer).w
 	beq.s	+
+	tst.w	(Loser_Time_Left).w
+	beq.s	+
 	move.w	#spriteScreenPositionX(144),d3
 	move.w	#spriteScreenPositionY2P(screen_height/2+72),d2
 	movea.w	#make_art_tile_2p(ArtTile_Art_HUD_Numbers_2P,0,1),a3
@@ -88109,6 +88170,8 @@ BuildHUD_P2_Continued:
 	tst.b	(Update_HUD_timer).w
 	bne.s	+
 	tst.b	(Update_HUD_timer_2P).w
+	beq.s	+
+	tst.w	(Loser_Time_Left).w
 	beq.s	+
 	move.w	#spriteScreenPositionX(144),d3
 	move.w	#spriteScreenPositionY2P(screen_height/2+72)+screen_height,d2

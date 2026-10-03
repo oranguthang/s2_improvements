@@ -164,6 +164,78 @@ def controllers(repo):
     return {'both_port_frames':cases,'three_and_six_button_mixes_passed':True,
             'up_down_false_detection_rejected':True,'unplug_clears_extra_inputs':True,'original_ram_layout_preserved':True}
 
+def vs_countdown(repo):
+    triggers=0
+    for option,expected in ((0,0x3C3C),(1,0x5A3C),(2,0)):
+        for trigger in ('loc_1922C','loc_192BC','loc_1932E'):
+            c=CPU(repo);obj=c.s['MainCharacter']+0x100
+            c.write('Two_player_mode',1,2);c.write('VS_countdown_option',option,2)
+            c.write('Loser_Time_Left',0x1234,2)
+            c.skip('loc_19350');c.skip('PlaySound')
+            c.call(trigger,obj)
+            assert c.read('Loser_Time_Left',2)==expected,(option,trigger)
+            triggers+=1
+    # A cycles only on the VS row and remains edge-triggered.
+    for row in range(3):
+        c=CPU(repo);c.write('Options_menu_box',row)
+        for wanted in (1,2,0):
+            c.uc.reg_write(UC_M68K_REG_D0,c.s['button_A_mask'])
+            c.call('OptionScreen_CycleCountdown')
+            assert c.read('VS_countdown_option',2)==(wanted if row==1 else 0)
+        c.uc.reg_write(UC_M68K_REG_D0,0);c.call('OptionScreen_CycleCountdown')
+        assert c.read('VS_countdown_option',2)==0
+    # Draw the actual label into a guarded menu row; no VDP emulation needed.
+    for mode in range(3):
+        c=CPU(repo);c.write('Options_menu_box',1);c.write('VS_countdown_option',mode,2)
+        dst=c.s['Chunk_Table']+0x10C
+        c.uc.mem_write(dst-2,b'\xAA'*44)
+        c.uc.reg_write(UC_M68K_REG_A2,dst);c.uc.reg_write(UC_M68K_REG_D0,0x6000)
+        c.call('OptionScreen_DrawCountdown')
+        assert c.read(dst-2,2)==0xAAAA and c.read(dst+40,2)==0xAAAA
+        name=('TextOptScr_Countdown60','TextOptScr_Countdown90','TextOptScr_CountdownOff')[mode]
+        addr=c.s[name];length=c.rom[addr]+1
+        expected=b''.join((0x6000+x).to_bytes(2,'big') for x in c.rom[addr+1:addr+1+length])
+        assert bytes(c.uc.mem_read(dst,len(expected)))==expected
+    # Check late music/expiry behavior, disabled timer and pause for both racers.
+    expiry=0
+    for remaining in (0,0x0C01,0x0001):
+        for racing in (1,2):
+            c=CPU(repo);c.write('Two_player_mode',1,2);c.write('Loser_Time_Left',remaining,2)
+            c.write('Update_HUD_timer' if racing==1 else 'Update_HUD_timer_2P',1)
+            c.write(c.s['MainCharacter']+c.s['id'],c.s['ObjID_Sonic'])
+            c.write(c.s['Sidekick']+c.s['id'],c.s['ObjID_Tails'])
+            sounds=[]
+            def music(uc,pc,size,user):
+                sounds.append(uc.reg_read(UC_M68K_REG_D0)&0xFFFF)
+            c.uc.hook_add(UC_HOOK_CODE,music,begin=c.s['PlayMusic'],end=c.s['PlayMusic'])
+            c.skip('PlayMusic');c.skip('PlaySound');c.call('loc_40F50')
+            if remaining==0:
+                assert c.read('Loser_Time_Left',2)==0 and not sounds
+                assert c.read('Time_Over_flag' if racing==1 else 'Time_Over_flag_2P')==0
+            elif remaining==0x0C01:
+                assert c.read('Loser_Time_Left',2)==0x0B3C
+                assert sounds==[c.s['MusID_Countdown']]
+            else:
+                assert c.read('Time_Over_flag' if racing==1 else 'Time_Over_flag_2P')==1
+                expiry+=1
+    c=CPU(repo);c.write('Game_paused',1,2);c.write('Loser_Time_Left',0x0101,2)
+    c.call('loc_40F50');assert c.read('Loser_Time_Left',2)==0x0101
+    for racing in (1,2):
+        for remaining in (0,0x1E3C):
+            c=CPU(repo);c.write('Loser_Time_Left',remaining,2)
+            c.write('Update_HUD_timer' if racing==1 else 'Update_HUD_timer_2P',1)
+            digits=[]
+            def number(uc,pc,size,user):
+                digits.append(uc.reg_read(UC_M68K_REG_D7)&0xFFFF)
+            c.uc.hook_add(UC_HOOK_CODE,number,begin=c.s['loc_40938'],end=c.s['loc_40938'])
+            for name in ('DrawSprite_2P_Loop','sub_4092E','sub_4096A','sub_40984','loc_40938'):
+                c.skip(name)
+            c.call(f'BuildHUD_P{racing}_Continued')
+            assert digits==([0,30] if remaining else [0]),(racing,remaining,digits)
+    return {'all_three_start_triggers':triggers,'menu_cycle_and_labels_passed':True,
+            'music_threshold_preserved':True,'both_racer_expiry_cases':expiry,'off_and_pause_passed':True,
+            'inactive_countdown_digits_hidden_for_both_players':True}
+
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('repo',type=Path)
@@ -175,6 +247,8 @@ def main():
         results['burnt_death']=burnt(args.repo)
     if 'Ctrl_1_Held_6B' in symbols(args.repo/'s2.lst'):
         results['controllers']=controllers(args.repo)
+    if 'VS_StartCountdown' in symbols(args.repo/'s2.lst'):
+        results['vs_countdown']=vs_countdown(args.repo)
     results['rom_sha256']=hashlib.sha256((args.repo/'s2built.bin').read_bytes()).hexdigest()
     if args.report:
         args.report.write_text(json.dumps(results,indent=2)+'\n',encoding='utf-8')

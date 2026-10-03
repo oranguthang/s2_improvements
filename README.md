@@ -49,7 +49,7 @@ Work continues on the current branch with separate local commits and no pushes.
 | Separate Sega screen graphics from Sonic | Implemented | Compare all four copied and enlarged frames with the baseline; mutate player art to check independence |
 | Restore burnt death animation | Implemented | Fire hazards, other deaths, Sonic and Tails |
 | Support six-button controllers | Implemented | Both ports, three-button fallback, held/pressed transitions |
-| Configure VS countdown | Planned | All three start triggers, HUD, music and expiry |
+| Configure VS countdown | Implemented | All three start triggers, HUD, music and expiry |
 | Improve character Debug mode | Planned | Tails Alone, movement reset, cameras, water, HUD and Level Select |
 | Preserve level state after Special Stage | Planned | Rings, object consumption and shields for both players; ordinary deaths and new levels |
 
@@ -108,6 +108,13 @@ Bits 0..3 represent Z, Y, X and Mode; bit 7 of Held indicates a detected
 six-button pad. Existing three-button controls remain available. Extended
 buttons are exposed for future ability bindings; they do not grant rings,
 lives or other tutorial test cheats.
+
+- [Toggle the VS countdown](https://info.sonicretro.org/SCHG_How-to:Toggle_the_2_Player_VS_Countdown)
+
+In Options, select **VS MODE ITEMS** and press **A** on either controller to
+cycle the finish countdown between **60 seconds**, **90 seconds** and **off**.
+The setting covers signpost loading and either player's finish, and hides the
+countdown digits when inactive. The normal countdown music and expiry remain.
 
 ## Custom fixes
 

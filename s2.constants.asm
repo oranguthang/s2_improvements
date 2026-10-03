@@ -1843,7 +1843,8 @@ Player_mode:			ds.w	1	; 0 = Sonic and Tails, 1 = Sonic, 2 = Tails
 Player_option:			ds.w	1	; 0 = Sonic and Tails, 1 = Sonic, 2 = Tails
 
 Two_player_items:		ds.w	1
-				ds.b	$A	; $FFFFFF76-$FFFFFF7F ; seems unused
+VS_countdown_option:		ds.w	1	; 0 = 60 seconds, 1 = 90 seconds, 2 = off
+				ds.b	8	; $FFFFFF78-$FFFFFF7F
 
 LevSel_HoldTimer:		ds.w	1
 Level_select_zone:		ds.w	1
