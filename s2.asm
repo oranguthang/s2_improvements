@@ -27250,8 +27250,13 @@ TitleScreen_SetFinalState:
 	; Initialise title screen menu object.
 	move.b	#ObjID_TitleMenu,(TitleScreenMenu+id).w
 
-	; Delete palette-changer object.
+	; Delete the flashing star used during the intro.
 	lea	(TitleScreenPaletteChanger).w,a1
+	bsr.w	DeleteObject2
+
+	; Stop the emblem fade before loading its completed palette. Otherwise,
+	; the fade keeps adding colour components to the already finished colours.
+	lea	(TitleScreenPaletteChanger3).w,a1
 	bsr.w	DeleteObject2
 
 	; Load palette line 4.
