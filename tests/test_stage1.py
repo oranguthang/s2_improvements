@@ -188,11 +188,11 @@ def vs_countdown(repo):
     # Draw the actual label into a guarded menu row; no VDP emulation needed.
     for mode in range(3):
         c=CPU(repo);c.write('Options_menu_box',1);c.write('VS_countdown_option',mode,2)
-        dst=c.s['Chunk_Table']+0x10C
-        c.uc.mem_write(dst-2,b'\xAA'*44)
+        dst=c.s['Chunk_Table']+22*5*2+2*2
+        c.uc.mem_write(dst-2,b'\xAA'*40)
         c.uc.reg_write(UC_M68K_REG_A2,dst);c.uc.reg_write(UC_M68K_REG_D0,0x6000)
         c.call('OptionScreen_DrawCountdown')
-        assert c.read(dst-2,2)==0xAAAA and c.read(dst+40,2)==0xAAAA
+        assert c.read(dst-2,2)==0xAAAA and c.read(dst+36,2)==0xAAAA
         name=('TextOptScr_Countdown60','TextOptScr_Countdown90','TextOptScr_CountdownOff')[mode]
         addr=c.s[name];length=c.rom[addr]+1
         expected=b''.join((0x6000+x).to_bytes(2,'big') for x in c.rom[addr+1:addr+1+length])
@@ -236,6 +236,58 @@ def vs_countdown(repo):
     return {'all_three_start_triggers':triggers,'menu_cycle_and_labels_passed':True,
             'music_threshold_preserved':True,'both_racer_expiry_cases':expiry,'off_and_pause_passed':True,
             'inactive_countdown_digits_hidden_for_both_players':True}
+
+def options_layout(repo):
+    c=CPU(repo);base=c.s['Chunk_Table'];templates={}
+    # OptionScreen_Choices stores limits in pointer bits 24..31. Real M68000
+    # ignores those address bits; Unicorn needs explicit mirrored RAM pages.
+    aliases=[(limit<<24)|0xFF0000 for limit in (2,3,0x7F)]
+    for address in aliases:c.uc.mem_map(address,0x10000)
+    for selected in (True,False):
+        offset=0 if selected else 0x160
+        c.uc.reg_write(UC_M68K_REG_A0,c.s['MapEng_Options'])
+        c.uc.reg_write(UC_M68K_REG_A1,base+offset)
+        c.uc.reg_write(UC_M68K_REG_D0,c.s['ArtTile_ArtNem_MenuBox']|(0 if selected else 0x2000))
+        c.call('EniDec')
+        templates[selected]=bytes(c.uc.mem_read(base+offset,0x160))
+    captures=[]
+    def upload(uc,pc,size,user):
+        src=uc.reg_read(UC_M68K_REG_A1)
+        assert uc.reg_read(UC_M68K_REG_D1)==21 and uc.reg_read(UC_M68K_REG_D2)==7
+        captures.append(bytes(uc.mem_read(src,0x160)))
+    c.uc.hook_add(UC_HOOK_CODE,upload,begin=c.s['PlaneMapToVRAM_H40'],end=c.s['PlaneMapToVRAM_H40'])
+    c.skip('PlaneMapToVRAM_H40')
+    c.write('Player_option',1,2);c.write('Two_player_items',0,2);c.write('Sound_test_sound',0x2A,2)
+    def draw(row,selected):
+        c.write('Options_menu_box',row)
+        ram=bytes(c.uc.mem_read(0xFFFF0000,0x10000))
+        for address in aliases:c.uc.mem_write(address,ram)
+        c.call('OptionScreen_DrawSelected' if selected else 'OptionScreen_DrawUnselected')
+        block=captures[-1];original=templates[selected]
+        for y in range(8):
+            for x in range(22):
+                if y in (0,6,7) or x in (0,20,21):
+                    i=(y*22+x)*2
+                    assert block[i:i+2]==original[i:i+2],('damaged box border',row,selected,x,y)
+        for y in (3,4,5):
+            if (row==1 and y==4) or (row!=1 and y in (3,5)):
+                assert block[y*44:(y+1)*44]==original[y*44:(y+1)*44],('stale text in shared box',row,selected,y)
+        if row==1:
+            name=('TextOptScr_Countdown60','TextOptScr_Countdown90','TextOptScr_CountdownOff')[c.read('VS_countdown_option',2)]
+            addr=c.s[name];length=c.rom[addr]+1;assert length==18
+            palette=0x6000 if selected else 0
+            expected=b''.join((palette+x).to_bytes(2,'big') for x in c.rom[addr+1:addr+1+length])
+            assert block[22*5*2+4:22*5*2+40]==expected
+        return block
+    draw(0,True);draw(1,False);draw(2,False)
+    # Execute the real shared-template redraw order when selection changes.
+    for option in range(3):
+        c.write('VS_countdown_option',option,2)
+        previous=0
+        for row in (1,2,0,2,1,0):
+            draw(previous,False);draw(row,True);previous=row
+    return {'complete_box_redraws':len(captures),'countdown_only_in_vs_box':True,
+            'all_borders_and_shadow_preserved':True,'no_stale_choice_rows':True}
 
 def debug(repo):
     entries=0
@@ -526,6 +578,7 @@ def main():
         results['controllers']=controllers(args.repo)
     if 'VS_StartCountdown' in symbols(args.repo/'s2.lst'):
         results['vs_countdown']=vs_countdown(args.repo)
+        results['options_layout']=options_layout(args.repo)
     if 'Debug_PreparePlayer' in symbols(args.repo/'s2.lst'):
         results['debug']=debug(args.repo)
     if 'SS_SaveLevelState' in symbols(args.repo/'s2.lst'):

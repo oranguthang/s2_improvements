@@ -12299,10 +12299,22 @@ OptionScreen_CycleCountdown:
 .return:
 	rts
 
-; a2 = spare sixth row in the selected/unselected VS option box.
+; a2 = 18 interior cells of row 5. Both box templates are shared between
+; menu entries, so erase the VS label before drawing any other entry.
 OptionScreen_DrawCountdown:
 	cmpi.b	#1,(Options_menu_box).w
-	bne.s	.return
+	beq.s	.draw
+	move.w	#make_art_tile(ArtTile_ArtNem_MenuBox,1,0),d1
+	tst.w	d0	; selected text uses palette 3; its box uses palette 0
+	beq.s	.clear
+	move.w	#make_art_tile(ArtTile_ArtNem_MenuBox,0,0),d1
+.clear:
+	moveq	#18-1,d2
+.clearCell:
+	move.w	d1,(a2)+
+	dbf	d2,.clearCell
+	rts
+.draw:
 	move.w	(VS_countdown_option).w,d1
 	cmpi.w	#2,d1
 	bls.s	.valid
@@ -12327,9 +12339,24 @@ OptionScreen_Choices:
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 
 
+; Clear both possible item-choice rows before reusing a box template.
+OptionScreen_ClearChoiceRows:
+	moveq	#2-1,d2
+.row:
+	moveq	#19-1,d1
+.cell:
+	move.w	d0,(a2)+
+	dbf	d1,.cell
+	addq.w	#6,a2
+	dbf	d2,.row
+	rts
+
 ;sub_9186
 OptionScreen_DrawSelected:
 	bsr.w	OptionScreen_SelectTextPtr
+	lea	(Chunk_Table+0+22*3*2+2).l,a2
+	move.w	#make_art_tile(ArtTile_ArtNem_MenuBox,0,0),d0
+	bsr.w	OptionScreen_ClearChoiceRows
 	moveq	#0,d1
 	move.b	(Options_menu_box).w,d1
 	lsl.w	#3,d1
@@ -12340,6 +12367,10 @@ OptionScreen_DrawSelected:
 	movea.l	(a3)+,a1
 	bsr.w	MenuScreenTextToRAM
 	lea	(Chunk_Table+$B6).l,a2
+	cmpi.b	#1,(Options_menu_box).w
+	bne.s	+
+	lea	(Chunk_Table+22*3*2+3*2).l,a2	; leave a blank row between VS items and countdown
++
 	moveq	#0,d1
 	cmpi.b	#2,(Options_menu_box).w
 	beq.s	+
@@ -12357,7 +12388,7 @@ OptionScreen_DrawSelected:
 	lea	(Chunk_Table+$C2).l,a2
 	bsr.w	OptionScreen_HexDumpSoundTest
 +
-	lea	(Chunk_Table+22*6*2+2*2).l,a2
+	lea	(Chunk_Table+22*5*2+2*2).l,a2
 	move.w	#palette_line_3,d0
 	bsr.w	OptionScreen_DrawCountdown
 	lea	(Chunk_Table).l,a1
@@ -12370,6 +12401,9 @@ OptionScreen_DrawSelected:
 ;loc_91F8
 OptionScreen_DrawUnselected:
 	bsr.w	OptionScreen_SelectTextPtr
+	lea	(Chunk_Table+$160+22*3*2+2).l,a2
+	move.w	#make_art_tile(ArtTile_ArtNem_MenuBox,1,0),d0
+	bsr.w	OptionScreen_ClearChoiceRows
 	moveq	#0,d1
 	move.b	(Options_menu_box).w,d1
 	lsl.w	#3,d1
@@ -12380,6 +12414,10 @@ OptionScreen_DrawUnselected:
 	movea.l	(a3)+,a1
 	bsr.w	MenuScreenTextToRAM
 	lea	(Chunk_Table+$216).l,a2
+	cmpi.b	#1,(Options_menu_box).w
+	bne.s	+
+	lea	(Chunk_Table+$160+22*3*2+3*2).l,a2	; leave a blank row between VS items and countdown
++
 	moveq	#0,d1
 	cmpi.b	#2,(Options_menu_box).w
 	beq.s	+
@@ -12399,7 +12437,7 @@ OptionScreen_DrawUnselected:
 	bsr.w	OptionScreen_HexDumpSoundTest
 
 +
-	lea	(Chunk_Table+$160+22*6*2+2*2).l,a2
+	lea	(Chunk_Table+$160+22*5*2+2*2).l,a2
 	moveq	#palette_line_0,d0
 	bsr.w	OptionScreen_DrawCountdown
 	lea	(Chunk_Table+$160).l,a1
@@ -13081,9 +13119,9 @@ TextOptScr_AllKindsItems:	menutxt	"ALL KINDS ITEMS"	; byte_983E:
 TextOptScr_TeleportOnly:	menutxt	"TELEPORT ONLY  "	; byte_984E:
 TextOptScr_NormalItems:		menutxt	"NORMAL ITEMS   "
 TextOptScr_NoItems:			menutxt	"NO ITEMS       "
-TextOptScr_Countdown60:		menutxt "A COUNTDOWN 60 SEC  "
-TextOptScr_Countdown90:		menutxt "A COUNTDOWN 90 SEC  "
-TextOptScr_CountdownOff:		menutxt "A COUNTDOWN OFF     "
+TextOptScr_Countdown60:		menutxt "A COUNTDOWN 60 SEC"
+TextOptScr_Countdown90:		menutxt "A COUNTDOWN 90 SEC"
+TextOptScr_CountdownOff:		menutxt "A COUNTDOWN OFF   "
 TextOptScr_SoundTest:		menutxt	"*  SOUND TEST   *"	; byte_985E:
 TextLevSel_SonicTails:		menutxt "C PLAYER: SONIC TAILS"
 TextLevSel_Sonic:		menutxt "C PLAYER: SONIC      "
