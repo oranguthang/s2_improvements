@@ -47,7 +47,7 @@ Work continues on the current branch with separate local commits and no pushes.
 | Improvement | Progress | Validation |
 | --- | --- | --- |
 | Separate Sega screen graphics from Sonic | Implemented | Compare all four copied and enlarged frames with the baseline; mutate player art to check independence |
-| Restore burnt death animation | Planned | Fire hazards, other deaths, Sonic and Tails |
+| Restore burnt death animation | Implemented | Fire hazards, other deaths, Sonic and Tails |
 | Support six-button controllers | Planned | Both ports, three-button fallback, held/pressed transitions |
 | Configure VS countdown | Planned | All three start triggers, HUD, music and expiry |
 | Improve character Debug mode | Planned | Tails Alone, movement reset, cameras, water, HUD and Level Select |
@@ -97,6 +97,8 @@ changes described above.
 - [Create a Homing Attack from scratch](https://info.sonicretro.org/SCHG_How-to:Create_a_Homing_Attack_from_scratch)
 
 - [Decouple Sega screen from Sonic sprite labels](https://info.sonicretro.org/SCHG_How-to:Decoupling_Sega_Screen_from_Sonic_Sprite_Labels_in_Sonic_2)
+
+- [Restore burnt death animation](https://info.sonicretro.org/SCHG_How-to:Restore_the_Burnt_Death_Animation)
 
 ## Custom fixes
 

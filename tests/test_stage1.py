@@ -68,6 +68,38 @@ def sega(repo,baseline):
     return {'copied_bytes':len(before[0]),'enlarged_bytes':len(before[1]),
             'baseline_pixels_identical':True,'player_art_mutation_independent':True}
 
+def burnt(repo):
+    fires=('ObjID_LavaBubble','ObjID_RisingLava','ObjID_LavaMarker','ObjID_Sol','ObjID_Laser')
+    cases=0
+    for character in ('ObjID_Sonic','ObjID_Tails'):
+        for hazard in (*fires,'ObjID_Spikes','ObjID_Monitor',character):
+            c=CPU(repo)
+            obj=c.s['MainCharacter']; killer=c.s['Sidekick']+0x80
+            c.write(obj+c.s['id'],c.s[character])
+            c.write(killer+c.s['id'],c.s[hazard])
+            c.uc.reg_write(UC_M68K_REG_A2,killer)
+            sounds=[]
+            def sound(uc,pc,size,user):
+                sounds.append(uc.reg_read(UC_M68K_REG_D0)&0xFFFF)
+            addr=c.s['PlaySound']
+            c.uc.hook_add(UC_HOOK_CODE,sound,begin=addr,end=addr)
+            c.skip('PlaySound')
+            c.call('KillCharacter',obj)
+            expected='AniIDSonAni_DeathBW' if character=='ObjID_Sonic' and hazard in fires else 'AniIDSonAni_Death'
+            assert c.read(obj+c.s['anim'])==c.s[expected],(character,hazard)
+            assert c.read(obj+c.s['routine'])==6
+            assert c.read(obj+c.s['y_vel'],2)==0xF900
+            assert c.read(obj+c.s['x_vel'],2)==c.read(obj+c.s['inertia'],2)==0
+            expected_sound='SndID_HurtBySpikes' if hazard=='ObjID_Spikes' else 'SndID_Hurt'
+            assert sounds==[c.s[expected_sound]],(character,hazard,sounds)
+            cases+=1
+    c=CPU(repo);obj=c.s['MainCharacter']
+    c.write(obj+c.s['id'],c.s['ObjID_Sonic']);c.write('Debug_placement_mode',1,2)
+    c.uc.reg_write(UC_M68K_REG_A2,c.s['Sidekick'])
+    before=bytes(c.uc.mem_read(obj,0x40));c.call('KillCharacter',obj)
+    assert before==bytes(c.uc.mem_read(obj,0x40)),'Debug kill guard changed'
+    return {'death_cases':cases,'debug_guard_passed':True,'tails_uses_normal_death':True,'sounds_preserved':True}
+
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('repo',type=Path)
@@ -75,6 +107,8 @@ def main():
     parser.add_argument('--report',type=Path)
     args=parser.parse_args()
     results={'sega':sega(args.repo,args.baseline)}
+    if 'KillCharacter_SetBurntAnimation' in symbols(args.repo/'s2.lst'):
+        results['burnt_death']=burnt(args.repo)
     results['rom_sha256']=hashlib.sha256((args.repo/'s2built.bin').read_bytes()).hexdigest()
     if args.report:
         args.report.write_text(json.dumps(results,indent=2)+'\n',encoding='utf-8')

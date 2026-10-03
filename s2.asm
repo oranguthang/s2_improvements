@@ -85937,7 +85937,7 @@ Hurt_Sound:
 ; loc_3F926: KillSonic:
 KillCharacter:
 	tst.w	(Debug_placement_mode).w
-	bne.s	++
+	bne.w	++
 	clr.b	status_secondary(a0)
 	move.b	#6,routine(a0)
 	jsrto	JmpTo_Sonic_ResetOnFloor_Part2
@@ -85952,9 +85952,32 @@ KillCharacter:
 	bne.s	+
 	move.w	#SndID_HurtBySpikes,d0
 +
+	bsr.w	KillCharacter_SetBurntAnimation
 	jsr	(PlaySound).l
 +
 	moveq	#-1,d0
+	rts
+
+; Select Sonic's unused grayscale death frame only for fiery killing objects.
+; Tails (including Tails Alone) keeps his own normal death animation.
+; Preserve d0 so spike deaths keep their original sound.
+KillCharacter_SetBurntAnimation:
+	cmpi.b	#ObjID_Sonic,id(a0)
+	bne.s	.return
+	move.b	id(a2),d1
+	cmpi.b	#ObjID_LavaBubble,d1
+	beq.s	.burnt
+	cmpi.b	#ObjID_RisingLava,d1
+	beq.s	.burnt
+	cmpi.b	#ObjID_LavaMarker,d1
+	beq.s	.burnt
+	cmpi.b	#ObjID_Sol,d1
+	beq.s	.burnt
+	cmpi.b	#ObjID_Laser,d1
+	bne.s	.return
+.burnt:
+	move.b	#AniIDSonAni_DeathBW,anim(a0)
+.return:
 	rts
 ; ===========================================================================
 ;loc_3F976:
