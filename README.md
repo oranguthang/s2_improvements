@@ -48,7 +48,7 @@ Work continues on the current branch with separate local commits and no pushes.
 | --- | --- | --- |
 | Separate Sega screen graphics from Sonic | Implemented | Compare all four copied and enlarged frames with the baseline; mutate player art to check independence |
 | Restore burnt death animation | Implemented | Fire hazards, other deaths, Sonic and Tails |
-| Support six-button controllers | Planned | Both ports, three-button fallback, held/pressed transitions |
+| Support six-button controllers | Implemented | Both ports, three-button fallback, held/pressed transitions |
 | Configure VS countdown | Planned | All three start triggers, HUD, music and expiry |
 | Improve character Debug mode | Planned | Tails Alone, movement reset, cameras, water, HUD and Level Select |
 | Preserve level state after Special Stage | Planned | Rings, object consumption and shields for both players; ordinary deaths and new levels |
@@ -99,6 +99,15 @@ changes described above.
 - [Decouple Sega screen from Sonic sprite labels](https://info.sonicretro.org/SCHG_How-to:Decoupling_Sega_Screen_from_Sonic_Sprite_Labels_in_Sonic_2)
 
 - [Restore burnt death animation](https://info.sonicretro.org/SCHG_How-to:Restore_the_Burnt_Death_Animation)
+
+- [Add six-button support](https://info.sonicretro.org/SCHG_How-to:Add_6_button_support)
+
+Extended input for both ports is available as `Ctrl_1_Held_6B` /
+`Ctrl_1_Press_6B` and `Ctrl_2_Held_6B` / `Ctrl_2_Press_6B`.
+Bits 0..3 represent Z, Y, X and Mode; bit 7 of Held indicates a detected
+six-button pad. Existing three-button controls remain available. Extended
+buttons are exposed for future ability bindings; they do not grant rings,
+lives or other tutorial test cheats.
 
 ## Custom fixes
 

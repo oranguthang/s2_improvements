@@ -1353,6 +1353,9 @@ JoypadInit:
 	move.b	d0,(HW_Port_1_Control).l	; init port 1 (joypad 1)
 	move.b	d0,(HW_Port_2_Control).l	; init port 2 (joypad 2)
 	move.b	d0,(HW_Expansion_Control).l	; init port 3 (expansion/extra)
+	move.b	d0,(HW_Port_1_Data).l
+	move.b	d0,(HW_Port_2_Data).l
+	clr.l	(Ctrl_1_Held_6B).w
 	startZ80
 	rts
 ; End of function JoypadInit
@@ -1363,32 +1366,78 @@ JoypadInit:
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 
 ; sub_111C:
-ReadJoypads:
-	lea	(Ctrl_1).w,a0	; address where joypad states are written
-	lea	(HW_Port_1_Data).l,a1	; first joypad port
-	bsr.s	Joypad_Read		; do the first joypad
-	addq.w	#2,a1			; do the second joypad
+; TH changes need bus synchronization before the controller is read.
+PollTH macro high
+    if high
+	move.b	#$40,(a1)
+    else
+	move.b	#0,(a1)
+    endif
+	nop
+	nop
+    endm
 
-; sub_112A:
+ReadJoypads:
+	move.l	a2,-(sp)
+	lea	(Ctrl_1).w,a0
+	lea	(Ctrl_1_Held_6B).w,a2
+	lea	(HW_Port_1_Data).l,a1
+	bsr.s	Joypad_Read
+	lea	(Ctrl_2).w,a0
+	lea	(Ctrl_2_Held_6B).w,a2
+	addq.w	#2,a1
+	bsr.s	Joypad_Read
+	movea.l	(sp)+,a2
+	rts
+
+; Standard buttons retain their original format and RAM addresses.
+; Detect each frame, so unplugging or swapping a pad cannot leave stuck inputs.
 Joypad_Read:
-	move.b	#0,(a1)	; Poll controller data port
-	nop
-	nop
-	move.b	(a1),d0	; Get controller port data (start/A)
-	lsl.b	#2,d0
-	andi.b	#$C0,d0
-	move.b	#$40,(a1)	; Poll controller data port again
-	nop
-	nop
-	move.b	(a1),d1	; Get controller port data (B/C/Dpad)
-	andi.b	#$3F,d1
-	or.b	d1,d0	; Fuse them into one controller bit array
+	PollTH	1
+	moveq	#$3F,d0
+	and.b	(a1),d0
+	PollTH	0
+	moveq	#$30,d1
+	and.b	(a1),d1
+	lsl.b	#2,d1
+	or.b	d1,d0
 	not.b	d0
-	move.b	(a0),d1	; Get button press data
-	eor.b	d0,d1	; Toggle off held buttons
-	move.b	d0,(a0)+	; Store raw controller input for held button data
+	move.b	(a0),d1
+	move.b	d0,(a0)+
+	eor.b	d0,d1
 	and.b	d0,d1
-	move.b	d1,(a0)+	; Store pressed controller input
+	move.b	d1,(a0)
+
+	PollTH	1
+	PollTH	0
+	PollTH	1
+	PollTH	0
+	moveq	#$F,d0
+	and.b	(a1),d0	; six-button signature at the third low poll
+	bne.s	.standard
+	PollTH	1
+	move.b	(a1),d0	; Mode, X, Y, Z
+	not.b	d0
+	andi.b	#$F,d0
+	move.b	d0,d1
+	PollTH	0
+	moveq	#$F,d0
+	and.b	(a1),d0	; verify fourth-low signature (all ones)
+	cmpi.b	#$F,d0	; reject false detection from Up+Down on a 3-button pad
+	bne.s	.standard
+	move.b	d1,d0
+	ori.b	#$80,d0	; mark a six-button pad as present
+	bra.s	.store
+.standard:
+	moveq	#0,d0
+.store:
+	PollTH	1		; leave TH high, ready for the next frame
+	move.b	(a2),d1
+	move.b	d0,(a2)+
+	eor.b	d0,d1
+	and.b	d0,d1
+	andi.b	#$F,d1	; controller detection is not a button press
+	move.b	d1,(a2)
 	rts
 ; End of function Joypad_Read
 

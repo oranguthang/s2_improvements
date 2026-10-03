@@ -353,6 +353,15 @@ button_B_mask:			EQU	1<<button_B	; $10
 button_C_mask:			EQU	1<<button_C	; $20
 button_A_mask:			EQU	1<<button_A	; $40
 button_start_mask:		EQU	1<<button_start	; $80
+; Extended buttons occupy the low nibble of Ctrl_*_6B only.
+button_Z:			EQU	0
+button_Y:			EQU	1
+button_X:			EQU	2
+button_mode:			EQU	3
+button_Z_mask:			EQU	1<<button_Z
+button_Y_mask:			EQU	1<<button_Y
+button_X_mask:			EQU	1<<button_X
+button_mode_mask:		EQU	1<<button_mode
 
 ; ---------------------------------------------------------------------------
 ; Casino night bumpers
@@ -1394,7 +1403,11 @@ Ctrl_1_Press:			ds.b	1	; 1 byte
 Ctrl_2:						; 2 bytes
 Ctrl_2_Held:			ds.b	1	; 1 byte
 Ctrl_2_Press:			ds.b	1	; 1 byte
-				ds.b	4	; $FFFFF608-$FFFFF60B ; seems unused
+; Keep the original standard controller addresses and their logical copies.
+Ctrl_1_Held_6B:		ds.b	1	; bit 7 = detected; low nibble = Mode/X/Y/Z
+Ctrl_1_Press_6B:		ds.b	1	; newly pressed extended buttons
+Ctrl_2_Held_6B:		ds.b	1
+Ctrl_2_Press_6B:		ds.b	1
 VDP_Reg1_val:			ds.w	1	; normal value of VDP register #1 when display is disabled
 				ds.b	6	; $FFFFF60E-$FFFFF613 ; seems unused
 Demo_Time_left:			ds.w	1	; 2 bytes
