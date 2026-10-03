@@ -78651,15 +78651,19 @@ ObjB0_Init:
 	addq.w	#2 * 2 * 2,a1	; Advance to next streak 2 pixels down
 	dbf	d6,-
 
-	lea	off_3A294(pc),a1 ; pointers to mapping DPLC data
-	lea	(ArtUnc_Sonic).l,a3
+	lea	SegaScreen_RunFrames(pc),a1 ; private running-frame IDs
+	lea	(ArtUnc_SegaSonic).l,a3
 	lea	(Chunk_Table).l,a5
 	moveq	#4-1,d5 ; there are 4 mapping frames to loop over
 
 	; this copies the tiles that we want to scale up from ROM to RAM
 ;loc_3A246:
 ;CopySpriteTilesToRAMForSegaScreen:
--	movea.l	(a1)+,a2
+-	lea	(MapRUnc_SegaSonic).l,a2
+	moveq	#0,d0
+	move.b	(a1)+,d0
+	add.w	d0,d0
+	adda.w	(a2,d0.w),a2
 	move.w	(a2)+,d6 ; get the number of pieces in this mapping frame
 	subq.w	#1,d6
 -	move.w	(a2)+,d0
@@ -78703,11 +78707,9 @@ ObjB0_Init:
 
 	rts
 ; ===========================================================================
-off_3A294:
-	dc.l MapRUnc_Sonic.frame45
-	dc.l MapRUnc_Sonic.frame46
-	dc.l MapRUnc_Sonic.frame47
-	dc.l MapRUnc_Sonic.frame48
+SegaScreen_RunFrames:
+	dc.b 0,1,2,3
+	even
 
 map_piece macro width,height
 	dc.l copysrc,copydst
@@ -90767,6 +90769,10 @@ MapRUnc_Tails:			include		"mappings/spriteDPLC/Tails.asm"
 ;---------------------------------------------------------------------------------------
 ; Sega Screen Assets
 ;---------------------------------------------------------------------------------------
+	align tiles_to_bytes(1)
+ArtUnc_SegaSonic:		BINCLUDE	"art/uncompressed/Sega Sonic.bin"
+MapRUnc_SegaSonic:		include		"mappings/spriteDPLC/Sega Sonic.asm"
+; The enlarged sprite already has independent mappings in ObjB1_MapUnc_3A5A6.
 ArtNem_SEGA:			BINCLUDE	"art/nemesis/SEGA.nem"
 	even
 ArtNem_IntroTrails:		BINCLUDE	"art/nemesis/Shaded blocks from intro.nem"

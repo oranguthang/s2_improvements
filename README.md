@@ -40,6 +40,24 @@ The comparison checks every byte and the file lengths. It exits successfully
 only when both ROMs are identical, and otherwise prints the differing-byte
 count and first offset.
 
+## Current improvement plan
+
+Work continues on the current branch with separate local commits and no pushes.
+
+| Improvement | Progress | Validation |
+| --- | --- | --- |
+| Separate Sega screen graphics from Sonic | Implemented | Compare all four copied and enlarged frames with the baseline; mutate player art to check independence |
+| Restore burnt death animation | Planned | Fire hazards, other deaths, Sonic and Tails |
+| Support six-button controllers | Planned | Both ports, three-button fallback, held/pressed transitions |
+| Configure VS countdown | Planned | All three start triggers, HUD, music and expiry |
+| Improve character Debug mode | Planned | Tails Alone, movement reset, cameras, water, HUD and Level Select |
+| Preserve level state after Special Stage | Planned | Rings, object consumption and shields for both players; ordinary deaths and new levels |
+
+Hidden Palace from the official 2013 remake is a later project, outside this batch.
+The pre-improvement ROM remains the migration reference; new features intentionally
+change ROM bytes. The compatibility switch still controls only the newer upstream
+changes described above.
+
 ## Implemented Sonic Retro tutorials
 
 - [Fix bugs relating to Super Sonic](https://info.sonicretro.org/SCHG_How-to:Fix_bugs_relating_to_Super_Sonic)
@@ -77,6 +95,8 @@ count and first offset.
 - [Skip Score Tallies](https://info.sonicretro.org/SCHG_How-to:Skip_Score_Tallies)
 - [Add Extended Camera to Sonic 1](https://info.sonicretro.org/SCHG_How-to:Add_Extended_Camera_to_Sonic_1)
 - [Create a Homing Attack from scratch](https://info.sonicretro.org/SCHG_How-to:Create_a_Homing_Attack_from_scratch)
+
+- [Decouple Sega screen from Sonic sprite labels](https://info.sonicretro.org/SCHG_How-to:Decoupling_Sega_Screen_from_Sonic_Sprite_Labels_in_Sonic_2)
 
 ## Custom fixes
 
