@@ -54,7 +54,8 @@ local function generate_music_data()
 		music_buffer_address = music_buffer_address,
 		music_buffer_size = music_buffer_size,
 		compressed_song_list = common.clownmd5.HashFile(compressed_song_list_filename),
-		smps2asm = common.clownmd5.HashFile("sound/_smps2asm_inc.asm")
+		smps2asm = common.clownmd5.HashFile("sound/_smps2asm_inc.asm"),
+		compatibility = common.clownmd5.HashFile("s2.compatibility.asm")
 	}
 
 	for _, filename_stem in ipairs(common.get_directory_contents_changed("sound/music", ".asm", {".sax", ".inc"}, custom_hashes)) do
@@ -104,6 +105,7 @@ z80_ptr function x,(x)<<8&$FF00|(x)>>8&$00FF
 
 FixMusicAndSFXDataBugs = 0
 SonicDriverVer = 2
+	include "s2.compatibility.asm"
 	include "sound/_smps2asm_inc.asm"
 
 	phase $%X

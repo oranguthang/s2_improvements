@@ -10,6 +10,36 @@ See also:
 - Sonic Retro Disassemblies: https://info.sonicretro.org/Disassemblies
 - Sonic Retro How-To guides: https://info.sonicretro.org/SCHG_How-to:Guide
 
+## Upstream migration and ROM compatibility
+
+This branch ports the improvements from `master` at `bfadfbd` onto Sonic Retro
+upstream `380f37a`. The roll-jump collision-height fix from `a2f70eb` is already
+provided by upstream; the other 37 commits have been replayed with conflicts
+resolved.
+
+The default `preserveLegacyROM = 1` in `s2.compatibility.asm` retains the original
+ROM output with `gameRevision = 2`, `fixBugs = 1`, and `padToPowerOfTwo = 0`.
+It keeps the original implementations of newly changed upstream collision,
+boss, background, sprite-priority, and debug-list behavior, plus music modulation
+conversion. The newer upstream implementations remain available by setting
+`preserveLegacyROM = 0`; that mode intentionally produces a different ROM.
+The existing project improvements and earlier bug fixes remain enabled in both
+modes. Music assembly shares this setting, and the build script invalidates the
+generated music cache when it changes.
+
+The reference ROM built from `master` at `bfadfbd` is 1,081,322 bytes and has MD5
+`ca1f52e9cb999f5fa92d665d3eb508a4`.
+
+After building, compare against the saved reference ROM using the bundled Lua:
+
+```bat
+build_tools\lua\lua.exe compare_roms.lua baseline.bin s2built.bin
+```
+
+The comparison checks every byte and the file lengths. It exits successfully
+only when both ROMs are identical, and otherwise prints the differing-byte
+count and first offset.
+
 ## Implemented Sonic Retro tutorials
 
 - [Fix bugs relating to Super Sonic](https://info.sonicretro.org/SCHG_How-to:Fix_bugs_relating_to_Super_Sonic)
