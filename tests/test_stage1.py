@@ -24,6 +24,7 @@ class CPU:
         self.uc.mem_write(0,self.rom)
         self.uc.mem_map(0xFFFF0000,0x10000)
         self.uc.mem_map(0x02000000,0x10000)
+        self.uc.mem_map(0xC00000,0x1000)
         self.uc.reg_write(UC_M68K_REG_SR,0x2700)
         self.stop = 0x1F0000
     def addr(self, name):
@@ -236,6 +237,94 @@ def vs_countdown(repo):
             'music_threshold_preserved':True,'both_racer_expiry_cases':expiry,'off_and_pause_passed':True,
             'inactive_countdown_digits_hidden_for_both_players':True}
 
+def debug(repo):
+    entries=0
+    for character in ('ObjID_Sonic','ObjID_Tails'):
+        for water in (False,True):
+            for shoes,super_form in ((False,False),(True,False),(False,True),(True,True)):
+                if character=='ObjID_Tails' and super_form:
+                    continue
+                c=CPU(repo);obj=c.s['MainCharacter']
+                c.skip('PlayMusic')
+                c.write(obj+c.s['id'],c.s[character])
+                c.write(obj+c.s['status'],0x6E if water else 0x2E)
+                c.write(obj+c.s['air_left'],5 if water else 30)
+                c.write(obj+c.s['speedshoes_time'],100 if shoes else 0,2)
+                c.write('Super_Sonic_flag',int(super_form))
+                c.write(obj+c.s['x_vel'],0xA00,2);c.write(obj+c.s['y_vel'],0xFC00,2)
+                c.write(obj+c.s['inertia'],0xC00,2)
+                c.write(obj+c.s['x_pos'],100,2);c.write(obj+c.s['y_pos'],200,2)
+                c.write('Camera_Y_pos_bias',8,2);c.write('Camera_Y_pos_bias_P2',0xC8,2)
+                c.write('Camera_pan',160,2)
+                c.write('Camera_Min_Y_pos',0x20,2);c.write('Camera_Max_Y_pos_target',0x800,2)
+                c.write('Debug_placement_mode',1,2);c.write('Game_Mode',c.s['GameModeID_Level'])
+                c.write('Player_mode',2 if character=='ObjID_Tails' else 0,2)
+                c.call('Debug_Init',obj)
+                assert c.read('Camera_Y_pos_bias',2)==c.read('Camera_Y_pos_bias_P2',2)==96
+                assert c.read('Camera_pan',2)==0 and c.read(obj+c.s['air_left'])==30
+                assert c.read(obj+c.s['status'])&0x42==0,'Water/in-air not reset on entry'
+                speed='Tails_top_speed' if character=='ObjID_Tails' else 'Sonic_top_speed'
+                expected_top=0xC00 if shoes else (0xA00 if super_form else 0x600)
+                assert c.read(speed,2)==expected_top,(character,shoes,super_form)
+                assert c.read(obj+c.s['x_vel'],2)==c.read(obj+c.s['y_vel'],2)==c.read(obj+c.s['inertia'],2)==0
+                # The tail stays allocated but does not draw/update during placement.
+                if character=='ObjID_Tails':
+                    tail=c.s['Tails_Tails'];c.write(tail+c.s['parent'],obj,2)
+                    before=bytes(c.uc.mem_read(tail,0x40));c.call('Obj05_Main',tail)
+                    assert before==bytes(c.uc.mem_read(tail,0x40))
+                c.write('Timer_minute',2);c.write('Timer_second',37)
+                c.write(obj+c.s['jumping'],1);c.write(obj+c.s['transform_combo_timer'],5)
+                c.write(obj+c.s['transform_combo_buttons'],0xC0)
+                c.write('Ctrl_1_Press',c.s['button_B_mask'])
+                c.call('Debug_ExitDebugMode',obj)
+                assert c.read('Debug_placement_mode',2)==0
+                assert c.read(obj+c.s['mappings'],4)==c.s['MapUnc_Tails' if character=='ObjID_Tails' else 'MapUnc_Sonic']
+                assert c.read(obj+c.s['y_radius'])==(15 if character=='ObjID_Tails' else 19)
+                assert c.read(obj+c.s['x_radius'])==9 and c.read(obj+c.s['routine'])==2
+                for field in ('jumping','transform_combo_timer','transform_combo_buttons'):
+                    assert c.read(obj+c.s[field])==0
+                assert c.read('Timer_minute')==2 and c.read('Timer_second')==37
+                assert c.read('Update_HUD_score')==c.read('Update_HUD_rings')==1
+                assert c.read('Camera_Min_Y_pos',2)==0x20 and c.read('Camera_Max_Y_pos_target',2)==0x800
+                entries+=1
+    rescue=0
+    for name in ('Obj02_Control','Obj02_Hurt','Obj02_Dead'):
+        c=CPU(repo);obj=c.s['MainCharacter']
+        c.write('Debug_mode_flag',1,2);c.write('Ctrl_1_Press',c.s['button_B_mask'])
+        c.write('Control_Locked',1);c.call(name,obj)
+        assert c.read('Debug_placement_mode',2)==1 and c.read('Control_Locked')==0
+        rescue+=1
+    for role in ('MainCharacter','Sidekick'):
+        for enabled in (False,True):
+            for pressed in (False,True):
+                c=CPU(repo);c.write('Debug_mode_flag',int(enabled),2)
+                c.write('Ctrl_1_Press',c.s['button_B_mask'] if pressed else 0)
+                c.call('Tails_TryEnterDebug',role)
+                expected=int(role=='MainCharacter' and enabled and pressed)
+                assert c.read('Debug_placement_mode',2)==expected
+                assert c.uc.reg_read(UC_M68K_REG_D0)==expected
+    for active in (False,True):
+        c=CPU(repo);c.write('Debug_mode_flag',1,2);c.write('Debug_placement_mode',2 if active else 0,2)
+        calls=[]
+        def coordinates(uc,pc,size,user):
+            calls.append(pc)
+        c.uc.hook_add(UC_HOOK_CODE,coordinates,begin=c.s['HudDb_XY'],end=c.s['HudDb_XY'])
+        c.skip('HudDb_XY');c.call('HudUpdate')
+        assert bool(calls)==active
+    c=CPU(repo);c.skip('RunPLC_ROM');c.skip('PlaySound')
+    c.write('Last_star_pole_hit',5);c.write('Last_star_pole_hit_2P',5)
+    c.uc.reg_write(UC_M68K_REG_D0,c.s['chemical_plant_zone_act_1'])
+    c.call('LevelSelect_StartZone')
+    assert c.read('Last_star_pole_hit')==c.read('Last_star_pole_hit_2P')==0
+    assert c.read('Life_count')==c.read('Life_count_2P')==3
+    c=CPU(repo);c.write('Level_select_zone',0,2)
+    for option in (1,2,0):
+        c.write('Ctrl_1_Press',c.s['button_C_mask'])
+        c.call('LevSelControls_SwitchSide');assert c.read('Player_option',2)==option
+    return {'character_water_powerup_cycles':entries,'tails_hurt_and_death_rescue_cases':rescue,
+            'sidekick_entry_rejected':True,'normal_hud_outside_placement':True,
+            'level_select_character_cycle_and_checkpoint_reset':True}
+
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('repo',type=Path)
@@ -249,6 +338,8 @@ def main():
         results['controllers']=controllers(args.repo)
     if 'VS_StartCountdown' in symbols(args.repo/'s2.lst'):
         results['vs_countdown']=vs_countdown(args.repo)
+    if 'Debug_PreparePlayer' in symbols(args.repo/'s2.lst'):
+        results['debug']=debug(args.repo)
     results['rom_sha256']=hashlib.sha256((args.repo/'s2built.bin').read_bytes()).hexdigest()
     if args.report:
         args.report.write_text(json.dumps(results,indent=2)+'\n',encoding='utf-8')

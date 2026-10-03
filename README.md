@@ -50,7 +50,7 @@ Work continues on the current branch with separate local commits and no pushes.
 | Restore burnt death animation | Implemented | Fire hazards, other deaths, Sonic and Tails |
 | Support six-button controllers | Implemented | Both ports, three-button fallback, held/pressed transitions |
 | Configure VS countdown | Implemented | All three start triggers, HUD, music and expiry |
-| Improve character Debug mode | Planned | Tails Alone, movement reset, cameras, water, HUD and Level Select |
+| Improve character Debug mode | Implemented | Tails Alone, movement reset, cameras, water, HUD and Level Select |
 | Preserve level state after Special Stage | Planned | Rings, object consumption and shields for both players; ordinary deaths and new levels |
 
 Hidden Palace from the official 2013 remake is a later project, outside this batch.
@@ -115,6 +115,17 @@ In Options, select **VS MODE ITEMS** and press **A** on either controller to
 cycle the finish countdown between **60 seconds**, **90 seconds** and **off**.
 The setting covers signpost loading and either player's finish, and hides the
 countdown digits when inactive. The normal countdown music and expiry remain.
+
+- [Improve Debug mode](https://info.sonicretro.org/SCHG_How-to:Improve_Debug_Mode)
+
+Debug now works for Tails Alone, including entry while hurt or dying. Placement
+resets camera offsets and air, hides Tails' separate tail sprite, and exiting
+restores the correct character, collision size, movement and normal HUD.
+All existing debug lists include the individual monitor types. In Level Select,
+**C** cycles Sonic and Tails / Sonic Alone / Tails Alone except on Sound Test;
+the current choice is shown below the level list. With the slow-motion cheat
+enabled, **A** while paused returns to Level Select with water/checkpoint state
+reset and standard HUD graphics reloaded on starting a level.
 
 ## Custom fixes
 

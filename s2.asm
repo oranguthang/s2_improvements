@@ -1653,7 +1653,7 @@ Pause_Loop:
 	beq.s	Pause_ChkStart		; if not, branch
 	btst	#button_A,(Ctrl_1_Press).w	; is button A pressed?
 	beq.s	Pause_ChkBC		; if not, branch
-	move.b	#GameModeID_TitleScreen,(Game_Mode).w ; set game mode to 4 (title screen)
+	move.b	#GameModeID_LevelSelect,(Game_Mode).w ; return from paused testing to Level Select
 	nop
 	bra.s	Pause_Resume
 ; ===========================================================================
@@ -12473,6 +12473,8 @@ off_92F2:
 ; ===========================================================================
 ; loc_92F6:
 MenuScreen_LevelSelect:
+	clr.b	(Water_fullscreen_flag).w
+	clr.w	(Game_paused).w
 	; Load foreground (sans zone icon)
 	lea	(Chunk_Table).l,a1
 	lea	(MapEng_LevSel).l,a0	; 2 bytes per 8x8 tile, compressed
@@ -12488,6 +12490,7 @@ MenuScreen_LevelSelect:
 	; Draw sound test number
 	moveq	#palette_line_0,d3
 	bsr.w	LevelSelect_DrawSoundNumber
+	bsr.w	LevelSelect_DrawPlayerOption
 
 	; Load zone icon
 	lea	(Chunk_Table+planeLoc(40,0,28)).l,a1
@@ -12636,6 +12639,8 @@ LevelSelect_Order:
 LevelSelect_StartZone:
 	andi.w	#$3FFF,d0
 	move.w	d0,(Current_ZoneAndAct).w
+	moveq	#PLCID_Std1,d0
+	bsr.w	RunPLC_ROM
 	move.b	#GameModeID_Level,(Game_Mode).w ; => Level (Zone play mode)
 	move.b	#3,(Life_count).w
 	move.b	#3,(Life_count_2P).w
@@ -12647,6 +12652,8 @@ LevelSelect_StartZone:
 	move.l	d0,(Timer_2P).w
 	move.l	d0,(Score_2P).w
 	move.b	d0,(Continue_count).w
+	move.b	d0,(Last_star_pole_hit).w
+	move.b	d0,(Last_star_pole_hit_2P).w
 	move.l	#5000,(Next_Extra_life_score).w
 	move.l	#5000,(Next_Extra_life_score_2P).w
 	move.b	#MusID_FadeOut,d0
@@ -12743,6 +12750,13 @@ LevSelControls_SwitchSide:	; not in soundtest, not up/down pressed
 	move.b	LevelSelect_SwitchTable(pc,d0.w),d0 ; set selected zone according to table
 	move.w	d0,(Level_select_zone).w
 +
+	btst	#button_C,(Ctrl_1_Press).w
+	beq.s	+
+	addq.w	#1,(Player_option).w
+	cmpi.w	#2,(Player_option).w
+	bls.s	+
+	clr.w	(Player_option).w
++
 	rts
 ; ===========================================================================
 ;byte_95A2:
@@ -12830,12 +12844,33 @@ LevelSelect_MarkFields:
 
 +
 	cmpi.w	#$15,(Level_select_zone).w
-	bne.s	+	; rts
+	bne.s	+
 	bsr.w	LevelSelect_DrawSoundNumber
 +
-	rts
+	bra.w	LevelSelect_DrawPlayerOption
 ; ===========================================================================
 ;loc_965A:
+LevelSelect_DrawPlayerOption:
+	move.l	#vdpComm(VRAM_Plane_A_Name_Table+planeLoc(64,3,24),VRAM,WRITE),(VDP_control_port).l
+	move.w	(Player_option).w,d0
+	cmpi.w	#2,d0
+	bls.s	.valid
+	moveq	#0,d0
+.valid:
+	lsl.w	#2,d0
+	lea	LevelSelect_PlayerText(pc),a1
+	movea.l	(a1,d0.w),a1
+	moveq	#0,d1
+	move.b	(a1)+,d1
+.loop:
+	moveq	#0,d0
+	move.b	(a1)+,d0
+	move.w	d0,(a6)
+	dbf	d1,.loop
+	rts
+LevelSelect_PlayerText:
+	dc.l TextLevSel_SonicTails,TextLevSel_Sonic,TextLevSel_Tails
+
 LevelSelect_DrawSoundNumber:
 	move.l	#vdpComm(VRAM_Plane_A_Name_Table+planeLoc(64,34,18),VRAM,WRITE),(VDP_control_port).l
 	move.w	(Sound_test_sound).w,d0
@@ -13041,6 +13076,9 @@ TextOptScr_Countdown60:		menutxt "A COUNTDOWN 60 SEC  "
 TextOptScr_Countdown90:		menutxt "A COUNTDOWN 90 SEC  "
 TextOptScr_CountdownOff:		menutxt "A COUNTDOWN OFF     "
 TextOptScr_SoundTest:		menutxt	"*  SOUND TEST   *"	; byte_985E:
+TextLevSel_SonicTails:		menutxt "C PLAYER: SONIC TAILS"
+TextLevSel_Sonic:		menutxt "C PLAYER: SONIC      "
+TextLevSel_Tails:		menutxt "C PLAYER: TAILS      "
 TextOptScr_0:			menutxt	"      00       "	; byte_9870:
 
 	charset ; reset character set
@@ -39522,6 +39560,9 @@ Obj02:
 	move.w	(Camera_Min_X_pos).w,(Tails_Min_X_pos).w
 	move.w	(Camera_Max_X_pos).w,(Tails_Max_X_pos).w
 	move.w	(Camera_Max_Y_pos).w,(Tails_Max_Y_pos).w
+	tst.w	(Debug_placement_mode).w
+	beq.s	+
+	jmp	(DebugMode).l
 +
 	moveq	#0,d0
 	move.b	routine(a0),d0
@@ -39602,6 +39643,9 @@ Obj02_Init_Continued:
 Obj02_Control:
 	cmpa.w	#MainCharacter,a0
 	bne.s	Obj02_Control_Joypad2
+	bsr.w	Tails_TryEnterDebug
+	tst.b	d0
+	bne.w	Obj02_DebugReturn
 	move.w	(Ctrl_1_Logical).w,(Ctrl_2_Logical).w
 	tst.b	(Control_Locked).w	; are controls locked?
 	bne.s	Obj02_Control_Part2	; if yes, branch
@@ -41760,6 +41804,9 @@ return_1CBC4:
 ; ---------------------------------------------------------------------------
 ; loc_1CBC6:
 Obj02_Hurt:
+	bsr.w	Tails_TryEnterDebug
+	tst.b	d0
+	bne.w	Obj02_DebugReturn
 	jsr	(ObjectMove).l
 	addi.w	#$30,y_vel(a0)
 	btst	#status.player.underwater,status(a0)
@@ -41828,7 +41875,27 @@ JmpTo2_KillCharacter ; JmpTo
 ; ---------------------------------------------------------------------------
 
 ; loc_1CC50:
+; Debug placement always belongs to the main character, never the AI sidekick.
+Tails_TryEnterDebug:
+	cmpa.w	#MainCharacter,a0
+	bne.s	.noEntry
+	tst.w	(Debug_mode_flag).w
+	beq.s	.noEntry
+	btst	#button_B,(Ctrl_1_Press).w
+	beq.s	.noEntry
+	move.w	#1,(Debug_placement_mode).w
+	clr.b	(Control_Locked).w
+	moveq	#1,d0
+	rts
+.noEntry:
+	moveq	#0,d0
+Obj02_DebugReturn:
+	rts
+
 Obj02_Dead:
+	bsr.w	Tails_TryEnterDebug
+	tst.b	d0
+	bne.w	Obj02_DebugReturn
 	bsr.w	Obj02_CheckGameOver
 	jsr	(ObjectMoveAndFall).l
 	bsr.w	Tails_RecordPos
@@ -42410,6 +42477,12 @@ Obj05_Init:
 ; loc_1D23A:
 Obj05_Main:
 	movea.w	parent(a0),a2 ; a2=character
+	cmpa.w	#MainCharacter,a2
+	bne.s	.normal
+	tst.w	(Debug_placement_mode).w
+	beq.s	.normal
+	rts		; hide the tail while Tails Alone is an item cursor
+.normal:
 	move.b	angle(a2),angle(a0)
 	move.b	status(a2),status(a0)
 	move.w	x_pos(a2),x_pos(a0)
@@ -48256,7 +48329,7 @@ Obj14_UpdateMappingAndCollision:
 	moveq	#8,d3
 	move.w	(sp)+,d4
     if preserveLegacyROM
-	bra.w	SlopedPlatform
+	jmp	(SlopedPlatform).l
     else
 	jmp	(SlopedPlatform).l
     endif
@@ -88280,7 +88353,7 @@ HudUpdate:
 	lea	(VDP_data_port).l,a6
 	tst.w	(Two_player_mode).w
 	bne.w	loc_40F50
-	tst.w	(Debug_mode_flag).w	; is debug mode on?
+	tst.w	(Debug_placement_mode).w	; show coordinates only during placement
 	bne.w	loc_40E9A	; if yes, branch
 	tst.b	(Update_HUD_score).w	; does the score need updating?
 	beq.s	Hud_ChkRings	; if not, branch
@@ -89012,6 +89085,7 @@ Debug_Init:
 	andi.w	#$7FF,(MainCharacter+y_pos).w
 	andi.w	#$7FF,(Camera_Y_pos).w
 	andi.w	#$7FF,(Camera_BG_Y_pos).w
+	bsr.w	Debug_PreparePlayer
 	clr.b	(Scroll_lock).w
 	move.b	#0,mapping_frame(a0)
 	move.b	#AniIDSonAni_Walk,anim(a0)
@@ -89046,6 +89120,7 @@ Debug_Init:
 	move.b	#1,(Debug_Speed).w
 ; loc_41B0C:
 Debug_Main:
+	move.b	#30,air_left(a0)
 	; S1 leftover
 	moveq	#6,d0		; force zone 6's debug object list (was the ending in S1)
 	cmpi.b	#GameModeID_SpecialStage,(Game_Mode).w	; special stage mode? (you can't enter debug mode in S2's special stage)
@@ -89199,30 +89274,41 @@ Debug_SpawnObject:
 ; loc_41C56:
 Debug_ExitDebugMode:
 	btst	#button_B,(Ctrl_1_Press).w
-	beq.s	return_41CB6
-	; Exit debug mode
+	beq.w	return_41CB6
 	moveq	#0,d0
 	move.w	d0,(Debug_placement_mode).w
-	lea	(MainCharacter).w,a1 ; a1=character
+	lea	(MainCharacter).w,a1
+	move.b	#9,x_radius(a1)
+	cmpi.b	#ObjID_Tails,id(a1)
+	bne.s	.sonic
+	move.l	#MapUnc_Tails,mappings(a1)
+	move.w	#make_art_tile(ArtTile_ArtUnc_Tails,0,0),art_tile(a1)
+	move.b	#$F,y_radius(a1)
+	move.b	#-1,(Tails_LastLoadedDPLC).w
+	bra.s	.characterReady
+.sonic:
 	move.l	#MapUnc_Sonic,mappings(a1)
 	move.w	#make_art_tile(ArtTile_ArtUnc_Sonic,0,0),art_tile(a1)
+	move.b	#$13,y_radius(a1)
+	move.b	#-1,(Sonic_LastLoadedDPLC).w
+.characterReady:
 	tst.w	(Two_player_mode).w
 	beq.s	.notTwoPlayerMode
-	move.w	#make_art_tile_2p(ArtTile_ArtUnc_Sonic,0,0),art_tile(a1)
-; loc_41C82:
+	jsr	(Adjust2PArtPointer).l
 .notTwoPlayerMode:
-	bsr.s	Debug_ResetPlayerStats
-	move.b	#$13,y_radius(a1)
-	move.b	#9,x_radius(a1)
+	moveq	#0,d0
+	bsr.w	Debug_ResetPlayerStats
+	move.b	#-1,prev_anim(a1)
+	move.b	#0,mapping_frame(a1)
+	move.b	#30,air_left(a1)
+	clr.b	jumping(a1)
+	clr.b	transform_combo_timer(a1)
+	clr.b	transform_combo_buttons(a1)
+	clr.w	move_lock(a1)
 	move.w	(Camera_Min_Y_pos_Debug_Copy).w,(Camera_Min_Y_pos).w
 	move.w	(Camera_Max_Y_pos_Debug_Copy).w,(Camera_Max_Y_pos_target).w
-	; useless leftover; this is for S1's special stage
-	cmpi.b	#GameModeID_SpecialStage,(Game_Mode).w	; special stage mode?
-	bne.s	return_41CB6		; if not, branch
-	move.b	#AniIDSonAni_Roll,(MainCharacter+anim).w
-	bset	#status.player.rolling,(MainCharacter+status).w
-	bset	#status.player.in_air,(MainCharacter+status).w
-
+	bsr.w	Debug_RestoreHUD
+	; S1 Special Stage is not supported here; S2 cannot enter Debug in Special Stage.
 return_41CB6:
 	rts
 ; End of function Debug_Control
@@ -89231,6 +89317,46 @@ return_41CB6:
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 
 ; sub_41CB8:
+; Restore normal air and speed without discarding speed shoes or Super Sonic.
+Debug_PreparePlayer:
+	move.w	#(screen_height/2)-16,(Camera_Y_pos_bias).w
+	move.w	#(screen_height/2)-16,(Camera_Y_pos_bias_P2).w
+	clr.w	(Camera_pan).w
+	bclr	#status.player.underwater,status(a0)
+	movea.l	a0,a1
+	jsr	(ResumeMusic).l
+	lea	(Sonic_top_speed).w,a2
+	cmpi.b	#ObjID_Tails,id(a0)
+	bne.s	.apply
+	lea	(Tails_top_speed).w,a2
+.apply:
+	jsr	(ApplySpeedSettings).l
+	clr.w	x_vel(a0)
+	clr.w	y_vel(a0)
+	clr.w	inertia(a0)
+	rts
+
+; Restore numbers immediately rather than waiting for the next whole second.
+Debug_RestoreHUD:
+	movem.l d0-d7/a0-a6,-(sp)
+	bsr.w	Hud_Base
+	move.b	#1,(Update_HUD_score).w
+	move.b	#1,(Update_HUD_rings).w
+	move.b	#1,(Update_HUD_lives).w
+	tst.w	(Two_player_mode).w
+	bne.s	.done
+	move.l	#vdpComm(tiles_to_bytes(ArtTile_HUD_Minutes),VRAM,WRITE),d0
+	moveq	#0,d1
+	move.b	(Timer_minute).w,d1
+	bsr.w	Hud_Mins
+	move.l	#vdpComm(tiles_to_bytes(ArtTile_HUD_Seconds),VRAM,WRITE),d0
+	moveq	#0,d1
+	move.b	(Timer_second).w,d1
+	bsr.w	Hud_Secs
+.done:
+	movem.l (sp)+,d0-d7/a0-a6
+	rts
+
 Debug_ResetPlayerStats:
 	move.b	d0,anim(a1)
 	move.w	d0,x_sub(a1) ; subpixel x
@@ -89313,12 +89439,26 @@ dbglistobj macro   obj, mapaddr, subtype, frame, vram
 
 DbgObjList_Def: dbglistheader
 	dbglistobj ObjID_Ring,		Obj25_MapUnc_12382,   0,   0, make_art_tile(ArtTile_ArtNem_Ring,1,0) ; obj25 = ring
-	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   8,   0, make_art_tile(ArtTile_ArtNem_Powerups,0,0) ; obj26 = monitor
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   4,   5, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   6,   7, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   5,   6, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   7,   8, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   1,   2, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   2,   3, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   3,   4, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   8,   9, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
 DbgObjList_Def_End
 
 DbgObjList_EHZ: dbglistheader
 	dbglistobj ObjID_Ring,		Obj25_MapUnc_12382,   0,   0, make_art_tile(ArtTile_ArtNem_Ring,1,0)
-	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   8,   0, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   4,   5, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   6,   7, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   5,   6, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   7,   8, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   1,   2, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   2,   3, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   3,   4, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   8,   9, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
 	dbglistobj ObjID_Starpost,	Obj79_MapUnc_1F424,   1,   0, make_art_tile(ArtTile_ArtNem_Checkpoint,0,0)
 	dbglistobj ObjID_PlaneSwitcher,	Obj03_MapUnc_1FFB8,   9,   1, make_art_tile(ArtTile_ArtNem_Ring,1,0)
     if upstreamFixes
@@ -89345,7 +89485,14 @@ DbgObjList_EHZ_End
 
 DbgObjList_MTZ: dbglistheader
 	dbglistobj ObjID_Ring,		Obj25_MapUnc_12382,   0,   0, make_art_tile(ArtTile_ArtNem_Ring,1,0)
-	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   8,   0, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   4,   5, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   6,   7, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   5,   6, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   7,   8, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   1,   2, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   2,   3, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   3,   4, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   8,   9, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
 	dbglistobj ObjID_Starpost,	Obj79_MapUnc_1F424,   1,   0, make_art_tile(ArtTile_ArtNem_Checkpoint,0,0)
 	dbglistobj ObjID_PlaneSwitcher,	Obj03_MapUnc_1FFB8,   9,   1, make_art_tile(ArtTile_ArtNem_Ring,1,0)
 	dbglistobj ObjID_SteamSpring,	Obj42_MapUnc_2686C,   1,   7, make_art_tile(ArtTile_ArtKos_LevelArt,3,0)
@@ -89382,7 +89529,14 @@ DbgObjList_MTZ_End
 
 DbgObjList_WFZ: dbglistheader
 	dbglistobj ObjID_Ring,		Obj25_MapUnc_12382,   0,   0, make_art_tile(ArtTile_ArtNem_Ring,1,0)
-	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   8,   0, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   4,   5, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   6,   7, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   5,   6, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   7,   8, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   1,   2, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   2,   3, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   3,   4, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   8,   9, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
 	dbglistobj ObjID_WFZPalSwitcher, Obj03_MapUnc_1FFB8,   0,   0, make_art_tile(ArtTile_ArtNem_Ring,0,0)
 	dbglistobj ObjID_Starpost,	Obj79_MapUnc_1F424,   1,   0, make_art_tile(ArtTile_ArtNem_Checkpoint,0,0)
 	dbglistobj ObjID_Cloud,		ObjB3_MapUnc_3B32C, $5E,   0, make_art_tile(ArtTile_ArtNem_Clouds,2,0)
@@ -89417,7 +89571,14 @@ DbgObjList_WFZ_End
 
 DbgObjList_HTZ: dbglistheader
 	dbglistobj ObjID_Ring,		Obj25_MapUnc_12382,   0,   0, make_art_tile(ArtTile_ArtNem_Ring,1,0)
-	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   8,   0, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   4,   5, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   6,   7, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   5,   6, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   7,   8, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   1,   2, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   2,   3, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   3,   4, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   8,   9, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
 	dbglistobj ObjID_Starpost,	Obj79_MapUnc_1F424,   1,   0, make_art_tile(ArtTile_ArtNem_Checkpoint,0,0)
 	dbglistobj ObjID_ForcedSpin,	Obj03_MapUnc_1FFB8,   0,   0, make_art_tile(ArtTile_ArtNem_Ring,0,0)
 	dbglistobj ObjID_ForcedSpin,	Obj03_MapUnc_1FFB8,   4,   4, make_art_tile(ArtTile_ArtNem_Ring,0,0)
@@ -89456,7 +89617,14 @@ DbgObjList_HPZ:; dbglistheader
 
 DbgObjList_OOZ: dbglistheader
 	dbglistobj ObjID_Ring,		Obj25_MapUnc_12382,   0,   0, make_art_tile(ArtTile_ArtNem_Ring,1,0)
-	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   8,   0, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   4,   5, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   6,   7, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   5,   6, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   7,   8, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   1,   2, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   2,   3, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   3,   4, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   8,   9, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
 	dbglistobj ObjID_Starpost,	Obj79_MapUnc_1F424,   1,   0, make_art_tile(ArtTile_ArtNem_Checkpoint,0,0)
 	dbglistobj ObjID_OOZPoppingPform, Obj33_MapUnc_23DDC,   1,   0, make_art_tile(ArtTile_ArtNem_BurnerLid,3,0)
 	dbglistobj ObjID_SlidingSpike,	Obj43_MapUnc_23FE0,   0,   0, make_art_tile(ArtTile_ArtNem_SpikyThing,2,1)
@@ -89492,7 +89660,14 @@ DbgObjList_OOZ_End
 
 DbgObjList_MCZ: dbglistheader
 	dbglistobj ObjID_Ring,		Obj25_MapUnc_12382,   0,   0, make_art_tile(ArtTile_ArtNem_Ring,1,0)
-	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   8,   0, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   4,   5, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   6,   7, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   5,   6, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   7,   8, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   1,   2, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   2,   3, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   3,   4, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   8,   9, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
 	dbglistobj ObjID_Starpost,	Obj79_MapUnc_1F424,   1,   0, make_art_tile(ArtTile_ArtNem_Checkpoint,0,0)
 	dbglistobj ObjID_SwingingPlatform, Obj15_Obj7A_MapUnc_10256, $48,   2, make_art_tile(ArtTile_ArtKos_LevelArt,0,0)
 	dbglistobj ObjID_CollapsPform,	Obj1F_MapUnc_11106,   0,   0, make_art_tile(ArtTile_ArtNem_MCZCollapsePlat,3,0)
@@ -89519,7 +89694,14 @@ DbgObjList_MCZ_End
 
 DbgObjList_CNZ: dbglistheader
 	dbglistobj ObjID_Ring,		Obj25_MapUnc_12382,   0,   0, make_art_tile(ArtTile_ArtNem_Ring,1,0)
-	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   8,   0, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   4,   5, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   6,   7, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   5,   6, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   7,   8, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   1,   2, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   2,   3, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   3,   4, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   8,   9, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
 	dbglistobj ObjID_Starpost,	Obj79_MapUnc_1F424,   1,   0, make_art_tile(ArtTile_ArtNem_Checkpoint,0,0)
 	dbglistobj ObjID_PinballMode,	Obj03_MapUnc_1FFB8,   0,   0, make_art_tile(ArtTile_ArtNem_Ring,0,0)
 	dbglistobj ObjID_PinballMode,	Obj03_MapUnc_1FFB8,   4,   4, make_art_tile(ArtTile_ArtNem_Ring,0,0)
@@ -89550,7 +89732,14 @@ DbgObjList_CNZ_End
 
 DbgObjList_CPZ: dbglistheader
 	dbglistobj ObjID_Ring,		Obj25_MapUnc_12382,   0,   0, make_art_tile(ArtTile_ArtNem_Ring,1,0)
-	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   8,   0, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   4,   5, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   6,   7, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   5,   6, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   7,   8, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   1,   2, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   2,   3, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   3,   4, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   8,   9, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
 	dbglistobj ObjID_Starpost,	Obj79_MapUnc_1F424,   1,   0, make_art_tile(ArtTile_ArtNem_Checkpoint,0,0)
 	dbglistobj ObjID_TippingFloor,	Obj0B_MapUnc_201A0, $70,   0, make_art_tile(ArtTile_ArtNem_CPZAnimatedBits,3,1)
 	dbglistobj ObjID_SpeedBooster,	Obj1B_MapUnc_223E2,   0,   0, make_art_tile(ArtTile_ArtNem_CPZBooster,3,1)
@@ -89577,7 +89766,14 @@ DbgObjList_CPZ_End
 
 DbgObjList_ARZ: dbglistheader
 	dbglistobj ObjID_Ring,		Obj25_MapUnc_12382,   0,   0, make_art_tile(ArtTile_ArtNem_Ring,1,0)
-	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   8,   0, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   4,   5, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   6,   7, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   5,   6, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   7,   8, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   1,   2, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   2,   3, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   3,   4, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   8,   9, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
 	dbglistobj ObjID_Starpost,	Obj79_MapUnc_1F424,   1,   0, make_art_tile(ArtTile_ArtNem_Checkpoint,0,0)
 	dbglistobj ObjID_SwingingPlatform, Obj15_Obj83_MapUnc_1021E, $88,   2, make_art_tile(ArtTile_ArtKos_LevelArt,0,0)
 	dbglistobj ObjID_ARZPlatform,	Obj18_MapUnc_1084E,   1,   0, make_art_tile(ArtTile_ArtKos_LevelArt,2,0)
@@ -89609,7 +89805,14 @@ DbgObjList_ARZ_End
 
 DbgObjList_SCZ: dbglistheader
 	dbglistobj ObjID_Ring,		Obj25_MapUnc_12382,   0,   0, make_art_tile(ArtTile_ArtNem_Ring,1,0)
-	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   8,   0, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   4,   5, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   6,   7, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   5,   6, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   7,   8, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   1,   2, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   2,   3, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   3,   4, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
+	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   8,   9, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
 	dbglistobj ObjID_WFZPalSwitcher, Obj03_MapUnc_1FFB8,   0,   0, make_art_tile(ArtTile_ArtNem_Ring,0,0)
 	dbglistobj ObjID_Cloud,		ObjB3_MapUnc_3B32C, $5E,   0, make_art_tile(ArtTile_ArtNem_Clouds,2,0)
 	dbglistobj ObjID_Cloud,		ObjB3_MapUnc_3B32C, $60,   1, make_art_tile(ArtTile_ArtNem_Clouds,2,0)
