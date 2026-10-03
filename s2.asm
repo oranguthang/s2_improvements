@@ -4253,6 +4253,7 @@ PlaneMapToVRAM_H80_Sega:
 ; ===========================================================================
 ; loc_3998:
 TitleScreen:
+	clr.b	(SS_keep_level_state).w
 	; Stop music.
 	move.b	#MusID_Stop,d0
 	bsr.w	PlayMusic
@@ -4772,6 +4773,7 @@ MusicList2: zoneOrderedTable 1,1
 ; ---------------------------------------------------------------------------
 ; loc_3EC4:
 Level:
+	jsr	(SS_ValidateLevelReturn).l
 	bset	#GameModeFlag_TitleCard,(Game_Mode).w ; add $80 to screen mode (for pre level sequence)
 	tst.w	(Demo_mode_flag).w	; test the old flag for the credits demos (now unused)
 	bmi.s	+
@@ -4829,12 +4831,15 @@ Level_ClrRam:
 	clearRAM MiscLevelVariables,MiscLevelVariables_End
 	clearRAM Misc_Variables,Misc_Variables_End
 	clearRAM Oscillating_Data,Oscillating_variables_End
+	tst.b	(SS_keep_level_state).w
+	bne.s	Level_KeepSaucerState
     if fixBugs
 	clearRAM CNZ_saucer_data,CNZ_saucer_data_End
     else
 	; The '+C0' shouldn't be here; CNZ_saucer_data is only $40 bytes large
 	clearRAM CNZ_saucer_data,CNZ_saucer_data_End+$C0
     endif
+Level_KeepSaucerState:
 
 	cmpi.w	#chemical_plant_zone_act_2,(Current_ZoneAndAct).w ; CPZ 2
 	beq.s	Level_InitWater
@@ -5002,6 +5007,7 @@ Level_ClrHUD:
 	move.b	d0,(Extra_life_flags_2P).w
 ; loc_41E4:
 Level_FromCheckpoint:
+	jsr	(SS_RestorePlayerState).l
 	move.b	d0,(Time_Over_flag).w
 	move.b	d0,(Time_Over_flag_2P).w
 	move.b	d0,(SlotMachine_Routine).w
@@ -5101,6 +5107,7 @@ Level_FromCheckpoint:
 +	move.b	#0,(Control_Locked).w
 	move.b	#0,(Control_Locked_P2).w
 	move.b	#1,(Level_started_flag).w
+	clr.b	(SS_keep_level_state).w
 
 ; Level_StartGame: loc_435A:
 	bclr	#GameModeFlag_TitleCard,(Game_Mode).w ; clear $80 from the game mode
@@ -12473,6 +12480,7 @@ off_92F2:
 ; ===========================================================================
 ; loc_92F6:
 MenuScreen_LevelSelect:
+	clr.b	(SS_keep_level_state).w
 	clr.b	(Water_fullscreen_flag).w
 	clr.w	(Game_paused).w
 	; Load foreground (sans zone icon)
@@ -12637,6 +12645,7 @@ LevelSelect_Order:
 
 ;loc_9480:
 LevelSelect_StartZone:
+	clr.b	(SS_keep_level_state).w
 	andi.w	#$3FFF,d0
 	move.w	d0,(Current_ZoneAndAct).w
 	moveq	#PLCID_Std1,d0
@@ -30087,6 +30096,8 @@ RunObjects:
 
 	moveq	#(Object_RAM_End-Object_RAM)/object_size-1,d7 ; run the first $80 objects out of levels
 	moveq	#0,d0
+	btst	#GameModeFlag_TitleCard,(Game_Mode).w
+	bne.s	+	; level-only shield slots also run during the title card
 	cmpi.b	#GameModeID_Demo,(Game_Mode).w	; demo mode?
 	beq.s	+	; if in a level in a demo, branch
 	cmpi.b	#GameModeID_Level,(Game_Mode).w	; regular level mode?
@@ -32485,7 +32496,29 @@ SpriteSizes_2P_3:
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 
 ; loc_172A4:
+; Finish in-flight collection animations using a bounded walk over every
+; slot. Sparse entries and an empty/stale count cannot run beyond the table.
+RingsManager_Setup_SSReturn:
+	lea	(Ring_consumption_table+2).w,a2
+	move.w	#(Ring_consumption_table_End-Ring_consumption_table-2)/2-1,d1
+.loop:
+	move.w	(a2),d0
+	beq.s	.next
+	cmpi.w	#(Ring_Positions+6)&$FFFF,d0
+	blo.s	.next
+	cmpi.w	#Ring_Positions_End&$FFFF,d0
+	bhs.s	.next
+	movea.w	d0,a1
+	move.w	#-1,(a1)
+.next:
+	clr.w	(a2)+
+	dbf	d1,.loop
+	clr.w	(Ring_consumption_table).w
+	rts
+
 RingsManager_Setup:
+	tst.b	(SS_keep_level_state).w
+	bne.s	RingsManager_Setup_SSReturn
 	clearRAM Ring_Positions,Ring_Positions_End
 	; d0 = 0
 	lea	(Ring_consumption_table).w,a1
@@ -33226,6 +33259,8 @@ ObjectsManager_Init:
 	lea	(Object_Respawn_Table).w,a2
 	move.w	#$0101,(a2)+	; the first two bytes are not used as respawn values
 	; instead, they are used to keep track of the current respawn indexes
+	tst.b	(SS_keep_level_state).w
+	bne.s	ObjectsManager_KeepStates
 
     if fixBugs
 	move.w	#bytesToLcnt(Obj_respawn_data_End-Obj_respawn_data),d0 ; set loop counter
@@ -33245,6 +33280,7 @@ ObjectsManager_Init:
     endif
     endif
 
+ObjectsManager_KeepStates:
 	lea	(Obj_respawn_index).w,a2	; reset a2
 	moveq	#0,d2
 	move.w	(Camera_X_pos).w,d6
@@ -45635,12 +45671,108 @@ Obj79_MakeSpecialStars:
 	rts
 ; ===========================================================================
 ; loc_1F536:
+; Preserve only the level state at a star's entrance. Checkpoint snapshots
+; remain independent, so an ordinary death still uses the existing ring policy.
+SS_SaveLevelState:
+	movem.l	d0/d7/a1-a2,-(sp)
+	move.b	#1,(SS_keep_level_state).w
+	move.w	(Current_ZoneAndAct).w,(SS_saved_zone).w
+	move.w	(Ring_count).w,(SS_saved_rings).w
+	move.w	(Ring_count_2P).w,(SS_saved_rings_2P).w
+	move.b	(Extra_life_flags).w,(SS_saved_extra_life_flags).w
+	move.b	(Extra_life_flags_2P).w,(SS_saved_extra_life_flags_2P).w
+	move.w	(Perfect_rings_left).w,(SS_saved_perfect_rings).w
+	move.w	(Perfect_rings_flag).w,(SS_saved_perfect_flag).w
+	move.b	(MainCharacter+status_secondary).w,d0
+	andi.b	#status_sec_hasShield_mask,d0
+	move.b	d0,(SS_saved_shield).w
+	move.b	(Sidekick+status_secondary).w,d0
+	andi.b	#status_sec_hasShield_mask,d0
+	move.b	d0,(SS_saved_shield_2P).w
+	bsr.w	Obj79_ClearStates
+	movem.l	(sp)+,d0/d7/a1-a2
+	rts
+
+; Use a separate loop counter and zero-extend each index. Explosions may
+; still carry a killed enemy's index even before their first update.
+Obj79_ClearStates:
+	lea	(Dynamic_Object_RAM).w,a1
+	lea	(Obj_respawn_data).w,a2
+	move.w	#(Dynamic_Object_RAM_End-Dynamic_Object_RAM)/object_size-1,d7
+.loop:
+	tst.b	id(a1)
+	beq.s	.next
+	cmpi.b	#ObjID_Explosion,id(a1)
+	beq.s	.next
+	moveq	#0,d0
+	move.b	respawn_index(a1),d0
+	beq.s	.next
+	cmpi.w	#Obj_respawn_data_End-Obj_respawn_data,d0
+	bhs.s	.next
+	bclr	#7,(a2,d0.w)
+.next:
+	lea	next_object(a1),a1
+	dbf	d7,.loop
+	rts
+
+; Reject stale state when starting another act, a demo or a VS game.
+SS_ValidateLevelReturn:
+	tst.b	(SS_keep_level_state).w
+	beq.s	.return
+	tst.w	(Two_player_mode).w
+	bne.s	.clear
+	tst.w	(Demo_mode_flag).w
+	bne.s	.clear
+	tst.b	(Last_star_pole_hit).w
+	beq.s	.clear
+	move.w	(Current_ZoneAndAct).w,d0
+	cmp.w	(SS_saved_zone).w,d0
+	beq.s	.return
+.clear:
+	clr.b	(SS_keep_level_state).w
+.return:
+	rts
+
+; Called after InitPlayers, before the first object update. Never restore
+; temporary invincibility or speed shoes, nor overwrite earned score/lives.
+SS_RestorePlayerState:
+	movem.l	d0/a0-a1,-(sp)
+	tst.b	(SS_keep_level_state).w
+	beq.s	.return
+	move.w	(SS_saved_rings).w,(Ring_count).w
+	move.w	(SS_saved_rings_2P).w,(Ring_count_2P).w
+	move.b	(SS_saved_extra_life_flags).w,(Extra_life_flags).w
+	move.b	(SS_saved_extra_life_flags_2P).w,(Extra_life_flags_2P).w
+	move.w	(SS_saved_perfect_rings).w,(Perfect_rings_left).w
+	move.w	(SS_saved_perfect_flag).w,(Perfect_rings_flag).w
+	lea	(MainCharacter).w,a0
+	lea	(Sonic_Shield).w,a1
+	move.b	(SS_saved_shield).w,d0
+	bsr.s	.shield
+	lea	(Sidekick).w,a0
+	lea	(Tails_Shield).w,a1
+	move.b	(SS_saved_shield_2P).w,d0
+	bsr.s	.shield
+.return:
+	movem.l	(sp)+,d0/a0-a1
+	rts
+.shield:
+	tst.b	id(a0)
+	beq.s	.noShield
+	move.b	d0,status_secondary(a0)
+	beq.s	.noShield
+	move.b	#ObjID_Shield,id(a1)
+	move.w	a0,parent(a1)
+.noShield:
+	rts
+
 Obj79_Star:
 	move.b	collision_property(a0),d0
 	beq.w	loc_1F554
 	andi.b	#1,d0
 	beq.s	+
 	move.b	#1,(f_bigring).w
+	bsr.w	SS_SaveLevelState
 	move.b	#GameModeID_SpecialStage,(Game_Mode).w ; => SpecialStage
 +
 	clr.b	collision_property(a0)
@@ -47494,6 +47626,7 @@ Obj27_Init:
 	move.b	#$C,width_pixels(a0)
 	move.b	#3,anim_frame_duration(a0)
 	move.b	#0,mapping_frame(a0)
+	clr.b	respawn_index(a0)	; an explosion is not a live placed enemy
 	move.w	#SndID_Explosion,d0
 	jsr	(PlaySound).l
 

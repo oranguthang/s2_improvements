@@ -39,7 +39,7 @@ class CPU:
         self.uc.reg_write(UC_M68K_REG_A7,0x0200FFE0)
         self.write(0x0200FFE0,self.stop,4)
         try:
-            self.uc.emu_start(self.addr(name),self.stop,count=250000)
+            self.uc.emu_start(self.addr(name),self.stop,count=2000000)
         except Exception as e:
             raise RuntimeError(f'{name} at {self.uc.reg_read(UC_M68K_REG_PC):08X}') from e
         assert self.uc.reg_read(UC_M68K_REG_PC)==self.stop, name
@@ -325,6 +325,193 @@ def debug(repo):
             'sidekick_entry_rejected':True,'normal_hud_outside_placement':True,
             'level_select_character_cycle_and_checkpoint_reset':True}
 
+def special_stage_state(repo):
+    cases=0
+    def until(c,start,end):
+        def stop(uc,pc,size,user):
+            uc.reg_write(UC_M68K_REG_PC,c.stop)
+        h=c.uc.hook_add(UC_HOOK_CODE,stop,begin=c.s[end],end=c.s[end])
+        try:
+            c.call(start)
+        finally:
+            c.uc.hook_del(h)
+
+    for mode in (0,1,2):
+        for shields in (0,1,2,3):
+            c=CPU(repo)
+            c.write('Player_mode',mode,2);c.write('Player_option',mode,2)
+            c.write('Current_ZoneAndAct',c.s['emerald_hill_zone_act_1'],2)
+            c.write('Game_Mode',c.s['GameModeID_Level'])
+            c.write('Last_star_pole_hit',1);c.write('Saved_Last_star_pole_hit',1)
+            c.write('Saved_x_pos',0x800,2);c.write('Saved_y_pos',0x280,2)
+            c.write('Saved_Timer',0x00012300,4)
+            c.write('Saved_Ring_count',51,2);c.write('Saved_Extra_life_flags',0)
+            c.write('Saved_art_tile',0x780,2);c.write('Saved_Solid_bits',0x0C0D,2)
+            c.write('Saved_Camera_Max_Y_pos',0x300,2)
+            c.write('Ring_count',134,2);c.write('Ring_count_2P',27,2)
+            c.write('Extra_life_flags',1);c.write('Extra_life_flags_2P',3)
+            c.write('Perfect_rings_left',13,2);c.write('Perfect_rings_flag',0x1200,2)
+            c.write('MainCharacter',c.s['ObjID_Tails'] if mode==2 else c.s['ObjID_Sonic'])
+            c.write('Sidekick',c.s['ObjID_Tails'] if mode==0 else 0)
+            c.write(c.s['MainCharacter']+c.s['status_secondary'],6|(shields&1))
+            c.write(c.s['Sidekick']+c.s['status_secondary'],6|((shields>>1)&1))
+            c.uc.mem_write(c.s['CNZ_saucer_data'],bytes(range(64)))
+            # Populate all dynamic slots: high indexes expose counter/index alias bugs.
+            table=c.s['Obj_respawn_data'];dynamic=c.s['Dynamic_Object_RAM']
+            total=(c.s['Dynamic_Object_RAM_End']-dynamic)//c.s['object_size']
+            expected=bytearray([0x80]*190)
+            for i in range(total):
+                obj=dynamic+i*c.s['object_size'];index=i+50
+                c.write(obj+c.s['id'],c.s['ObjID_Coconuts'])
+                c.write(obj+c.s['respawn_index'],index)
+                expected[index]=0
+            c.write(dynamic+c.s['id'],c.s['ObjID_Explosion']);expected[50]=0x80
+            c.write(dynamic+c.s['object_size']+c.s['id'],c.s['ObjID_Explosion'])
+            c.write(dynamic+c.s['object_size']+c.s['routine'],2);expected[51]=0x80
+            # Monitor and checkpoint states keep bit 0 while alive bit 7 clears.
+            c.write(dynamic+2*c.s['object_size']+c.s['id'],c.s['ObjID_Monitor'])
+            expected[52]=1
+            c.uc.mem_write(table,b'\x80'*190);c.write(table+52,0x81)
+            ring=c.s['Ring_Positions'];consume=c.s['Ring_consumption_table']
+            c.uc.mem_write(ring,b'\0'*0x600)
+            for i,(state,x,y) in enumerate(((0,0,0),(0xFFFF,0x760,0x180),(0x0604,0x780,0x188),(0,0x790,0x190),(0xFFFF,0xFFFF,0))):
+                c.write(ring+i*6,state,2);c.write(ring+i*6+2,x,2);c.write(ring+i*6+4,y,2)
+            c.uc.mem_write(consume,b'\0'*0x80);c.write(consume,1,2)
+            c.write(consume+0x7E,(ring+12)&0xFFFF,2)
+            ring_snapshot=bytes(c.uc.mem_read(ring,0x600))
+            consumption_snapshot=bytes(c.uc.mem_read(consume,0x80))
+            c.uc.reg_write(UC_M68K_REG_D7,0x72)
+            c.write('TitleCard',c.s['ObjID_Starpost'])
+            c.write(c.s['TitleCard']+c.s['collision_property'],1)
+            c.skip('DisplaySprite')
+            c.call('Obj79_Star','TitleCard')
+            assert c.read('Game_Mode')==c.s['GameModeID_SpecialStage']
+            assert c.read('SS_keep_level_state')==1,'star entrance failed to save state'
+            assert c.uc.reg_read(UC_M68K_REG_D7)==0x72,'RunObjects loop register clobbered'
+            assert bytes(c.uc.mem_read(table,190))==bytes(expected),'alive/dead flags'
+            assert c.read('Saved_Ring_count',2)==51,'checkpoint snapshot overwritten'
+            # Real SpecialStage preamble performs RAM clears; skip VDP/sound waits.
+            for name in ('PlaySound','PlayMusic','Pal_FadeToWhite'):
+                c.skip(name)
+            until(c,'SpecialStage','ssInitTableBuffers')
+            assert bytes(c.uc.mem_read(table,190))==bytes(expected),'Special Stage overwrote objects'
+            assert bytes(c.uc.mem_read(ring,0x600))==ring_snapshot,'Special Stage overwrote rings'
+            assert bytes(c.uc.mem_read(consume,0x80))==consumption_snapshot
+            c.call('SSInitPalAndData')
+            assert c.read('Ring_count',2)==c.read('Ring_count_2P',2)==0
+            assert c.read('SS_keep_level_state')==1
+            # Mimic rings/score/lives obtained in the Special Stage.
+            c.write('Ring_count',89,2);c.write('Ring_count_2P',45,2)
+            c.write('Life_count',8);c.write('Life_count_2P',7)
+            c.write('Score',23450,4);c.write('Score_2P',12340,4)
+            c.write('Perfect_rings_flag',0xFFFF,2)
+            c.write('Game_Mode',c.s['GameModeID_Level'])
+            c.call('SS_ValidateLevelReturn');assert c.read('SS_keep_level_state')==1
+            # Execute actual level clearing, checkpoint load, player init and manager init.
+            for name in ('ClearPLC','Pal_FadeToBlack','ClearScreen','LoadTitleCard',
+                         'LoadPLC','PalLoad_Now','PalLoad_ForFade','WaitForVint','RunPLC_RAM',
+                         'Hud_Base','DeformBgLayer','LoadZoneTiles','loadZoneBlockMaps',
+                         'LoadAnimatedBlocks','DrawInitialBG','ConvertCollisionArray',
+                         'LoadCollisionIndexes','WaterEffects','BuildSprites','AniArt_Load'):
+                if name in c.s:
+                    c.skip(name)
+            # Renderer/object behavior is tested separately; keep title-card loop finite here.
+            c.skip('RunObjects')
+            until(c,'Level_ClrRam','Level_MainLoop')
+            assert c.read('SS_keep_level_state')==0,'return snapshot not consumed'
+            assert c.read('Ring_count',2)==134 and c.read('Ring_count_2P',2)==27
+            assert c.read('Extra_life_flags')==1 and c.read('Extra_life_flags_2P')==3
+            assert c.read('Perfect_rings_left',2)==13 and c.read('Perfect_rings_flag',2)==0x1200
+            assert c.read('Life_count')==8 and c.read('Life_count_2P')==7
+            assert c.read('Score',4)==23450 and c.read('Score_2P',4)==12340
+            assert c.read(c.s['MainCharacter']+c.s['status_secondary'])==(shields&1)
+            assert c.read('Sonic_Shield')==(c.s['ObjID_Shield'] if shields&1 else 0)
+            if mode==0:
+                assert c.read(c.s['Sidekick']+c.s['status_secondary'])==((shields>>1)&1)
+                assert c.read('Tails_Shield')==(c.s['ObjID_Shield'] if shields&2 else 0)
+            else:
+                assert c.read('Tails_Shield')==0,'shield attached to absent sidekick'
+            assert c.read(ring+6,2)==c.read(ring+12,2)==0xFFFF
+            assert c.read(ring+18,2)==0 and c.read(ring+20,2)==0x790
+            assert bytes(c.uc.mem_read(consume,0x80))==b'\0'*0x80
+            assert c.read('Ring_start_addr',2)==(ring+6)&0xFFFF
+            assert c.read('Ring_end_addr',2)==(ring+24)&0xFFFF
+            assert bytes(c.uc.mem_read(c.s['CNZ_saucer_data'],64))==bytes(range(64))
+            assert c.read(table+50)==c.read(table+51)==0x80,'exploding enemies revived'
+            assert c.read(table+52)&1,'destroyed monitor lost its state'
+            # Ordinary death: level clear consumes no stale shield/ring/object snapshot.
+            until(c,'Level_ClrRam','Level_MainLoop')
+            assert c.read('Ring_count',2)==51,'ordinary checkpoint ring behavior changed'
+            assert c.read('Sonic_Shield')==c.read('Tails_Shield')==0
+            assert c.read(ring+6,2)==0,'normal death failed to reload rings'
+            assert bytes(c.uc.mem_read(c.s['CNZ_saucer_data'],64))==b'\0'*64
+            assert c.read(table+50)==c.read(table+51)==0,'ordinary death kept killed enemies'
+            cases+=1
+    # Refuse state at another act/start, demos, VS, and explicit Level Select.
+    for invalid in ('zone','checkpoint','demo','vs','level_select'):
+        c=CPU(repo);c.write('SS_keep_level_state',1);c.write('Last_star_pole_hit',1)
+        if invalid=='zone':c.write('Current_ZoneAndAct',1,2)
+        if invalid=='checkpoint':c.write('Last_star_pole_hit',0)
+        if invalid=='demo':c.write('Demo_mode_flag',1,2)
+        if invalid=='vs':c.write('Two_player_mode',1,2)
+        if invalid=='level_select':
+            c.skip('RunPLC_ROM');c.skip('PlaySound');c.call('LevelSelect_StartZone')
+        else:c.call('SS_ValidateLevelReturn')
+        assert c.read('SS_keep_level_state')==0,invalid
+    # All 63 slots, sparse entries, invalid address and a wrong count remain bounded.
+    c=CPU(repo);ring=c.s['Ring_Positions'];consume=c.s['Ring_consumption_table']
+    c.write(consume,0xFFFF,2)
+    for slot in range(63):c.write(consume+2+slot*2,(ring+6*(slot+1))&0xFFFF,2)
+    c.write(consume+2,0xFFFF,2)
+    c.call('RingsManager_Setup_SSReturn')
+    assert bytes(c.uc.mem_read(consume,0x80))==b'\0'*0x80
+    for i in range(2,64):assert c.read(ring+i*6,2)==0xFFFF
+    # Shield slots are actually run under the level title-card flag.
+    for game_mode in ('level_title','special','normal'):
+        c=CPU(repo);c.write('Game_Mode',c.s['GameModeID_Level']|(1<<c.s['GameModeFlag_TitleCard']) if game_mode=='level_title' else c.s['GameModeID_SpecialStage'] if game_mode=='special' else c.s['GameModeID_Level'])
+        c.write('Sonic_Shield',c.s['ObjID_Shield'])
+        c.write(c.s['Sonic_Shield']+c.s['parent'],c.s['MainCharacter'],2)
+        c.write(c.s['MainCharacter']+c.s['status_secondary'],1)
+        calls=[]
+        def shield(uc,pc,size,user):calls.append(pc)
+        c.uc.hook_add(UC_HOOK_CODE,shield,begin=c.s['Obj38'],end=c.s['Obj38'])
+        c.skip('Obj38');c.call('RunObjects')
+        assert bool(calls)==(game_mode!='special')
+    return {'return_and_ordinary_death_cycles':cases,'both_player_shields_and_rings':True,
+            'destroyed_enemies_and_monitors_preserved':True,'all_dynamic_slots_visited':True,
+            'special_stage_ram_clears_executed':True,'ring_pointers_reinitialized':True,
+            'sparse_full_ring_consumption_table_bounded':True,'stale_snapshot_rejections':5,
+            'title_card_shield_slots_run':True,'special_stage_rewards_preserved':True}
+
+def title_palette(repo):
+    def setup():
+        c=CPU(repo)
+        c.write(c.s['IntroSonic']+c.s['obj0e_music_playing'],1)
+        c.write('TitleScreenPaletteChanger3',c.s['ObjID_TtlScrPalChanger'])
+        c.call('ObjC9','TitleScreenPaletteChanger3')
+        return c
+    def tick(c):
+        if c.read('TitleScreenPaletteChanger3'):
+            c.call('ObjC9','TitleScreenPaletteChanger3')
+    def palette(c):return bytes(c.uc.mem_read(c.s['Normal_palette_line4'],32))
+    c=setup()
+    expected=c.rom[c.s['Pal_1342C']:c.s['Pal_1342C']+32]
+    for _ in range(40):tick(c)
+    assert palette(c)==expected
+    for player in (1,2):
+        for frame in range(33):
+            c=setup()
+            for _ in range(frame):tick(c)
+            c.write(f'Ctrl_{player}_Press',0x80)
+            c.call('TitleScreen_SetFinalState','IntroSonic')
+            assert palette(c)==expected
+            assert c.read(f'Ctrl_{player}_Press')==0
+            for _ in range(40):tick(c)
+            assert palette(c)==expected
+    c=setup();before=palette(c);c.call('TitleScreen_SetFinalState','IntroSonic')
+    assert palette(c)==before and c.read('TitleScreenPaletteChanger3')!=0
+    return {'start_timing_cases':66,'palette_corruption_cases':0,'ordinary_fade_and_no_start_passed':True}
+
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('repo',type=Path)
@@ -332,6 +519,7 @@ def main():
     parser.add_argument('--report',type=Path)
     args=parser.parse_args()
     results={'sega':sega(args.repo,args.baseline)}
+    results['title_palette']=title_palette(args.repo)
     if 'KillCharacter_SetBurntAnimation' in symbols(args.repo/'s2.lst'):
         results['burnt_death']=burnt(args.repo)
     if 'Ctrl_1_Held_6B' in symbols(args.repo/'s2.lst'):
@@ -340,6 +528,8 @@ def main():
         results['vs_countdown']=vs_countdown(args.repo)
     if 'Debug_PreparePlayer' in symbols(args.repo/'s2.lst'):
         results['debug']=debug(args.repo)
+    if 'SS_SaveLevelState' in symbols(args.repo/'s2.lst'):
+        results['special_stage_state']=special_stage_state(args.repo)
     results['rom_sha256']=hashlib.sha256((args.repo/'s2built.bin').read_bytes()).hexdigest()
     if args.report:
         args.report.write_text(json.dumps(results,indent=2)+'\n',encoding='utf-8')

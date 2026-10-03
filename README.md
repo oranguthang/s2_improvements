@@ -51,7 +51,7 @@ Work continues on the current branch with separate local commits and no pushes.
 | Support six-button controllers | Implemented | Both ports, three-button fallback, held/pressed transitions |
 | Configure VS countdown | Implemented | All three start triggers, HUD, music and expiry |
 | Improve character Debug mode | Implemented | Tails Alone, movement reset, cameras, water, HUD and Level Select |
-| Preserve level state after Special Stage | Planned | Rings, object consumption and shields for both players; ordinary deaths and new levels |
+| Preserve level state after Special Stage | Implemented | Rings, object consumption and shields for both players; ordinary deaths and new levels |
 
 Hidden Palace from the official 2013 remake is a later project, outside this batch.
 The pre-improvement ROM remains the migration reference; new features intentionally
@@ -126,6 +126,30 @@ All existing debug lists include the individual monitor types. In Level Select,
 the current choice is shown below the level list. With the slow-motion cheat
 enabled, **A** while paused returns to Level Select with water/checkpoint state
 reset and standard HUD graphics reloaded on starting a level.
+
+- [Restore level state after a Special Stage](https://info.sonicretro.org/SCHG_How-to:Restore_level_state_after_a_Special_Stage)
+
+Entering a Special Stage through a star post now preserves collected level rings,
+destroyed enemies/monitors, CNZ saucer group counters and each player's ring count,
+extra-life thresholds and shield. Active remembered objects reload normally;
+explosions do not revive dead enemies. In-flight ring pickups finish on return.
+Temporary invincibility and speed shoes expire, while earned lives/score remain.
+The snapshot is consumed once; ordinary deaths keep the existing checkpoint ring
+behavior, and new acts, demos, VS and Level Select do not reuse Special Stage state.
+
+## Regression checks
+
+`tests/test_stage1.py` executes assembled ROM routines with Unicorn 2.1.4 on
+an M68000 CPU. Install it with `python -m pip install unicorn==2.1.4`, then run:
+
+```text
+python tests/test_stage1.py . --baseline BASELINE_DIRECTORY --report stage1-test-report.json
+```
+
+The baseline directory must contain `s2built.bin` and `s2.lst` from `d6b2f27`.
+Checks cover all six features and the title-palette skip fix, including actual
+Special Stage/level RAM clears and manager initialization. VDP rendering and
+physical controller timing still need a play-through in an emulator or on hardware.
 
 ## Custom fixes
 

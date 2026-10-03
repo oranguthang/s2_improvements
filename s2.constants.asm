@@ -1718,7 +1718,12 @@ Timer_second:			ds.b	1	; 1 byte
 Timer_frame:			ds.b	1	; 1 byte
 
 Score:				ds.l	1	; 4 bytes
-				ds.b	6	; $FFFFFE2A-$FFFFFE2F ; seems unused
+SS_keep_level_state:		ds.b	1
+SS_saved_shield:		ds.b	1
+SS_saved_shield_2P:		ds.b	1
+SS_saved_extra_life_flags:	ds.b	1
+SS_saved_extra_life_flags_2P:	ds.b	1
+				ds.b	1	; $FFFFFE2F
 Last_star_pole_hit:		ds.b	1	; 1 byte -- max activated starpole ID in this act
 Saved_Last_star_pole_hit:	ds.b	1
 Saved_x_pos:			ds.w	1
@@ -1785,7 +1790,9 @@ Timer_minute_2P:		ds.b	1	; 1 byte
 Timer_second_2P:		ds.b	1	; 1 byte
 Timer_frame_2P:			ds.b	1	; 1 byte
 Score_2P:			ds.l	1
-				ds.b	6	; $FFFFFEDA-$FFFFFEDF ; seems unused
+SS_saved_rings:			ds.w	1
+SS_saved_rings_2P:		ds.w	1
+SS_saved_zone:			ds.w	1
 Last_star_pole_hit_2P:		ds.b	1
 Saved_Last_star_pole_hit_2P:	ds.b	1
 Saved_x_pos_2P:			ds.w	1
@@ -1817,7 +1824,9 @@ SS_Total_Won:			ds.b	2	; 2 bytes (player 1 then player 2)
 				ds.b	6	; $FFFFFF3A-$FFFFFF3F ; seems unused
 Perfect_rings_left:		ds.w	1
 Perfect_rings_flag:		ds.w	1
-				ds.b	8	; $FFFFFF44-$FFFFFF4B ; seems unused
+SS_saved_perfect_rings:		ds.w	1
+SS_saved_perfect_flag:		ds.w	1
+				ds.b	4	; $FFFFFF48-$FFFFFF4B
 
 CreditsScreenIndex:
 SlotMachineInUse:		ds.w	1
