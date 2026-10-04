@@ -138,6 +138,23 @@ Map_Tails:	mappingsTable
 	mappingsTableEntry.w	Map_Tails_0A6C
 	mappingsTableEntry.w	Map_Tails_0A76
 	mappingsTableEntry.w	Map_Tails_0A80
+	mappingsTableEntry.w	Map_Tails_Extra_8B
+	mappingsTableEntry.w	Map_Tails_Extra_8C
+	mappingsTableEntry.w	Map_Tails_Extra_8D
+	mappingsTableEntry.w	Map_Tails_Extra_8E
+	mappingsTableEntry.w	Map_Tails_Extra_8F
+	mappingsTableEntry.w	Map_Tails_Extra_90
+	mappingsTableEntry.w	Map_Tails_Extra_91
+	mappingsTableEntry.w	Map_Tails_Extra_92
+	mappingsTableEntry.w	Map_Tails_Extra_93
+	mappingsTableEntry.w	Map_Tails_Extra_94
+	mappingsTableEntry.w	Map_Tails_Extra_95
+	mappingsTableEntry.w	Map_Tails_Extra_96
+	mappingsTableEntry.w	Map_Tails_Extra_97
+	mappingsTableEntry.w	Map_Tails_Extra_98
+	mappingsTableEntry.w	Map_Tails_Extra_99
+	mappingsTableEntry.w	Map_Tails_Extra_9A
+	mappingsTableEntry.w	Map_Tails_Extra_9B
 
 Map_Tails_0116:	spriteHeader
 Map_Tails_0116_End
@@ -619,13 +636,11 @@ Map_Tails_0806:	spriteHeader
 Map_Tails_0806_End
 
 Map_Tails_0810:	spriteHeader
-	spritePiece	-$10, -$10, 4, 4, 0, 0, 0, 0, 0
-	spritePiece	-$16, -$1C, 4, 2, $10, 0, 0, 0, 0
+	spritePiece	-$16, -$1C, 4, 2, 0, 0, 0, 0, 0
 Map_Tails_0810_End
 
 Map_Tails_0822:	spriteHeader
-	spritePiece	-$10, -$10, 4, 4, 0, 0, 0, 0, 0
-	spritePiece	-$16, -$1C, 4, 2, $10, 1, 0, 0, 0
+	spritePiece	-$16, -$1C, 4, 2, 0, 1, 0, 0, 0
 Map_Tails_0822_End
 
 Map_Tails_0834:	spriteHeader
@@ -821,4 +836,83 @@ Map_Tails_0A80:	spriteHeader
 	spritePiece	-$1D, -3, 3, 2, 0, 0, 0, 0, 0
 Map_Tails_0A80_End
 
+	even
+
+Map_Tails_Extra_8B:	spriteHeader
+	spritePiece	-$10, -$10, 4, 4, 0, 0, 0, 0, 0
+Map_Tails_Extra_8B_End
+
+Map_Tails_Extra_8C:	spriteHeader
+	spritePiece	-15, -16, 4, 4, $0, 0, 0, 0, 0
+Map_Tails_Extra_8C_End
+
+Map_Tails_Extra_8D:	spriteHeader
+	spritePiece	-14, -16, 4, 4, $0, 0, 0, 0, 0
+Map_Tails_Extra_8D_End
+
+Map_Tails_Extra_8E:	spriteHeader
+	spritePiece	-15, -16, 4, 4, $0, 0, 0, 0, 0
+Map_Tails_Extra_8E_End
+
+Map_Tails_Extra_8F:	spriteHeader
+	spritePiece	-15, -16, 4, 4, $0, 0, 0, 0, 0
+Map_Tails_Extra_8F_End
+
+Map_Tails_Extra_90:	spriteHeader
+	spritePiece	-15, -16, 4, 4, $0, 0, 0, 0, 0
+Map_Tails_Extra_90_End
+
+Map_Tails_Extra_91:	spriteHeader
+	spritePiece	-15, -16, 4, 4, $0, 0, 0, 0, 0
+Map_Tails_Extra_91_End
+
+Map_Tails_Extra_92:	spriteHeader
+	spritePiece	-16, -16, 4, 4, $0, 0, 0, 0, 0
+	spritePiece	16, -16, 1, 4, $10, 0, 0, 0, 0
+Map_Tails_Extra_92_End
+
+Map_Tails_Extra_93:	spriteHeader
+	spritePiece	-17, -16, 4, 4, $0, 0, 0, 0, 0
+	spritePiece	15, -16, 1, 4, $10, 0, 0, 0, 0
+Map_Tails_Extra_93_End
+
+Map_Tails_Extra_94:	spriteHeader
+	spritePiece	-16, -16, 4, 4, $0, 0, 0, 0, 0
+	spritePiece	16, -16, 1, 4, $10, 0, 0, 0, 0
+Map_Tails_Extra_94_End
+
+Map_Tails_Extra_95:	spriteHeader
+	spritePiece	-16, -16, 4, 4, $0, 0, 0, 0, 0
+	spritePiece	16, -16, 1, 4, $10, 0, 0, 0, 0
+Map_Tails_Extra_95_End
+
+Map_Tails_Extra_96:	spriteHeader
+	spritePiece	-18, -16, 4, 4, $0, 0, 0, 0, 0
+	spritePiece	14, -16, 1, 4, $10, 0, 0, 0, 0
+Map_Tails_Extra_96_End
+
+Map_Tails_Extra_97:	spriteHeader
+	spritePiece	-12, -16, 3, 4, $0, 0, 0, 0, 0
+	spritePiece	-12, 16, 3, 2, $C, 0, 0, 0, 0
+Map_Tails_Extra_97_End
+
+Map_Tails_Extra_98:	spriteHeader
+	spritePiece	-12, -16, 3, 4, $0, 0, 0, 0, 0
+	spritePiece	-12, 16, 3, 2, $C, 0, 0, 0, 0
+Map_Tails_Extra_98_End
+
+Map_Tails_Extra_99:	spriteHeader
+	spritePiece	-19, -16, 4, 4, $0, 0, 0, 0, 0
+	spritePiece	13, -16, 1, 4, $10, 0, 0, 0, 0
+Map_Tails_Extra_99_End
+
+Map_Tails_Extra_9A:	spriteHeader
+	spritePiece	-17, -16, 4, 4, $0, 0, 0, 0, 0
+	spritePiece	15, -16, 1, 4, $10, 0, 0, 0, 0
+Map_Tails_Extra_9A_End
+
+Map_Tails_Extra_9B:	spriteHeader
+	spritePiece	-17, -16, 4, 4, $0, 0, 0, 0, 0
+	spritePiece	15, -16, 1, 4, $10, 0, 0, 0, 0
+Map_Tails_Extra_9B_End
 	even

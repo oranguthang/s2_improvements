@@ -213,6 +213,11 @@ Map_Sonic:	mappingsTable
 	mappingsTableEntry.w	Map_Sonic_18AA
 	mappingsTableEntry.w	Map_Sonic_18CC
 	mappingsTableEntry.w	Map_Sonic_18EE
+	mappingsTableEntry.w	Map_Sonic_Extra_D6
+	mappingsTableEntry.w	Map_Sonic_Extra_D7
+	mappingsTableEntry.w	Map_Sonic_Extra_D8
+	mappingsTableEntry.w	Map_Sonic_Extra_D9
+	mappingsTableEntry.w	Map_Sonic_Extra_DA
 
 Map_Sonic_01AC:	spriteHeader
 Map_Sonic_01AC_End
@@ -1549,4 +1554,30 @@ Map_Sonic_18EE:	spriteHeader
 	spritePiece	-9, -4, 3, 4, 6, 0, 0, 0, 0
 Map_Sonic_18EE_End
 
+	even
+
+Map_Sonic_Extra_D6:	spriteHeader
+	spritePiece	-14, -25, 4, 4, $0, 0, 0, 0, 0
+	spritePiece	-14, 7, 4, 2, $10, 0, 0, 0, 0
+Map_Sonic_Extra_D6_End
+
+Map_Sonic_Extra_D7:	spriteHeader
+	spritePiece	-10, -22, 3, 4, $0, 0, 0, 0, 0
+	spritePiece	-10, 10, 3, 2, $C, 0, 0, 0, 0
+Map_Sonic_Extra_D7_End
+
+Map_Sonic_Extra_D8:	spriteHeader
+	spritePiece	-12, -22, 4, 4, $0, 0, 0, 0, 0
+	spritePiece	-12, 10, 4, 2, $10, 0, 0, 0, 0
+Map_Sonic_Extra_D8_End
+
+Map_Sonic_Extra_D9:	spriteHeader
+	spritePiece	-12, -22, 4, 4, $0, 0, 0, 0, 0
+	spritePiece	-12, 10, 4, 2, $10, 0, 0, 0, 0
+Map_Sonic_Extra_D9_End
+
+Map_Sonic_Extra_DA:	spriteHeader
+	spritePiece	-10, -22, 3, 4, $0, 0, 0, 0, 0
+	spritePiece	-10, 10, 3, 2, $C, 0, 0, 0, 0
+Map_Sonic_Extra_DA_End
 	even

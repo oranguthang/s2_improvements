@@ -4616,6 +4616,10 @@ TitleScreen_Demo:
 +
 	move.w	#1,(Demo_mode_flag).w
 	move.b	#GameModeID_Demo,(Game_Mode).w ; => Level (Demo mode)
+	cmpi.w #5,(Demo_number).w
+	blo.s .standardplayer
+	move.w #0,(Player_mode).w
+.standardplayer:
 	cmpi.w	#emerald_hill_zone_act_1,(Current_ZoneAndAct).w
 	bne.s	+
 	move.w	#1,(Two_player_mode).w
@@ -4642,6 +4646,8 @@ DemoLevels:
 	dc.w	chemical_plant_zone_act_1	; CPZ
 	dc.w	aquatic_ruin_zone_act_1		; ARZ
 	dc.w	casino_night_zone_act_1		; CNZ
+	dc.w	chemical_plant_zone_act_2	; Tails Flight Assist demonstration
+	dc.w	casino_night_zone_act_1	; CNZ Tails Flight Assist demonstration
 DemoLevels_End:
 
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
@@ -4721,48 +4727,82 @@ CopyrightText_End:
 ; 1P Music Playlist
 ;----------------------------------------------------------------------------
 ; byte_3EA0:
-MusicList: zoneOrderedTable 1,1
-	zoneTableEntry.b MusID_EHZ	; EHZ
-	zoneTableEntry.b MusID_EHZ	; Zone 1
-	zoneTableEntry.b MusID_MTZ	; WZ
-	zoneTableEntry.b MusID_OOZ	; Zone 3
-	zoneTableEntry.b MusID_MTZ	; MTZ1,2
-	zoneTableEntry.b MusID_MTZ	; MTZ3
-	zoneTableEntry.b MusID_WFZ	; WFZ
-	zoneTableEntry.b MusID_HTZ	; HTZ
-	zoneTableEntry.b MusID_HPZ	; HPZ
-	zoneTableEntry.b MusID_SCZ	; Zone 9
-	zoneTableEntry.b MusID_OOZ	; OOZ
-	zoneTableEntry.b MusID_MCZ	; MCZ
-	zoneTableEntry.b MusID_CNZ	; CNZ
-	zoneTableEntry.b MusID_CPZ	; CPZ
-	zoneTableEntry.b MusID_DEZ	; DEZ
-	zoneTableEntry.b MusID_ARZ	; ARZ
-	zoneTableEntry.b MusID_SCZ	; SCZ
+MusicList: zoneOrderedTable 1,2
+	zoneTableEntry.b MusID_EHZ	; EHZ Act 1
+	zoneTableEntry.b MusID_EHZ_2P	; EHZ Act 2
+	zoneTableEntry.b MusID_EHZ	; Zone 1 Act 1
+	zoneTableEntry.b MusID_EHZ_2P	; Zone 1 Act 2
+	zoneTableEntry.b MusID_MTZ	; WZ Act 1
+	zoneTableEntry.b MusID_MTZ	; WZ Act 2
+	zoneTableEntry.b MusID_OOZ	; Zone 3 Act 1
+	zoneTableEntry.b MusID_OOZ	; Zone 3 Act 2
+	zoneTableEntry.b MusID_MTZ	; MTZ1,2 Act 1
+	zoneTableEntry.b MusID_MTZ	; MTZ1,2 Act 2
+	zoneTableEntry.b MusID_MTZ	; MTZ3 Act 1
+	zoneTableEntry.b MusID_MTZ	; MTZ3 Act 2
+	zoneTableEntry.b MusID_WFZ	; WFZ Act 1
+	zoneTableEntry.b MusID_WFZ	; WFZ Act 2
+	zoneTableEntry.b MusID_HTZ	; HTZ Act 1
+	zoneTableEntry.b MusID_HTZ	; HTZ Act 2
+	zoneTableEntry.b MusID_HPZ	; HPZ Act 1
+	zoneTableEntry.b MusID_HPZ	; HPZ Act 2
+	zoneTableEntry.b MusID_SCZ	; Zone 9 Act 1
+	zoneTableEntry.b MusID_SCZ	; Zone 9 Act 2
+	zoneTableEntry.b MusID_OOZ	; OOZ Act 1
+	zoneTableEntry.b MusID_OOZ	; OOZ Act 2
+	zoneTableEntry.b MusID_MCZ	; MCZ Act 1
+	zoneTableEntry.b MusID_MCZ_2P	; MCZ Act 2
+	zoneTableEntry.b MusID_CNZ	; CNZ Act 1
+	zoneTableEntry.b MusID_CNZ_2P	; CNZ Act 2
+	zoneTableEntry.b MusID_CPZ	; CPZ Act 1
+	zoneTableEntry.b MusID_CPZ	; CPZ Act 2
+	zoneTableEntry.b MusID_DEZ	; DEZ Act 1
+	zoneTableEntry.b MusID_DEZ	; DEZ Act 2
+	zoneTableEntry.b MusID_ARZ	; ARZ Act 1
+	zoneTableEntry.b MusID_ARZ	; ARZ Act 2
+	zoneTableEntry.b MusID_SCZ	; SCZ Act 1
+	zoneTableEntry.b MusID_SCZ	; SCZ Act 2
     zoneTableEnd
 	even
 ;----------------------------------------------------------------------------
 ; 2P Music Playlist
 ;----------------------------------------------------------------------------
 ; byte_3EB2:
-MusicList2: zoneOrderedTable 1,1
-	zoneTableEntry.b MusID_EHZ_2P	; EHZ
-	zoneTableEntry.b MusID_EHZ	; Zone 1
-	zoneTableEntry.b MusID_MTZ	; WZ
-	zoneTableEntry.b MusID_OOZ	; Zone 3
-	zoneTableEntry.b MusID_MTZ	; MTZ1,2
-	zoneTableEntry.b MusID_MTZ	; MTZ3
-	zoneTableEntry.b MusID_WFZ	; WFZ
-	zoneTableEntry.b MusID_HTZ	; HTZ
-	zoneTableEntry.b MusID_HPZ	; HPZ
-	zoneTableEntry.b MusID_SCZ	; Zone 9
-	zoneTableEntry.b MusID_OOZ	; OOZ
-	zoneTableEntry.b MusID_MCZ_2P	; MCZ
-	zoneTableEntry.b MusID_CNZ_2P	; CNZ
-	zoneTableEntry.b MusID_CPZ	; CPZ
-	zoneTableEntry.b MusID_DEZ	; DEZ
-	zoneTableEntry.b MusID_ARZ	; ARZ
-	zoneTableEntry.b MusID_SCZ	; SCZ
+MusicList2: zoneOrderedTable 1,2
+	zoneTableEntry.b MusID_EHZ_2P	; EHZ Act 1
+	zoneTableEntry.b MusID_EHZ_2P	; EHZ Act 2
+	zoneTableEntry.b MusID_EHZ	; Zone 1 Act 1
+	zoneTableEntry.b MusID_EHZ	; Zone 1 Act 2
+	zoneTableEntry.b MusID_MTZ	; WZ Act 1
+	zoneTableEntry.b MusID_MTZ	; WZ Act 2
+	zoneTableEntry.b MusID_OOZ	; Zone 3 Act 1
+	zoneTableEntry.b MusID_OOZ	; Zone 3 Act 2
+	zoneTableEntry.b MusID_MTZ	; MTZ1,2 Act 1
+	zoneTableEntry.b MusID_MTZ	; MTZ1,2 Act 2
+	zoneTableEntry.b MusID_MTZ	; MTZ3 Act 1
+	zoneTableEntry.b MusID_MTZ	; MTZ3 Act 2
+	zoneTableEntry.b MusID_WFZ	; WFZ Act 1
+	zoneTableEntry.b MusID_WFZ	; WFZ Act 2
+	zoneTableEntry.b MusID_HTZ	; HTZ Act 1
+	zoneTableEntry.b MusID_HTZ	; HTZ Act 2
+	zoneTableEntry.b MusID_HPZ	; HPZ Act 1
+	zoneTableEntry.b MusID_HPZ	; HPZ Act 2
+	zoneTableEntry.b MusID_SCZ	; Zone 9 Act 1
+	zoneTableEntry.b MusID_SCZ	; Zone 9 Act 2
+	zoneTableEntry.b MusID_OOZ	; OOZ Act 1
+	zoneTableEntry.b MusID_OOZ	; OOZ Act 2
+	zoneTableEntry.b MusID_MCZ_2P	; MCZ Act 1
+	zoneTableEntry.b MusID_MCZ_2P	; MCZ Act 2
+	zoneTableEntry.b MusID_CNZ_2P	; CNZ Act 1
+	zoneTableEntry.b MusID_CNZ_2P	; CNZ Act 2
+	zoneTableEntry.b MusID_CPZ	; CPZ Act 1
+	zoneTableEntry.b MusID_CPZ	; CPZ Act 2
+	zoneTableEntry.b MusID_DEZ	; DEZ Act 1
+	zoneTableEntry.b MusID_DEZ	; DEZ Act 2
+	zoneTableEntry.b MusID_ARZ	; ARZ Act 1
+	zoneTableEntry.b MusID_ARZ	; ARZ Act 2
+	zoneTableEntry.b MusID_SCZ	; SCZ Act 1
+	zoneTableEntry.b MusID_SCZ	; SCZ Act 2
     zoneTableEnd
 	even
 ; ===========================================================================
@@ -4923,7 +4963,9 @@ Level_GetBgm:
 	tst.w	(Demo_mode_flag).w
 	bmi.s	+
 	moveq	#0,d0
-	move.b	(Current_Zone).w,d0
+	move.w	(Current_ZoneAndAct).w,d0
+	ror.b	#1,d0
+	lsr.w	#7,d0	; zone * 2 + act (including the separate MTZ3 zone)
 	lea_	MusicList,a1
 	tst.w	(Two_player_mode).w
 	beq.s	Level_PlayBgm
@@ -5190,6 +5232,11 @@ Level_MainLoop:
 
 ; sub_4450:
 Level_SetPlayerMode:
+	cmpi.b	#GameModeID_Demo,(Game_Mode).w
+	bne.s .normalmode
+	cmpi.w #5,(Demo_number).w
+	bhs.s .return
+.normalmode:
 	cmpi.b	#GameModeID_TitleCard|GameModeID_Demo,(Game_Mode).w ; pre-level demo mode?
 	beq.s	+			; if yes, branch
 	tst.w	(Two_player_mode).w	; 2P mode?
@@ -5198,6 +5245,7 @@ Level_SetPlayerMode:
 	rts
 +
 	move.w	#0,(Player_mode).w	; force Sonic and Tails
+.return:
 	rts
 ; End of function Level_SetPlayerMode
 
@@ -5538,6 +5586,11 @@ WindTunnel:
 	move.w	#0,y_vel(a1)
 	move.b	#AniIDSonAni_Float2,anim(a1)
 	bset	#status.player.in_air,status(a1)	; set "in-air" bit
+	cmpi.b #ObjID_Tails,id(a1)
+	bne.s .notflying
+	clr.b flying(a1)
+	clr.b jumping(a1)
+.notflying:
 	btst	#button_up,(Ctrl_1_Held).w	; is Up being pressed?
 	beq.s	+				; if not, branch
 	subq.w	#1,y_pos(a1)	; move up
@@ -5886,8 +5939,8 @@ DemoScriptPointers: zoneOrderedTable 4,1
 	zoneTableEntry.l Demo_EHZ	; Zone 9
 	zoneTableEntry.l Demo_EHZ	; OOZ
 	zoneTableEntry.l Demo_EHZ	; MCZ
-	zoneTableEntry.l Demo_CNZ	; CNZ
-	zoneTableEntry.l Demo_CPZ	; CPZ
+	zoneTableEntry.l Demo_CNZ_TailsAssist	; CNZ
+	zoneTableEntry.l Demo_CPZ_TailsAssist	; CPZ
 	zoneTableEntry.l Demo_EHZ	; DEZ
 	zoneTableEntry.l Demo_ARZ	; ARZ
 	zoneTableEntry.l Demo_EHZ	; SCZ
@@ -6400,6 +6453,102 @@ Demo_CNZ:
 	demoinput ,	$5F
 ; ---------------------------------------------------------------------------
 ; CPZ Demo Script
+; ---------------------------------------------------------------------------
+Demo_CPZ_TailsAssist:
+	demoinput R, $3C
+	demoinput RA, 1
+	demoinput R, $18
+	demoinput URA, 1
+	demoinput UR, $24
+	demoinput R, $20
+	demoinput U, 1
+	demoinput R, $30
+	demoinput URA, 1
+	demoinput UR, $20
+	demoinput R, $26
+	demoinput URA, 1
+	demoinput UR, $18
+	demoinput R, $38
+	demoinput URA, 1
+	demoinput UR, $1C
+	demoinput R, $2B
+	demoinput RA, 1
+	demoinput R, $18
+	demoinput U, 1
+	demoinput UR, $36
+	demoinput R, $23
+	demoinput URA, 1
+	demoinput UR, $1C
+	demoinput R, $2D
+	demoinput URA, 1
+	demoinput UR, $24
+	demoinput R, $2A
+	demoinput RA, 1
+	demoinput R, $17
+	demoinput URA, 1
+	demoinput UR, $18
+	demoinput R, $2F
+	demoinput URA, 1
+	demoinput UR, $22
+	demoinput R, $2A
+	demoinput URA, 1
+	demoinput UR, $1A
+	demoinput R, $2C
+	demoinput RA, 1
+	demoinput R, $16
+	demoinput UR, $3A
+	demoinput R, $29
+	demoinput URA, 1
+	demoinput UR, $20
+	demoinput R, $2A
+	demoinput URA, 1
+	demoinput UR, $1E
+	demoinput R, $34
+	demoinput URA, 1
+	demoinput UR, $24
+	demoinput R, $28
+	demoinput , $A
+; ---------------------------------------------------------------------------
+Demo_CNZ_TailsAssist:
+	demoinput R, $40
+	demoinput RA, 1
+	demoinput R, $1C
+	demoinput URA, 1
+	demoinput UR, $24
+	demoinput R, $3A
+	demoinput RA, 1
+	demoinput R, $20
+	demoinput U, 1
+	demoinput R, $2E
+	demoinput URA, 1
+	demoinput UR, $18
+	demoinput R, $40
+	demoinput URA, 1
+	demoinput UR, $20
+	demoinput R, $37
+	demoinput RA, 1
+	demoinput R, $1E
+	demoinput UR, $24
+	demoinput R, $3C
+	demoinput URA, 1
+	demoinput UR, $22
+	demoinput R, $31
+	demoinput U, 1
+	demoinput R, $2C
+	demoinput URA, 1
+	demoinput UR, $20
+	demoinput R, $3F
+	demoinput RA, 1
+	demoinput R, $1B
+	demoinput URA, 1
+	demoinput UR, $28
+	demoinput R, $34
+	demoinput URA, 1
+	demoinput UR, $1C
+	demoinput R, $39
+	demoinput UR, $20
+	demoinput R, $27
+	demoinput , $12
 ; ---------------------------------------------------------------------------
 Demo_CPZ:
 	demoinput ,	$47
@@ -20928,6 +21077,7 @@ LevEvents_WFZ_Routine6:
 	blo.s	+	; rts
 	addq.w	#2,(WFZ_LevEvent_Subrout).w ; => LevEvents_WFZ_RoutineNull
 	st.b	(Control_Locked).w
+	clr.w (Ctrl_1_Logical).w
 	moveq	#PLCID_Tornado,d0
 	jsrto	JmpTo2_LoadPLC
 +
@@ -35826,6 +35976,8 @@ SolidObject_TestClearPush:
 	beq.s	SolidObject_NoCollision	; if not, branch
 	cmpi.b	#AniIDSonAni_Roll,anim(a1)
 	beq.s	Solid_NotPushing
+	cmpi.b #AniIDSonAni_Hang2,anim(a1)
+	beq.s Solid_NotPushing
     if fixBugs
 	; Prevent Sonic or Tails from entering their running animation when
 	; stood next to solid objects while charging a Spin Dash, dying, or
@@ -36603,6 +36755,17 @@ Obj01_Control:
 	bne.s	+			; if yes, branch
 	move.w	(Ctrl_1).w,(Ctrl_1_Logical).w	; copy new held buttons, to enable joypad control
 +
+	btst #status_secondary.carry,status_secondary(a0)
+	beq.s Obj01_FreeMovement
+	cmpi.b #ObjID_Tails,(Sidekick+id).w
+	bne.s Obj01_ReleaseCarry
+	cmpi.b #4,(Sidekick+routine).w
+	bhs.s Obj01_ReleaseCarry
+	tst.b (Sidekick+flying).w
+	bne.s Obj01_AfterMovement
+Obj01_ReleaseCarry:
+	bclr #status_secondary.carry,status_secondary(a0)
+Obj01_FreeMovement:
 	btst	#0,obj_control(a0)	; is Sonic interacting with another object that holds him in place or controls his movement somehow?
 	bne.s	+			; if yes, branch to skip Sonic's control
 	moveq	#0,d0
@@ -36611,6 +36774,7 @@ Obj01_Control:
 	move.w	Obj01_Modes(pc,d0.w),d1
 	jsr	Obj01_Modes(pc,d1.w)	; run Sonic's movement control code
 +
+Obj01_AfterMovement:
 	cmpi.w	#-$100,(Camera_Min_Y_pos).w	; is vertical wrapping enabled?
 	bne.s	+				; if not, branch
 	andi.w	#$7FF,y_pos(a0) 		; perform wrapping of Sonic's y position
@@ -36779,10 +36943,13 @@ Obj01_InWater:
 	move.w	#$80,(Sonic_deceleration).w	; change Super Sonic's deceleration
 +
     endif
+	btst #status_secondary.carry,status_secondary(a0)
+	bne.s Sonic_CarrySplash
 	asr.w	x_vel(a0)	; half X-speed when entering water
 	asr.w	y_vel(a0)	; (memory operands can only be shifted one bit at a time)
 	asr.w	y_vel(a0)	; (memory operands can only be shifted one bit at a time)
 	beq.s	return_1A18C	; if Sonic's new Y-speed is 0, don't load splash object
+Sonic_CarrySplash:
 	move.w	#(1<<8)|(0<<0),(Sonic_Dust+anim).w	; load splash animation from Obj08
 	move.w	#SndID_Splash,d0	; load splash sound
 	jmp	(PlaySound).l	; play splash sound
@@ -36808,9 +36975,12 @@ Obj01_OutWater:
 	move.w	#$100,(Sonic_deceleration).w	; restore Super Sonic's deceleration
 +
     endif
+	btst #status_secondary.carry,status_secondary(a0)
+	bne.s Sonic_CarryOutSplash
 	asl	y_vel(a0)	; double Y-speed while exiting water
 	tst.w	y_vel(a0)	; test Sonic's Y-speed
 	beq.w	return_1A18C	; branch if 0
+Sonic_CarryOutSplash:
 	move.w	#(1<<8)|(0<<0),(Sonic_Dust+anim).w	; load splash animation from Obj08
 	movea.l	a0,a1
 	bsr.w	ResumeMusic	; (why is this repeated?)
@@ -37034,6 +37204,15 @@ Sonic_PanCamera:
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 
 Sonic_HomingAttack:
+	tst.w (Player_mode).w
+	bne.s .normal
+	tst.w (Two_player_mode).w
+	bne.s .normal
+	cmpi.b #ObjID_Tails,(Sidekick+id).w
+	bne.s .normal
+	btst #button_up,(Ctrl_1_Held_Logical).w
+	bne.s .homeend
+.normal:
 	tst.b	(Control_Locked).w		; are Sonic's controls locked (cutscene)?
 	bne.s	.homeend			; if yes, branch
 	btst	#4,status(a0)			; was the homing attack already used this jump?
@@ -38044,7 +38223,8 @@ Sonic_JumpHeight:
 	bne.s	+		; if yes, branch
 	move.w	d1,y_vel(a0)	; immediately reduce Sonic's upward speed to d1
 +
-	bra.s	Sonic_ToggleSuper		; check for Super Sonic transformation combo
+	jsr	(Sonic_RequestTailsAssist).l
+	bra.s	Sonic_ToggleSuper		; keep the existing Super Sonic transformation combo
 ; ---------------------------------------------------------------------------
 ; loc_1AB22:
 Sonic_UpVelCap:
@@ -39459,7 +39639,7 @@ SonAni_Float:	dc.b   7,$54,$59,$FF
 	rev02even
 SonAni_Float2:	dc.b   7,$54,$55,$56,$57,$58,$FF
 	rev02even
-SonAni_Spring:	dc.b $2F,$5B,$FD,  0
+SonAni_Spring:	dc.b 3,$D6,$D7,$D8,$D9,$DA,$D6,$D7,$D8,$D9,$DA,$D6,$D7,$D8,$D9,$DA,$FD,0
 	rev02even
 SonAni_Hang:	dc.b   1,$50,$51,$FF
 	rev02even
@@ -39738,6 +39918,11 @@ Obj02_Control_Joypad2:
 	bsr.w	TailsCPU_Control
 ; loc_1B9EA:
 Obj02_Control_Part2:
+	btst #0,obj_control(a0)
+	beq.s Obj02_FreeMovement
+	clr.b flying(a0)
+	bra.s Obj02_AfterMovement
+Obj02_FreeMovement:
 	btst	#0,obj_control(a0)	; is Tails flying, or interacting with another object that holds him in place or controls his movement somehow?
 	bne.s	+			; if yes, branch to skip Tails' control
 	moveq	#0,d0
@@ -39746,6 +39931,7 @@ Obj02_Control_Part2:
 	move.w	Obj02_Modes(pc,d0.w),d1
 	jsr	Obj02_Modes(pc,d1.w)	; run Tails' movement control code
 +
+Obj02_AfterMovement:
 	cmpi.w	#-$100,(Camera_Min_Y_pos).w	; is vertical wrapping enabled?
 	bne.s	+				; if not, branch
 	andi.w	#$7FF,y_pos(a0)			; perform wrapping of Sonic's y position
@@ -39859,6 +40045,8 @@ TailsCPU_States: offsetTable
 	offsetTableEntry.w TailsCPU_Flying	; 4
 	offsetTableEntry.w TailsCPU_Normal	; 6
 	offsetTableEntry.w TailsCPU_Panic	; 8
+	offsetTableEntry.w TailsCPU_Assist	; $A
+	offsetTableEntry.w TailsCPU_Carry	; $C
 
 ; ===========================================================================
 ; initial AI State
@@ -39888,9 +40076,8 @@ TailsCPU_Spawning:
 	bne.s	return_1BB88
 	tst.b	obj_control(a1)
 	bne.s	return_1BB88
-	move.b	status(a1),d0
-	andi.b	#1<<status.player.in_air|1<<status.player.underwater|1<<status.player.prevent_tails_respawn,d0
-	bne.s	return_1BB88
+	cmpi.b #6,routine(a1)
+	bhs.s return_1BB88
 ; loc_1BB54:
 TailsCPU_Respawn:
 	move.w	#4,(Tails_CPU_routine).w	; => TailsCPU_Flying
@@ -39921,14 +40108,15 @@ TailsCPU_Flying:
 	move.w	#0,(Tails_respawn_counter).w
 	move.w	#2,(Tails_CPU_routine).w	; => TailsCPU_Spawning
 	move.b	#$81,obj_control(a0)
-	move.b	#1<<status.player.in_air,status(a0)
+	andi.b #1<<status.player.underwater,status(a0)
+	bset #status.player.in_air,status(a0)
 	move.w	#0,x_pos(a0)
 	move.w	#0,y_pos(a0)
-	move.b	#AniIDTailsAni_Fly,anim(a0)
-	rts
+	bra.w	Tails_FlyingAnimation
 ; ---------------------------------------------------------------------------
 ; loc_1BBC8:
 TailsCPU_FlyingOnscreen:
+	bsr.w Tails_FlyingAnimation
 	move.w	#0,(Tails_respawn_counter).w
 ; loc_1BBCE:
 TailsCPU_Flying_Part2:
@@ -39940,14 +40128,6 @@ TailsCPU_Flying_Part2:
 	sub.b	d2,d3
 	move.w	(a2,d3.w),(Tails_CPU_target_x).w
 	move.w	2(a2,d3.w),(Tails_CPU_target_y).w
-	tst.b	(Water_flag).w
-	beq.s	+
-	move.w	(Water_Level_1).w,d0
-	subi.w	#$10,d0
-	cmp.w	(Tails_CPU_target_y).w,d0
-	bge.s	+
-	move.w	d0,(Tails_CPU_target_y).w
-+
 	move.w	x_pos(a0),d0
 	sub.w	(Tails_CPU_target_x).w,d0
 	beq.s	loc_1BC54
@@ -39995,10 +40175,8 @@ loc_1BC64:
 	add.w	d2,y_pos(a0)
 
 loc_1BC68:
-	lea	(Sonic_Stat_Record_Buf).w,a2
-	move.b	2(a2,d3.w),d2
-	andi.b	#$D2,d2
-	bne.s	return_1BCDE
+	cmpi.b #6,(MainCharacter+routine).w
+	bhs.s return_1BCDE
 	or.w	d0,d1
 	bne.s	return_1BCDE
     if fixBugs
@@ -40047,9 +40225,9 @@ TailsCPU_Normal:
 	move.b	#0,spindash_flag(a0)
 	move.w	#0,spindash_counter(a0)
 	move.b	#$81,obj_control(a0)
-	move.b	#1<<status.player.in_air,status(a0)
-	move.b	#AniIDTailsAni_Fly,anim(a0)
-	rts
+	andi.b #1<<status.player.underwater,status(a0)
+	bset #status.player.in_air,status(a0)
+	bra.w	Tails_FlyingAnimation
 ; ---------------------------------------------------------------------------
 ; loc_1BD0E:
 TailsCPU_Normal_SonicOK:
@@ -40181,11 +40359,11 @@ TailsCPU_Despawn:
 	move.w	#0,(Tails_respawn_counter).w
 	move.w	#2,(Tails_CPU_routine).w	; => TailsCPU_Spawning
 	move.b	#$81,obj_control(a0)
-	move.b	#1<<status.player.in_air,status(a0)
+	andi.b #1<<status.player.underwater,status(a0)
+	bset #status.player.in_air,status(a0)
 	move.w	#$4000,x_pos(a0)
 	move.w	#0,y_pos(a0)
-	move.b	#AniIDTailsAni_Fly,anim(a0)
-	rts
+	bra.w	Tails_FlyingAnimation
 ; ===========================================================================
 ; sub_1BE66:
 TailsCPU_CheckDespawn:
@@ -40407,6 +40585,8 @@ Obj02_MdNormal:
 ; Called if Tails is airborne, but not in a ball (thus, probably not jumping)
 ; loc_1C032: Obj02_MdJump
 Obj02_MdAir:
+	tst.b flying(a0)
+	bne.w Obj02_MdFly
 	bsr.w	Tails_AirRoll
 	bsr.w	Tails_JumpHeight
 	bsr.w	Tails_ChgJumpDir
@@ -40420,6 +40600,15 @@ Obj02_MdAir:
 	bsr.w	Tails_DoLevelCollision
 	rts
 ; End of subroutine Obj02_MdAir
+Obj02_MdFly:
+	bsr.w Tails_Flying
+	bsr.w Tails_ChgJumpDir
+	bsr.w Tails_LevelBound
+	jsr (ObjectMove).l
+	bsr.w Tails_JumpAngle
+	bsr.w Tails_DoLevelCollision
+	bsr.w Tails_CarrySonic
+	rts
 ; ===========================================================================
 ; Start of subroutine Obj02_MdRoll
 ; Called if Tails is in a ball, but not airborne (thus, probably rolling)
@@ -41247,7 +41436,7 @@ Tails_JumpHeight:
 	move.w	#-$200,d1
 +
 	cmp.w	y_vel(a0),d1	; is Tails going up faster than d1?
-	ble.s	+		; if not, branch
+	ble.w	Tails_CheckFlying		; if not, branch
 	move.b	(Ctrl_2_Held_Logical).w,d0
 	andi.b	#button_B_mask|button_C_mask|button_A_mask,d0 ; is a jump button pressed?
 	bne.s	+		; if yes, branch
@@ -41266,6 +41455,7 @@ Tails_UpVelCap:
 return_1C70C:
 	rts
 ; End of subroutine Tails_JumpHeight
+	include "code/TailsFlight.asm"
 
 ; ---------------------------------------------------------------------------
 ; Subroutine to check for starting to charge a spindash
@@ -41849,6 +42039,13 @@ Tails_ResetOnFloor_Part2:
 	subq.w	#1,y_pos(a0)	; move Tails up 1 pixel so the increased height doesn't push him slightly into the ground
 ; loc_1CB80:
 Tails_ResetOnFloor_Part3:
+	clr.b flying(a0)
+	cmpa.w #Sidekick,a0
+	bne.s .keepai
+	tst.w (Two_player_mode).w
+	bne.s .keepai
+	move.w #6,(Tails_CPU_routine).w
+.keepai:
 	bclr	#status.player.in_air,status(a0)
 	bclr	#status.player.pushing,status(a0)
 	move.b	#0,jumping(a0)
@@ -41864,8 +42061,11 @@ Tails_ResetOnFloor_Part3:
 	move.b	#0,flip_turned(a0)
 	move.b	#0,flips_remaining(a0)
 	move.w	#0,(Tails_Look_delay_counter).w
+	cmpi.b #AniIDTailsAni_Fly,anim(a0)
+	bhs.s Tails_LandedWalk
 	cmpi.b	#AniIDSonAni_Hang2,anim(a0)
 	bne.s	return_1CBC4
+Tails_LandedWalk:
 	move.b	#AniIDSonAni_Walk,anim(a0)
 
 return_1CBC4:
@@ -42406,6 +42606,15 @@ TailsAniData:		offsetTable
 			offsetTableEntry.w TailsAni_Dummy5	; 30 ; $1E
 TailsAni_HaulAss_ptr:	offsetTableEntry.w TailsAni_HaulAss	; 31 ; $1F
 TailsAni_Fly_ptr:	offsetTableEntry.w TailsAni_Fly		; 32 ; $20
+TailsAni_FlyUp_ptr:	offsetTableEntry.w TailsAni_Fly
+TailsAni_Carry_ptr:	offsetTableEntry.w TailsAni_Carry
+TailsAni_CarryUp_ptr:	offsetTableEntry.w TailsAni_CarryUp
+TailsAni_Tired_ptr:	offsetTableEntry.w TailsAni_Tired
+TailsAni_CarryTired_ptr:	offsetTableEntry.w TailsAni_CarryTired
+TailsAni_Swim_ptr:	offsetTableEntry.w TailsAni_Swim
+TailsAni_SwimUp_ptr:	offsetTableEntry.w TailsAni_SwimUp
+TailsAni_SwimCarry_ptr:	offsetTableEntry.w TailsAni_SwimCarry
+TailsAni_SwimTired_ptr:	offsetTableEntry.w TailsAni_SwimTired
 
 TailsAni_Walk:	dc.b $FF,$10,$11,$12,$13,$14,$15, $E, $F,$FF
 	rev02even
@@ -42476,7 +42685,23 @@ TailsAni_Dummy5:	dc.b   3,  1,  2,  3,  4,  5,  6,  7,  8,$FF
 TailsAni_HaulAss:	dc.b $FF,$32,$33,$FF
 			dc.b $FF,$FF,$FF,$FF,$FF,$FF
 	rev02even
-TailsAni_Fly:		dc.b   1,$5E,$5F,$FF
+TailsAni_Fly:		dc.b $3F,$8B,$FF
+	rev02even
+TailsAni_Carry:		dc.b $3F,$8C,$FF
+	rev02even
+TailsAni_CarryUp:	dc.b $3F,$8D,$FF
+	rev02even
+TailsAni_Tired:		dc.b $B,$8E,$8F,$FF
+	rev02even
+TailsAni_CarryTired:	dc.b $B,$90,$91,$FF
+	rev02even
+TailsAni_Swim:		dc.b 7,$92,$93,$94,$95,$96,$FF
+	rev02even
+TailsAni_SwimUp:		dc.b 3,$92,$93,$94,$95,$96,$FF
+	rev02even
+TailsAni_SwimCarry:	dc.b 4,$97,$98,$FF
+	rev02even
+TailsAni_SwimTired:	dc.b $B,$99,$9A,$9B,$9A,$FF
 	even
 
 ; ===========================================================================
@@ -42645,7 +42870,7 @@ Obj05AniSelection:
 	dc.b	0	; TailsAni_Blank	->
 	dc.b	0,0	; TailsAni_Dummy4,5	->
 	dc.b	0	; TailsAni_HaulAss	->
-	dc.b	0	; TailsAni_Fly		->
+	dc.b	$B,$C,$B,$C,$B,$B,0,0,0,0	; flight, carry, fatigue and swimming
 	even
 
 ; ---------------------------------------------------------------------------
@@ -42664,6 +42889,8 @@ Obj05AniData:	offsetTable
 		offsetTableEntry.w Obj05Ani_Skidding	;  8
 		offsetTableEntry.w Obj05Ani_Pushing	;  9
 		offsetTableEntry.w Obj05Ani_Hanging	; $A
+		offsetTableEntry.w Obj05Ani_Flying
+		offsetTableEntry.w Obj05Ani_FlyingFast
 
 Obj05Ani_Blank:		dc.b $20,  0,$FF
 	rev02even
@@ -42686,6 +42913,10 @@ Obj05Ani_Skidding:	dc.b   2,$87,$88,$89,$8A,$FF
 Obj05Ani_Pushing:	dc.b   9,$87,$88,$89,$8A,$FF
 	rev02even
 Obj05Ani_Hanging:	dc.b   9,$81,$82,$83,$84,$FF
+	even
+Obj05Ani_Flying:		dc.b 1,$5E,$5F,$FF
+	even
+Obj05Ani_FlyingFast:	dc.b 0,$5E,$5F,$FF
 	even
 
 ; ===========================================================================
@@ -43258,8 +43489,16 @@ Obj38_Main:
 	move.b	#1<<render_flags.level_fg,render_flags(a0)
 	move.b	#1,priority(a0)
 	move.b	#$18,width_pixels(a0)
-	move.w	#make_art_tile(ArtTile_ArtNem_Shield,0,0),art_tile(a0)
-	bsr.w	Adjust2PArtPointer
+	move.b #$FF,objoff_30(a0) ; frame zero must upload on first display
+	move.w #make_art_tile(ArtTile_ArtUnc_Shield,0,0),art_tile(a0)
+	cmpi.w #Sidekick,parent(a0)
+	bne.s .mainshield
+	move.w #make_art_tile(ArtTile_ArtUnc_Shield_P2,0,0),art_tile(a0)
+.mainshield:
+	move.w art_tile(a0),d0
+	lsl.w #5,d0
+	move.w d0,objoff_32(a0) ; keep raw DMA address before interlace halves art_tile
+	bsr.w Adjust2PArtPointer
 ; loc_1D92C:
 Obj38_Shield:
 	movea.w	parent(a0),a2 ; a2=character
@@ -43276,9 +43515,23 @@ Obj38_Shield:
 	ori.w	#high_priority,art_tile(a0)
 ; loc_1D964:
 Obj38_Display:
-	lea	(Ani_obj38).l,a1
-	jsr	(AnimateSprite).l
-	jmp	(DisplaySprite).l
+	lea (Ani_obj38).l,a1
+	jsr (AnimateSprite).l
+	bsr.w Obj38_LoadArt
+	jmp (DisplaySprite).l
+
+Obj38_LoadArt:
+	moveq #0,d0
+	move.b mapping_frame(a0),d0
+	cmp.b objoff_30(a0),d0
+	beq.s .return
+	move.b d0,objoff_30(a0)
+	lea (MapR_Shield).l,a2
+	move.w objoff_32(a0),d4
+	move.l #ArtUnc_Shield,d6
+	jmp (LoadDynPLC).l
+.return:
+	rts
 ; ===========================================================================
 
 return_1D976:
@@ -43460,12 +43713,12 @@ loc_1DAE4:
 
 	addi.w	#16*2,d6	; add 16 positions (add 180 degrees to the angle)
 	swap	d5
-	
+
 	jsr	Obj35_GetSpriteParams(pc)
 	move.w	d2,(a2)+	; sub3_x_pos
 	move.w	d3,(a2)+	; sub3_y_pos
 	move.w	d5,(a2)+	; sub3_mapframe, use frame 1
-	
+
 	moveq	#1*2,d0	; add 1 positions (2 bytes) to the table offset
 	btst	#status.player.x_flip,status(a1)	; if the player is looking to the left, negate the speed
 	beq.s	+
@@ -43549,6 +43802,7 @@ Ani_obj38:	offsetTable
 ; sprite mappings
 ; -------------------------------------------------------------------------------
 Obj38_MapUnc_1DBE4:	include "mappings/sprite/obj38.asm"
+	include "mappings/spriteDPLC/Shield.asm"
 ; -------------------------------------------------------------------------------
 ; sprite mappings
 ; -------------------------------------------------------------------------------
@@ -43668,7 +43922,7 @@ Obj08_ResetDisplayMode:
 ; ===========================================================================
 
 BranchTo16_DeleteObject ; BranchTo
-	bra.w	DeleteObject
+	jmp	DeleteObject
 ; ===========================================================================
 ; loc_1DE4A:
 Obj08_CheckSkid:
@@ -46082,7 +46336,7 @@ Obj44_BumpCharacter:
 	moveq	#1,d0
 	movea.w	a1,a3
 	jsr	(AddPoints2).l
-	bsr.w	AllocateObject
+	jsr	AllocateObject
 	bne.s	return_1F83C
 	_move.b	#ObjID_Points,id(a1) ; load obj29
 	move.w	x_pos(a0),x_pos(a1)
@@ -46265,7 +46519,7 @@ loc_1FA2A:
 	jsr	(RandomNumber).l
 	andi.w	#$1F,d0
 	move.w	d0,objoff_38(a0)
-	bsr.w	AllocateObject
+	jsr	AllocateObject
 	bne.s	loc_1FAA6
 	_move.b	id(a0),id(a1) ; load obj24
 	move.w	x_pos(a0),x_pos(a1)
@@ -47544,7 +47798,7 @@ Obj74_Main:
 	move.w	d2,d3
 	addq.w	#1,d3
 	move.w	x_pos(a0),d4
-	bsr.w	SolidObject_Always
+	jsr	SolidObject_Always
 	tst.w	(Two_player_mode).w
 	bne.s	+
 	move.w	x_pos(a0),d0
@@ -48103,7 +48357,7 @@ loc_21562:
 	bhs.s	return_215BE
 	tst.b	obj_control(a1)
 	bne.s	return_215BE
-	bsr.w	RideObject_SetRide
+	jsr	RideObject_SetRide
 	rts
 ; ---------------------------------------------------------------------------
 
@@ -48131,7 +48385,7 @@ loc_215A8:
 	subi.w	#$10,d1
 	cmpi.w	#$30,d1
 	bhs.s	return_215BE
-	bsr.w	RideObject_SetRide
+	jsr	RideObject_SetRide
 
 return_215BE:
 	rts
@@ -48299,7 +48553,7 @@ Obj06_Cylinder:
 	addq.w	#3,d2
 	move.w	d2,y_pos(a1)
 	move.b	#1,flip_turned(a1) ; face the other way
-	bsr.w	RideObject_SetRide
+	jsr	RideObject_SetRide
 	move.w	#(AniIDSonAni_Walk<<8)|(AniIDSonAni_Run<<0),anim(a1)
 	move.b	#0,(a2)
 	tst.w	inertia(a1)
@@ -49474,8 +49728,13 @@ loc_225FC:
 	sub.w	y_pos(a0),d1
 	cmpi.w	#$80,d1
 	bhs.w	return_22718
-	cmpi.b	#$20,anim(a1)
-	beq.w	return_22718
+	cmpa.w #Sidekick,a1
+	bne.s .notrespawning
+	tst.w (Two_player_mode).w
+	bne.s .notrespawning
+	cmpi.w #4,(Tails_CPU_routine).w
+	beq.w return_22718
+.notrespawning:
 
 	moveq	#0,d3
 	cmpi.w	#$A0,d2
@@ -58880,14 +59139,14 @@ BranchTo2_JmpTo26_MarkObjGone ; BranchTo
 
 loc_2A990:
 	cmpi.b	#4,routine(a1)
-	bhs.s	return_2AA10
+	bhs.w	return_2AA10
 	tst.b	obj_control(a1)
-	bne.s	return_2AA10
+	bne.w	return_2AA10
 	move.w	x_pos(a1),d0
 	sub.w	x_pos(a0),d0
 	addi.w	#$40,d0
 	cmpi.w	#$80,d0
-	bhs.s	return_2AA10
+	bhs.w	return_2AA10
 	moveq	#0,d1
 	move.b	(Oscillating_Data+$14).w,d1
 	add.w	y_pos(a1),d1
@@ -58895,7 +59154,7 @@ loc_2A990:
 	sub.w	y_pos(a0),d1
 	bcs.s	return_2AA10
 	cmpi.w	#$90,d1
-	bhs.s	return_2AA10
+	bhs.w	return_2AA10
 	subi.w	#$60,d1
 	bcs.s	+
 	not.w	d1
@@ -58909,11 +59168,16 @@ loc_2A990:
 	move.w	#0,y_vel(a1)
 	move.w	#1,inertia(a1)
 	tst.b	flip_angle(a1)
-	bne.s	return_2AA10
+	bne.w	return_2AA10
 	move.b	#1,flip_angle(a1)
 	move.b	#AniIDSonAni_Walk,anim(a1)
 	move.b	#$7F,flips_remaining(a1)
 	move.b	#8,flip_speed(a1)
+	cmpi.b #ObjID_Tails,id(a1)
+	bne.s .keepflight
+	clr.b flying(a1)
+	clr.b jumping(a1)
+.keepflight:
 
 return_2AA10:
 	rts
@@ -79762,7 +80026,7 @@ ObjB2_Jump_to_plane:
 	addq.w	#1,objoff_2A(a0)
 	subq.w	#1,objoff_2E(a0)
 	bmi.s	+
-	move.w	#((button_right_mask|button_A_mask)<<8)|button_right_mask|button_A_mask,(Ctrl_1_Logical).w
+	move.w	#((button_right_mask|button_A_mask)<<8),(Ctrl_1_Logical).w
 + ; loc_3AABC:
 	bsr.w	ObjB2_Align_plane
 	btst	#p1_standing_bit,status(a0)
@@ -80488,7 +80752,7 @@ ObjB5_Animate:
 ; loc_3B456:
 ObjB5_CheckPlayers:
 	cmpi.b	#4,anim(a0)
-	bne.s	++	; rts
+	bne.w	++	; rts
 	lea	(MainCharacter).w,a1 ; a1=character
 	bsr.w	ObjB5_CheckPlayer
 	lea	(Sidekick).w,a1 ; a1=character
@@ -80525,6 +80789,11 @@ ObjB5_CheckPlayer:
 	move.b	#AniIDSonAni_Float2,anim(a1)
 	move.b	#$7F,flips_remaining(a1)
 	move.b	#8,flip_speed(a1)
+	cmpi.b #ObjID_Tails,id(a1)
+	bne.s .keepflight
+	clr.b flying(a1)
+	clr.b jumping(a1)
+.keepflight:
 +
 	rts
 ; ===========================================================================
@@ -86082,15 +86351,32 @@ Touch_Enemy:
 	bne.s	+			; if yes, branch
 	cmpi.b	#AniIDSonAni_Spindash,anim(a0)
 	beq.s	+
-	cmpi.b	#AniIDSonAni_Roll,anim(a0)		; is Sonic rolling?
-	bne.w	Touch_ChkHurt		; if not, branch
+	cmpi.b #AniIDSonAni_Roll,anim(a0)
+	beq.s +
+	cmpi.b #ObjID_Tails,id(a0)
+	bne.w Touch_ChkHurt
+	tst.b flying(a0)
+	beq.w Touch_ChkHurt
+	btst #status.player.underwater,status(a0)
+	bne.w Touch_ChkHurt
+	move.w x_pos(a0),d1
+	move.w y_pos(a0),d2
+	sub.w x_pos(a1),d1
+	sub.w y_pos(a1),d2
+	jsr (CalcAngle).l
+	subi.b #$20,d0
+	cmpi.b #$40,d0
+	bhs.w Touch_ChkHurt
 +
 	btst	#render_flags.multi_sprite,render_flags(a1)
 	beq.s	Touch_Enemy_Part2
 	tst.b	boss_hitcount2(a1)
 	beq.s	return_3F7C6
+	btst #status_secondary.carry,status_secondary(a0)
+	bne.s +
 	neg.w	x_vel(a0)
 	neg.w	y_vel(a0)
++
 	move.b	#0,collision_flags(a1)
 	subq.b	#1,boss_hitcount2(a1)
 
@@ -86101,8 +86387,11 @@ return_3F7C6:
 Touch_Enemy_Part2:
 	tst.b	collision_property(a1)
 	beq.s	Touch_KillEnemy
+	btst #status_secondary.carry,status_secondary(a0)
+	bne.s +
 	neg.w	x_vel(a0)
 	neg.w	y_vel(a0)
++
 	move.b	#0,collision_flags(a1)
 	subq.b	#1,collision_property(a1)
 	bne.s	return_3F7E8
@@ -86137,6 +86426,8 @@ loc_3F81C:
 	move.b	#0,routine(a1)
 
 	; Decide how to bounce Sonic back.
+	btst #status_secondary.carry,status_secondary(a0)
+	bne.w return_3F7E8
 	tst.w	y_vel(a0)
 	bmi.s	loc_3F844
 	move.w	y_pos(a0),d0
@@ -90204,7 +90495,6 @@ PlrList_Std1_End
 PlrList_Std2: plrlistheader
 	plreq ArtTile_ArtNem_Checkpoint, ArtNem_Checkpoint
 	plreq ArtTile_ArtNem_Powerups, ArtNem_Powerups
-	plreq ArtTile_ArtNem_Shield, ArtNem_Shield
 	plreq ArtTile_ArtNem_Invincible_stars, ArtNem_Invincible_stars
 PlrList_Std2_End
 ;---------------------------------------------------------------------------------------
@@ -91263,7 +91553,8 @@ MapUnc_Sonic:			include		"mappings/sprite/Sonic.asm"
 
 MapRUnc_Sonic:			include		"mappings/spriteDPLC/Sonic.asm"
 
-ArtNem_Shield:			BINCLUDE	"art/nemesis/Shield.nem"
+ArtNem_Shield:			BINCLUDE	"art/nemesis/Shield.nem" ; retained for pixel regression checks
+ArtUnc_Shield:			BINCLUDE	"art/uncompressed/Shield.bin"
 	even
 ArtNem_Invincible_stars:	BINCLUDE	"art/nemesis/Invincibility stars.nem"
 	even
@@ -92610,7 +92901,7 @@ SndPtr_SpikesMove:	rom_ptr_z80	Sound36
 SndPtr_Rumbling:	rom_ptr_z80	Sound37	; rumbling
 			rom_ptr_z80	Sound38	; (unused)
 SndPtr_Smash:		rom_ptr_z80	Sound39	; smash/breaking
-			rom_ptr_z80	Sound3A	; nondescript ding (unused)
+SndPtr_TailsGrab:	rom_ptr_z80	Sound3A	; Tails grabs Sonic
 SndPtr_DoorSlam:	rom_ptr_z80	Sound3B	; door slamming shut
 SndPtr_SpindashRelease:	rom_ptr_z80	Sound3C	; spindash unleashed
 SndPtr_Hammer:		rom_ptr_z80	Sound3D	; slide-thunk
@@ -92633,8 +92924,8 @@ SndPtr_Blip:		rom_ptr_z80	Sound4D	; selection blip
 SndPtr_RingLeft:	rom_ptr_z80	Sound4E	; another ring sound (only plays in the left speaker?)
 SndPtr_Signpost:	rom_ptr_z80	Sound4F	; signpost spin sound
 SndPtr_CNZBossZap:	rom_ptr_z80	Sound50	; mosquito zapper
-			rom_ptr_z80	Sound51	; (unused)
-			rom_ptr_z80	Sound52	; (unused)
+SndPtr_TailsFly:		rom_ptr_z80	Sound51
+SndPtr_TailsTired:	rom_ptr_z80	Sound52
 SndPtr_Signpost2P:	rom_ptr_z80	Sound53
 SndPtr_OOZLidPop:	rom_ptr_z80	Sound54	; OOZ lid pop sound
 SndPtr_SlidingSpike:	rom_ptr_z80	Sound55
@@ -92695,7 +92986,7 @@ Sound36:	include "sound/sfx/B6 - Spikes Move.asm"
 Sound37:	include "sound/sfx/B7 - Rumbling.asm"
 Sound38:	include "sound/sfx/B8 - Unknown (Unused).asm"
 Sound39:	include "sound/sfx/B9 - Smash.asm"
-Sound3A:	include "sound/sfx/BA - Special Stage Glass (Unused).asm"
+Sound3A:	include "sound/sfx/Tails Grab.asm"
 Sound3B:	include "sound/sfx/BB - Door Slam.asm"
 Sound3C:	include "sound/sfx/BC - Spin Dash Release.asm"
 Sound3D:	include "sound/sfx/BD - Hammer.asm"
@@ -92718,8 +93009,8 @@ Sound4D:	include "sound/sfx/CD - Switch.asm"
 Sound4E:	include "sound/sfx/CE - Ring Left Speaker.asm"
 Sound4F:	include "sound/sfx/CF - Signpost.asm"
 Sound50:	include "sound/sfx/D0 - CNZ Boss Zap.asm"
-Sound51:	include "sound/sfx/D1 - Unknown (Unused).asm"
-Sound52:	include "sound/sfx/D2 - Unknown (Unused).asm"
+Sound51:	include "sound/sfx/Tails Fly.asm"
+Sound52:	include "sound/sfx/Tails Tired.asm"
 Sound53:	include "sound/sfx/D3 - Signpost 2P.asm"
 Sound54:	include "sound/sfx/D4 - OOZ Lid Pop.asm"
 Sound55:	include "sound/sfx/D5 - Sliding Spike.asm"

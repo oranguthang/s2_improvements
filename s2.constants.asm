@@ -1618,7 +1618,9 @@ MTZCylinder_Angle_Sonic:	ds.b	1
 MTZCylinder_Angle_Tails:	ds.b	1
 				ds.b	$A	; $FFFFF7B4-$FFFFF7BD ; seems unused
 BigRingGraphics:		ds.w	1	; S1 holdover
-				ds.b	7	; $FFFFF7C0-$FFFFF7C6 ; seems unused
+Sidekick_X_vel_copy:		ds.w	1
+Sidekick_Y_vel_copy:		ds.w	1
+				ds.b	3	; $FFFFF7C4-$FFFFF7C6 ; unused
 WindTunnel_flag:		ds.b	1
 				ds.b	1	; $FFFFF7C8 ; seems unused
 WindTunnel_holding_flag:	ds.b	1
@@ -2635,7 +2637,9 @@ ArtTile_ArtNem_Checkpoint             = $047C
 ArtTile_ArtNem_TailsDust              = $048C
 ArtTile_ArtNem_SonicDust              = $049C
 ArtTile_ArtNem_Numbers                = $04AC
-ArtTile_ArtNem_Shield                 = $04BE
+ArtTile_ArtUnc_Shield                 = $04BE
+ArtTile_ArtUnc_Shield_P2              = $04CA ; independent 12-tile sidekick slot
+ArtTile_ArtNem_Shield                 = ArtTile_ArtUnc_Shield ; legacy name
 ArtTile_ArtNem_Invincible_stars       = $04DE
 ArtTile_ArtNem_Powerups               = $0680
 ArtTile_ArtNem_Ring                   = $06BC
@@ -2687,3 +2691,22 @@ ArtTile_ArtNem_BigRing_Flash          = $0462
 ArtTile_ArtNem_EndPoints              = $04B6
 ArtTile_ArtNem_BreakWall              = $0590
 ArtTile_ArtNem_GHZ_Purple_Rock        = $06C0
+
+; Tails flight/carry state. Offset $23 is unused for player objects.
+flying = $20
+flying_timer = $21
+carry_delay = $23
+status_secondary.carry = 3
+AniIDTailsAni_FlyUp = id(TailsAni_FlyUp_ptr) ; $21
+AniIDTailsAni_Carry = id(TailsAni_Carry_ptr) ; $22
+AniIDTailsAni_CarryUp = id(TailsAni_CarryUp_ptr) ; $23
+AniIDTailsAni_Tired = id(TailsAni_Tired_ptr) ; $24
+AniIDTailsAni_CarryTired = id(TailsAni_CarryTired_ptr) ; $25
+AniIDTailsAni_Swim = id(TailsAni_Swim_ptr) ; $26
+AniIDTailsAni_SwimUp = id(TailsAni_SwimUp_ptr) ; $27
+AniIDTailsAni_SwimCarry = id(TailsAni_SwimCarry_ptr) ; $28
+AniIDTailsAni_SwimTired = id(TailsAni_SwimTired_ptr) ; $29
+
+SndID_TailsGrab = (SndPtr_TailsGrab-SoundIndex)/2+$A0
+SndID_TailsFly = (SndPtr_TailsFly-SoundIndex)/2+$A0
+SndID_TailsTired = (SndPtr_TailsTired-SoundIndex)/2+$A0

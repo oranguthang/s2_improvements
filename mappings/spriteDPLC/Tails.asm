@@ -138,6 +138,23 @@ DPLC_Tails:	mappingsTable
 	mappingsTableEntry.w	DPLC_Tails_0306
 	mappingsTableEntry.w	DPLC_Tails_030A
 	mappingsTableEntry.w	DPLC_Tails_030E
+	mappingsTableEntry.w	DPLC_Tails_Extra_8B
+	mappingsTableEntry.w	DPLC_Tails_Extra_8C
+	mappingsTableEntry.w	DPLC_Tails_Extra_8D
+	mappingsTableEntry.w	DPLC_Tails_Extra_8E
+	mappingsTableEntry.w	DPLC_Tails_Extra_8F
+	mappingsTableEntry.w	DPLC_Tails_Extra_90
+	mappingsTableEntry.w	DPLC_Tails_Extra_91
+	mappingsTableEntry.w	DPLC_Tails_Extra_92
+	mappingsTableEntry.w	DPLC_Tails_Extra_93
+	mappingsTableEntry.w	DPLC_Tails_Extra_94
+	mappingsTableEntry.w	DPLC_Tails_Extra_95
+	mappingsTableEntry.w	DPLC_Tails_Extra_96
+	mappingsTableEntry.w	DPLC_Tails_Extra_97
+	mappingsTableEntry.w	DPLC_Tails_Extra_98
+	mappingsTableEntry.w	DPLC_Tails_Extra_99
+	mappingsTableEntry.w	DPLC_Tails_Extra_9A
+	mappingsTableEntry.w	DPLC_Tails_Extra_9B
 
 DPLC_Tails_0116:	dplcHeader
 DPLC_Tails_0116_End
@@ -614,7 +631,6 @@ DPLC_Tails_0356:	dplcHeader
 DPLC_Tails_0356_End
 
 DPLC_Tails_035A:	dplcHeader
-	dplcEntry	$10, $3FA
 	dplcEntry	8, $40A
 DPLC_Tails_035A_End
 
@@ -769,4 +785,83 @@ DPLC_Tails_0404:	dplcHeader
 	dplcEntry	8, $5B6
 DPLC_Tails_0404_End
 
+	even
+
+DPLC_Tails_Extra_8B:	dplcHeader
+	dplcEntry	$10, $3FA
+DPLC_Tails_Extra_8B_End
+
+DPLC_Tails_Extra_8C:	dplcHeader
+	dplcEntry	16, $5D6
+DPLC_Tails_Extra_8C_End
+
+DPLC_Tails_Extra_8D:	dplcHeader
+	dplcEntry	16, $5E6
+DPLC_Tails_Extra_8D_End
+
+DPLC_Tails_Extra_8E:	dplcHeader
+	dplcEntry	16, $5F6
+DPLC_Tails_Extra_8E_End
+
+DPLC_Tails_Extra_8F:	dplcHeader
+	dplcEntry	16, $606
+DPLC_Tails_Extra_8F_End
+
+DPLC_Tails_Extra_90:	dplcHeader
+	dplcEntry	16, $616
+DPLC_Tails_Extra_90_End
+
+DPLC_Tails_Extra_91:	dplcHeader
+	dplcEntry	16, $626
+DPLC_Tails_Extra_91_End
+
+DPLC_Tails_Extra_92:	dplcHeader
+	dplcEntry	16, $636
+	dplcEntry	4, $646
+DPLC_Tails_Extra_92_End
+
+DPLC_Tails_Extra_93:	dplcHeader
+	dplcEntry	16, $64A
+	dplcEntry	4, $65A
+DPLC_Tails_Extra_93_End
+
+DPLC_Tails_Extra_94:	dplcHeader
+	dplcEntry	16, $65E
+	dplcEntry	4, $66E
+DPLC_Tails_Extra_94_End
+
+DPLC_Tails_Extra_95:	dplcHeader
+	dplcEntry	16, $672
+	dplcEntry	4, $682
+DPLC_Tails_Extra_95_End
+
+DPLC_Tails_Extra_96:	dplcHeader
+	dplcEntry	16, $686
+	dplcEntry	4, $696
+DPLC_Tails_Extra_96_End
+
+DPLC_Tails_Extra_97:	dplcHeader
+	dplcEntry	16, $69A
+	dplcEntry	2, $6AA
+DPLC_Tails_Extra_97_End
+
+DPLC_Tails_Extra_98:	dplcHeader
+	dplcEntry	16, $6AC
+	dplcEntry	2, $6BC
+DPLC_Tails_Extra_98_End
+
+DPLC_Tails_Extra_99:	dplcHeader
+	dplcEntry	16, $6BE
+	dplcEntry	4, $6CE
+DPLC_Tails_Extra_99_End
+
+DPLC_Tails_Extra_9A:	dplcHeader
+	dplcEntry	16, $6D2
+	dplcEntry	4, $6E2
+DPLC_Tails_Extra_9A_End
+
+DPLC_Tails_Extra_9B:	dplcHeader
+	dplcEntry	16, $6E6
+	dplcEntry	4, $6F6
+DPLC_Tails_Extra_9B_End
 	even

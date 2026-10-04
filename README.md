@@ -160,3 +160,23 @@ physical controller timing still need a play-through in an emulator or on hardwa
 Any and all content presented in this repository is presented for informational and educational purposes only.
 Commercial usage is expressly prohibited. Sonic Retro claims no ownership of any code in these repositories.
 You assume any and all responsibility for using this content responsibly. Sonic Retro claims no responsibility or warranty.
+
+## Ability, graphics and demo additions
+
+| Change | Status | Notes |
+| --- | --- | --- |
+| Tails flight and underwater swimming poses | Implemented | Jump again in the air. Hold a jump button to ascend; the timer gives eight seconds of powered flight. Water uses separate swimming poses. |
+| Carry Sonic and fly assist | Implemented | The Tails AI can catch Sonic during a flight. While held, Left/Right steer, Up plus a fresh jump flaps, and Jump lets Sonic go. |
+| Shield DPLC | Implemented | The shield uses uncompressed tiles on demand. Both players have separate 12-tile slots. |
+| Sonic CD spring twirl | Implemented | Five new frames are appended to Sonic's mappings so the existing animation frame IDs remain stable. |
+| Music by act | Implemented | Act 2 has distinct EHZ, MCZ and CNZ tracks; all other zones keep the original track. |
+| New title demos | Implemented | CPZ and CNZ demos show Tails flight assist and carry. |
+
+Tails flies with A, B or C after an initial jump. Player 2 can fly directly
+in versus play; in Sonic and Tails mode Player 1's Up plus another jump calls
+the AI assist. Carried Sonic uses a further fresh Up+jump to flap and a fresh
+A/B/C input to detach.
+
+Implementation guides used: [Tails flying and swimming](https://info.sonicretro.org/SCHG_How-to:Add_Tails'_flying_and_swimming_to_Sonic_2), [shield DPLCs](https://info.sonicretro.org/SCHG_How-to:Making_shields_use_DPLCs), [Sonic CD spring twirl](https://info.sonicretro.org/SCHG_How-to:Port_Sonic_CD's_spring_twirl_animation), [music per act](https://info.sonicretro.org/SCHG_How-to:Play_different_songs_per_act), and [custom demos](https://info.sonicretro.org/SCHG_How-to:Create_custom_demos).
+
+The added Tails sprite poses come from the Tails guide's sprite sheet. The five Sonic CD spring poses came from [Sonic Research Community's twirl sprite archive](https://sonicresearch.org/community/index.php?attachments/twirlsprites-zip.11022/). Flight sound data was adapted from the [Sonic 3 disassembly SFX sources](https://github.com/sonicretro/skdisasm/tree/master/Sound/SFX).

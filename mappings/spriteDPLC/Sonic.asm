@@ -213,6 +213,11 @@
 	mappingsTableEntry.w	.frame211
 	mappingsTableEntry.w	.frame212
 	mappingsTableEntry.w	.frame213
+	mappingsTableEntry.w	DPLC_Sonic_Extra_D6
+	mappingsTableEntry.w	DPLC_Sonic_Extra_D7
+	mappingsTableEntry.w	DPLC_Sonic_Extra_D8
+	mappingsTableEntry.w	DPLC_Sonic_Extra_D9
+	mappingsTableEntry.w	DPLC_Sonic_Extra_DA
 
 .frame0:	dplcHeader
 .frame0_End
@@ -1537,4 +1542,30 @@
 	dplcEntry	$C, $A0C
 .frame213_End
 
+	even
+
+DPLC_Sonic_Extra_D6:	dplcHeader
+	dplcEntry	16, $A19
+	dplcEntry	8, $A29
+DPLC_Sonic_Extra_D6_End
+
+DPLC_Sonic_Extra_D7:	dplcHeader
+	dplcEntry	16, $A31
+	dplcEntry	2, $A41
+DPLC_Sonic_Extra_D7_End
+
+DPLC_Sonic_Extra_D8:	dplcHeader
+	dplcEntry	16, $A43
+	dplcEntry	8, $A53
+DPLC_Sonic_Extra_D8_End
+
+DPLC_Sonic_Extra_D9:	dplcHeader
+	dplcEntry	16, $A5B
+	dplcEntry	8, $A6B
+DPLC_Sonic_Extra_D9_End
+
+DPLC_Sonic_Extra_DA:	dplcHeader
+	dplcEntry	16, $A73
+	dplcEntry	2, $A83
+DPLC_Sonic_Extra_DA_End
 	even
