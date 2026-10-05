@@ -29,6 +29,13 @@ fixBugs = 1
 ;	| See also the 'FixDriverBugs' flag in 's2.sounddriver.asm'
 ;	| See also the 'FixMusicAndSFXDataBugs' flag in 'build.lua'
 
+	ifndef MDDebugger
+MDDebugger = 1
+	endif
+;	| If 1, crashes show the MD Debugger exception screen (vladikcomper) instead of freezing.
+;	| build.lua appends the ConvSym symbol table right after the debugger blob, so the
+;	| ErrorHandler include must stay the last thing in the ROM.
+
 allOptimizations = 0
 ;	| If 1, enables all optimizations
 ;
@@ -62,6 +69,9 @@ debugTesting = 0
 ; >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ; Simplifying macros and functions
 	include "s2.macros.asm"
+	if MDDebugger
+	include "_debug/md-debugger/Debugger.asm"
+	endif
 
 ; >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ; Equates section - Names for variables.
@@ -89,29 +99,29 @@ StartOfRom:
 Vectors:
 	dc.l System_Stack	; Initial stack pointer value
 	dc.l EntryPoint		; Start of program
-	dc.l ErrorTrap		; Bus error
-	dc.l ErrorTrap		; Address error (4)
-	dc.l ErrorTrap		; Illegal instruction
-	dc.l ErrorTrap		; Division by zero
-	dc.l ErrorTrap		; CHK exception
-	dc.l ErrorTrap		; TRAPV exception (8)
-	dc.l ErrorTrap		; Privilege violation
-	dc.l ErrorTrap		; TRACE exception
-	dc.l ErrorTrap		; Line-A emulator
-	dc.l ErrorTrap		; Line-F emulator (12)
-	dc.l ErrorTrap		; Unused (reserved)
-	dc.l ErrorTrap		; Unused (reserved)
-	dc.l ErrorTrap		; Unused (reserved)
-	dc.l ErrorTrap		; Unused (reserved) (16)
-	dc.l ErrorTrap		; Unused (reserved)
-	dc.l ErrorTrap		; Unused (reserved)
-	dc.l ErrorTrap		; Unused (reserved)
-	dc.l ErrorTrap		; Unused (reserved) (20)
-	dc.l ErrorTrap		; Unused (reserved)
-	dc.l ErrorTrap		; Unused (reserved)
-	dc.l ErrorTrap		; Unused (reserved)
-	dc.l ErrorTrap		; Unused (reserved) (24)
-	dc.l ErrorTrap		; Spurious exception
+	dc.l BusError		; Bus error
+	dc.l AddressError		; Address error (4)
+	dc.l IllegalInstr		; Illegal instruction
+	dc.l ZeroDivide		; Division by zero
+	dc.l ChkInstr		; CHK exception
+	dc.l TrapvInstr		; TRAPV exception (8)
+	dc.l PrivilegeViol		; Privilege violation
+	dc.l Trace			; TRACE exception
+	dc.l Line1010Emu		; Line-A emulator
+	dc.l Line1111Emu		; Line-F emulator (12)
+	dc.l ErrorExcept	; Unused (reserved)
+	dc.l ErrorExcept	; Unused (reserved)
+	dc.l ErrorExcept	; Unused (reserved)
+	dc.l ErrorExcept	; Unused (reserved) (16)
+	dc.l ErrorExcept	; Unused (reserved)
+	dc.l ErrorExcept	; Unused (reserved)
+	dc.l ErrorExcept	; Unused (reserved)
+	dc.l ErrorExcept	; Unused (reserved) (20)
+	dc.l ErrorExcept	; Unused (reserved)
+	dc.l ErrorExcept	; Unused (reserved)
+	dc.l ErrorExcept	; Unused (reserved)
+	dc.l ErrorExcept	; Unused (reserved) (24)
+	dc.l ErrorExcept	; Spurious exception
 	dc.l ErrorTrap		; IRQ level 1
 	dc.l ErrorTrap		; IRQ level 2
 	dc.l ErrorTrap		; IRQ level 3 (28)
@@ -135,22 +145,22 @@ Vectors:
 	dc.l ErrorTrap		; TRAP #13 exception
 	dc.l ErrorTrap		; TRAP #14 exception
 	dc.l ErrorTrap		; TRAP #15 exception (48)
-	dc.l ErrorTrap		; Unused (reserved)
-	dc.l ErrorTrap		; Unused (reserved)
-	dc.l ErrorTrap		; Unused (reserved)
-	dc.l ErrorTrap		; Unused (reserved) (52)
-	dc.l ErrorTrap		; Unused (reserved)
-	dc.l ErrorTrap		; Unused (reserved)
-	dc.l ErrorTrap		; Unused (reserved)
-	dc.l ErrorTrap		; Unused (reserved) (56)
-	dc.l ErrorTrap		; Unused (reserved)
-	dc.l ErrorTrap		; Unused (reserved)
-	dc.l ErrorTrap		; Unused (reserved)
-	dc.l ErrorTrap		; Unused (reserved) (60)
-	dc.l ErrorTrap		; Unused (reserved)
-	dc.l ErrorTrap		; Unused (reserved)
-	dc.l ErrorTrap		; Unused (reserved)
-	dc.l ErrorTrap		; Unused (reserved) (64)
+	dc.l ErrorExcept	; Unused (reserved)
+	dc.l ErrorExcept	; Unused (reserved)
+	dc.l ErrorExcept	; Unused (reserved)
+	dc.l ErrorExcept	; Unused (reserved) (52)
+	dc.l ErrorExcept	; Unused (reserved)
+	dc.l ErrorExcept	; Unused (reserved)
+	dc.l ErrorExcept	; Unused (reserved)
+	dc.l ErrorExcept	; Unused (reserved) (56)
+	dc.l ErrorExcept	; Unused (reserved)
+	dc.l ErrorExcept	; Unused (reserved)
+	dc.l ErrorExcept	; Unused (reserved)
+	dc.l ErrorExcept	; Unused (reserved) (60)
+	dc.l ErrorExcept	; Unused (reserved)
+	dc.l ErrorExcept	; Unused (reserved)
+	dc.l ErrorExcept	; Unused (reserved)
+	dc.l ErrorExcept	; Unused (reserved) (64)
 ; byte_100:
 Header:
 	dc.b "SEGA GENESIS    " ; Console name
@@ -190,9 +200,25 @@ EndOfHeader:
 ; Crash/Freeze the 68000. Note that the Z80 continues to run, so the music keeps playing.
 ; loc_200:
 ErrorTrap:
+    if MDDebugger
+	jmp	(ErrorExcept).l	; report unexpected traps and interrupts
+    else
 	nop	; delay
 	nop	; delay
 	bra.s	ErrorTrap	; Loop indefinitely.
+
+BusError	= ErrorTrap
+AddressError	= ErrorTrap
+IllegalInstr	= ErrorTrap
+ZeroDivide	= ErrorTrap
+ChkInstr	= ErrorTrap
+TrapvInstr	= ErrorTrap
+PrivilegeViol	= ErrorTrap
+Trace		= ErrorTrap
+Line1010Emu	= ErrorTrap
+Line1111Emu	= ErrorTrap
+ErrorExcept	= ErrorTrap
+    endif
 
 ; ===========================================================================
 ; loc_206:
@@ -92954,7 +92980,15 @@ Sound70:	include "sound/sfx/F0 - Oil Slide.asm"
 	finishBank
 
 ; end of 'ROM'
-	if padToPowerOfTwo && (*-StartOfRom)&(*-StartOfRom-1)
+    if MDDebugger
+	if padToPowerOfTwo
+		fatal "padToPowerOfTwo must be 0 with MDDebugger: build.lua pads the ROM after the symbol table"
+	endif
+	even
+	include "_debug/md-debugger/ErrorHandler.asm"
+	; ConvSym appends the symbol table directly after this blob. Nothing may follow it:
+	; put any new data above the ErrorHandler include.
+    elseif padToPowerOfTwo && (*-StartOfRom)&(*-StartOfRom-1)
 		cnop	-1,2<<lastbit(*-StartOfRom-1)
 		dc.b	$00
 paddingSoFar	:= paddingSoFar+1

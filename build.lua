@@ -135,7 +135,7 @@ SonicDriverVer = 2
 	end
 end
 
-local function amend_sound_driver_size()
+local function amend_sound_driver_size(rom_path)
 	-- Correct the compressed sound driver size, which we couldn't do until p2bin had been ran.
 	local comp_z80_size, movewZ80CompSize
 
@@ -154,7 +154,7 @@ local function amend_sound_driver_size()
 	end
 
 	if comp_z80_size ~= nil and movewZ80CompSize ~= nil then
-		local rom = io.open("s2built.bin", "r+b")
+		local rom = io.open(rom_path, "r+b")
 
 		rom:seek("set", movewZ80CompSize + 2)
 		rom:write(string.pack(">I2", comp_z80_size))
@@ -174,6 +174,27 @@ end
 -- Actual build script begins here --
 -------------------------------------
 
+-- The debugger is always enabled; symbol names can be omitted explicitly.
+local debug_build = false
+local include_symbols = true
+for _, option in ipairs(arg) do
+	if option == "debug" then
+		debug_build = true
+	elseif option == "--no-symbols" then
+		include_symbols = false
+	else
+		io.stderr:write("Unknown build option: " .. option .. "\nUsage: build.lua [debug] [--no-symbols]\n")
+		os.exit(1)
+	end
+end
+local output = debug_build and "s2built.debug" or "s2built"
+local convsym = os.getenv("CONVSYM")
+if include_symbols and not convsym then
+	local tools = common.find_tools("ConvSym", "https://github.com/vladikcomper/md-modules/tree/master/utils/convsym", repository, "convsym")
+	if not tools then os.exit(1) end
+	convsym = tools.convsym
+end
+
 -- Compress music data and generate music-related assembler input.
 generate_music_data()
 
@@ -183,13 +204,54 @@ common.convert_dpcm_files_in_directory("sound/DAC")
 
 -- Build the ROM.
 local compression = improved_sound_driver_compression and "saxman-optimised" or "saxman-bugged"
-common.build_rom_and_handle_failure("s2", "s2built", "", "-p=0 -z=0," .. compression .. ",Size_of_Snd_driver_guess,after", true, repository)
+common.build_rom_and_handle_failure("s2", output, "-D MDDebugger=1", "-p=0 -z=0," .. compression .. ",Size_of_Snd_driver_guess,after", true, repository)
 
 -- Patch the ROM with the correct sound driver size.
-amend_sound_driver_size()
+amend_sound_driver_size(output .. ".bin")
 
--- Correct the ROM's header with a proper checksum and end-of-ROM value.
-common.fix_header("s2built.bin")
+-- Binary resources are read by words or used as DMA sources, so each must
+-- start at an even address. An odd one is an address error on real hardware
+-- and silent garbage on lenient emulators.
+for line in io.lines("s2.lst") do
+	local address, label = line:lower():match("^%s*%d+/%s*(%x+) :%s+([%w_]+):%s+binclude")
+	if address and tonumber(address, 16) % 2 == 1 then
+		print(label .. " starts at an odd address ($" .. address .. "); put 'even' before it.")
+		os.exit(1)
+	end
+end
+
+if include_symbols then
+	local before = assert(io.open(output .. ".bin", "rb"))
+	local size_before = before:seek("end")
+	before:close()
+	local shell_prefix = package.config:sub(1, 1) == "\\" and "call " or ""
+	local ok = os.execute(shell_prefix .. '"' .. convsym .. '" s2.lst ' .. output .. '.bin -input as_lst -range 0 FFFFFF -exclude -filter "(z[A-Z].+)|(ObjID_.+)|(PLCID_.+)|(PalID_.+)|(MusID_.+)|(SndID_.+)|(ArtTile_.+)" -a')
+	if not ok then os.exit(1) end
+	local after = assert(io.open(output .. ".bin", "rb"))
+	local size_after = after:seek("end")
+	after:close()
+	if size_after <= size_before then
+		print("ConvSym did not append the debugger symbol table.")
+		os.exit(1)
+	end
+	print("Debugger symbol table: " .. (size_after - size_before) .. " bytes.")
+end
+
+-- Symbols must immediately follow the debugger blob. Pad only afterwards.
+-- Keep cartridge sizes at powers of two, starting at exactly 1 MiB.
+local rom = assert(io.open(output .. ".bin", "ab"))
+local size = assert(rom:seek("end"))
+local padded_size = 0x100000
+while padded_size < size do
+	padded_size = padded_size * 2
+end
+local padding = padded_size - size
+assert(rom:write(string.rep("\255", padding)))
+assert(rom:close())
+print("ROM padding: " .. padding .. " bytes; final size: " .. padded_size .. " bytes.")
+
+-- Correct the header only after symbols and padding are included.
+common.fix_header(output .. ".bin")
 
 -- A successful build; we can quit now.
 common.exit()

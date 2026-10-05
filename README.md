@@ -6,6 +6,8 @@ This repository is built on top of the Sonic 2 community disassembly and gradual
 
 To build this project, use `build.bat` on Windows, or `build.lua` otherwise. The built ROM will be called `s2built.bin`. The Lua script requires Lua 5.3 or later.
 
+Every build includes the MD Debugger exception screen with a ConvSym symbol table, so crashes show the faulting label, registers, stack and backtrace instead of freezing. The ROM is padded with `$FF` to a power-of-two size (currently 2 MiB) after the symbols. Use `build.lua --no-symbols` to omit symbol names, or `build.lua debug` for the alternate `s2built.debug.bin` name. See [the debugger guide](_debug/md-debugger/README.md) for controls, the end-of-ROM layout rule and tool requirements, and [CREDITS.md](CREDITS.md) for third-party components.
+
 See also:
 - Sonic Retro Disassemblies: https://info.sonicretro.org/Disassemblies
 - Sonic Retro How-To guides: https://info.sonicretro.org/SCHG_How-to:Guide
@@ -134,6 +136,10 @@ explosions do not revive dead enemies. In-flight ring pickups finish on return.
 Temporary invincibility and speed shoes expire, while earned lives/score remain.
 The snapshot is consumed once; ordinary deaths keep the existing checkpoint ring
 behavior, and new acts, demos, VS and Level Select do not reuse Special Stage state.
+
+- [Add MD Debugger and Error Handler](https://info.sonicretro.org/SCHG_How-to:Add_MD_Debugger_and_Error_Handler_to_Sonic_1)
+  (Sonic 2 installation per the [official guide](https://github.com/vladikcomper/md-modules/blob/master/modules/errorhandler/docs/installation/Sonic_2_Github.md);
+  see [the debugger guide](_debug/md-debugger/README.md))
 
 ## Regression checks
 
