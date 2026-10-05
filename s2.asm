@@ -4616,10 +4616,6 @@ TitleScreen_Demo:
 +
 	move.w	#1,(Demo_mode_flag).w
 	move.b	#GameModeID_Demo,(Game_Mode).w ; => Level (Demo mode)
-	cmpi.w #5,(Demo_number).w
-	blo.s .standardplayer
-	move.w #0,(Player_mode).w
-.standardplayer:
 	cmpi.w	#emerald_hill_zone_act_1,(Current_ZoneAndAct).w
 	bne.s	+
 	move.w	#1,(Two_player_mode).w
@@ -4646,8 +4642,11 @@ DemoLevels:
 	dc.w	chemical_plant_zone_act_1	; CPZ
 	dc.w	aquatic_ruin_zone_act_1		; ARZ
 	dc.w	casino_night_zone_act_1		; CNZ
-	dc.w	chemical_plant_zone_act_2	; Tails Flight Assist demonstration
-	dc.w	casino_night_zone_act_1	; CNZ Tails Flight Assist demonstration
+DemoLevels_TailsAssist:
+	; These zones already have original demos, so their scripts are chosen
+	; by demo slot (see Demo_GetTailsAssistScript) instead of by zone.
+	dc.w	chemical_plant_zone_act_1	; CPZ Tails Flight Assist demonstration
+	dc.w	casino_night_zone_act_1		; CNZ Tails Flight Assist demonstration
 DemoLevels_End:
 
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
@@ -5087,6 +5086,7 @@ Level_FromCheckpoint:
 	move.b	(Current_Zone).w,d0	; load zone value
 	lsl.w	#2,d0
 	movea.l	(a1,d0.w),a1
+	bsr.w	Demo_GetTailsAssistScript
 	tst.w	(Demo_mode_flag).w
 	bpl.s	+
 	lea	(EndingDemoScriptPointers).l,a1
@@ -5232,11 +5232,6 @@ Level_MainLoop:
 
 ; sub_4450:
 Level_SetPlayerMode:
-	cmpi.b	#GameModeID_Demo,(Game_Mode).w
-	bne.s .normalmode
-	cmpi.w #5,(Demo_number).w
-	bhs.s .return
-.normalmode:
 	cmpi.b	#GameModeID_TitleCard|GameModeID_Demo,(Game_Mode).w ; pre-level demo mode?
 	beq.s	+			; if yes, branch
 	tst.w	(Two_player_mode).w	; 2P mode?
@@ -5245,7 +5240,6 @@ Level_SetPlayerMode:
 	rts
 +
 	move.w	#0,(Player_mode).w	; force Sonic and Tails
-.return:
 	rts
 ; End of function Level_SetPlayerMode
 
@@ -5829,6 +5823,7 @@ MoveDemo_On:
 MoveDemo_On_P1:
 	lsl.w	#2,d0
 	movea.l	(a1,d0.w),a1
+	bsr.w	Demo_GetTailsAssistScript
 
 	move.w	(Demo_button_index).w,d0
 	adda.w	d0,a1	; a1 now points to the current button press data
@@ -5918,6 +5913,30 @@ MoveDemo_On_SkipP2:
 	rts
 ; End of function MoveSonicInDemo
 
+; ---------------------------------------------------------------------------
+; Replaces the zone's demo script in a1 when the current title demo is one
+; of the Tails Flight Assist demos. Demo_number already holds the next slot.
+; ---------------------------------------------------------------------------
+Demo_GetTailsAssistScript:
+	move.w	(Demo_number).w,d0
+	bne.s	+
+	moveq	#(DemoLevels_End-DemoLevels)/2,d0	; the counter wrapped after the last demo
++
+	subq.w	#1+(DemoLevels_TailsAssist-DemoLevels)/2,d0
+	bcs.s	+	; not a Tails Flight Assist demo
+	lsl.w	#2,d0
+	movea.l	DemoTailsAssistScripts(pc,d0.w),a1
++
+	rts
+; ===========================================================================
+DemoTailsAssistScripts:
+	dc.l	Demo_CPZ_TailsAssist
+	dc.l	Demo_CNZ_TailsAssist
+DemoTailsAssistScripts_End:
+	if (DemoTailsAssistScripts_End-DemoTailsAssistScripts)/4<>(DemoLevels_End-DemoLevels_TailsAssist)/2
+		fatal "DemoTailsAssistScripts must have one script per Tails Flight Assist demo."
+	endif
+
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; DEMO SCRIPT POINTERS
@@ -5939,8 +5958,8 @@ DemoScriptPointers: zoneOrderedTable 4,1
 	zoneTableEntry.l Demo_EHZ	; Zone 9
 	zoneTableEntry.l Demo_EHZ	; OOZ
 	zoneTableEntry.l Demo_EHZ	; MCZ
-	zoneTableEntry.l Demo_CNZ_TailsAssist	; CNZ
-	zoneTableEntry.l Demo_CPZ_TailsAssist	; CPZ
+	zoneTableEntry.l Demo_CNZ	; CNZ
+	zoneTableEntry.l Demo_CPZ	; CPZ
 	zoneTableEntry.l Demo_EHZ	; DEZ
 	zoneTableEntry.l Demo_ARZ	; ARZ
 	zoneTableEntry.l Demo_EHZ	; SCZ

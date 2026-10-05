@@ -165,17 +165,17 @@ You assume any and all responsibility for using this content responsibly. Sonic 
 
 | Change | Status | Notes |
 | --- | --- | --- |
-| Tails flight and underwater swimming poses | Implemented | Jump again in the air. Hold a jump button to ascend; the timer gives eight seconds of powered flight. Water uses separate swimming poses. |
-| Carry Sonic and fly assist | Implemented | The Tails AI can catch Sonic during a flight. While held, Left/Right steer, Up plus a fresh jump flaps, and Jump lets Sonic go. |
+| Tails flight and underwater swimming poses | Implemented | Jump again in the air. Press a jump button repeatedly to flap upwards; the timer gives eight seconds of powered flight. Water uses separate swimming poses. |
+| Carry Sonic and fly assist | Implemented | The Tails AI can catch Sonic during a flight. While held, Left/Right steer, a fresh Up flaps, and a fresh jump lets Sonic go. |
 | Shield DPLC | Implemented | The shield uses uncompressed tiles on demand. Both players have separate 12-tile slots. |
 | Sonic CD spring twirl | Implemented | Five new frames are appended to Sonic's mappings so the existing animation frame IDs remain stable. |
 | Music by act | Implemented | Act 2 has distinct EHZ, MCZ and CNZ tracks; all other zones keep the original track. |
-| New title demos | Implemented | CPZ and CNZ demos show Tails flight assist and carry. |
+| New title demos | Implemented | Two extra demos follow the original four: CPZ Act 1 shows the AI assist carrying Sonic, and CNZ Act 1 shows assisted flight. They are selected by demo slot, so the original CPZ and CNZ demos still play. |
 
 Tails flies with A, B or C after an initial jump. Player 2 can fly directly
-in versus play; in Sonic and Tails mode Player 1's Up plus another jump calls
-the AI assist. Carried Sonic uses a further fresh Up+jump to flap and a fresh
-A/B/C input to detach.
+in versus play, or in Sonic and Tails mode while controlling Tails; otherwise
+Player 1's Up plus another jump calls the AI assist. Carried Sonic uses a fresh
+Up to flap and a fresh A/B/C input to detach.
 
 Implementation guides used: [Tails flying and swimming](https://info.sonicretro.org/SCHG_How-to:Add_Tails'_flying_and_swimming_to_Sonic_2), [shield DPLCs](https://info.sonicretro.org/SCHG_How-to:Making_shields_use_DPLCs), [Sonic CD spring twirl](https://info.sonicretro.org/SCHG_How-to:Port_Sonic_CD's_spring_twirl_animation), [music per act](https://info.sonicretro.org/SCHG_How-to:Play_different_songs_per_act), and [custom demos](https://info.sonicretro.org/SCHG_How-to:Create_custom_demos).
 
