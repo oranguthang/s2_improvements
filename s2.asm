@@ -47,7 +47,7 @@ addsubOptimize = 0|(gameRevision=2)|allOptimizations
 relativeLea = 0|(gameRevision<2)|allOptimizations
 ;	| If 1, makes some instructions use pc-relative addressing, instead of absolute long
 ;
-useFullWaterTables = 0
+useFullWaterTables = 1
 ;	| If 1, zone offset tables for water levels cover all level slots instead of only slots 8-$F
 ;	| Set to 1 if you've shifted level IDs around or you want water in levels with a level slot below 8
 ;
@@ -12856,7 +12856,7 @@ LevelSelect_StartZone:
 	andi.w	#$3FFF,d0
 	move.w	d0,(Current_ZoneAndAct).w
 	moveq	#PLCID_Std1,d0
-	bsr.w	RunPLC_ROM
+	jsr	(RunPLC_ROM).l
 	move.b	#GameModeID_Level,(Game_Mode).w ; => Level (Zone play mode)
 	move.b	#3,(Life_count).w
 	move.b	#3,(Life_count_2P).w
@@ -13532,7 +13532,7 @@ EndgameCredits:
 -
 	jsrto	JmpTo_ClearScreen
 	bsr.w	ShowCreditsScreen
-	bsr.w	Pal_FadeFromBlack
+	jsr	(Pal_FadeFromBlack).l
 
 	; Here's how to calculate new duration values for the below instructions.
 	; Each slide of the credits is displayed for $18E frames at 60 FPS, or $144 frames at 50 FPS.
