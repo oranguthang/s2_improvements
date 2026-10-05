@@ -1302,7 +1302,7 @@ sndDriverInput:
 	lea	(Sound_Queue&$00FFFFFF).l,a0
 	lea	(Z80_RAM+zAbsVar).l,a1 ; $A01B80
 
-	cmpi.b	#$80,zVar.QueueToPlay(a1)	; If this (zReadyFlag) isn't $80, the driver is processing a previous sound request.
+	tst.b	zVar.QueueToPlay(a1)	; If this (zReadyFlag) isn't 0, the driver is processing a previous sound request.
 	bne.s	.doSFX	; So we'll wait until at least the next frame before putting anything in there.
 
 	; If there's something in the first music queue slot, then play it.
@@ -12445,8 +12445,7 @@ OptionScreen_Controls:
 	bne.s	+
 	btst	#button_A,d0
 	beq.s	+
-	addi.b	#$10,d2
-	andi.b	#$7F,d2
+	addi.b	#$10,d2		; wraps around within $00-$FF
     else
 	; This code appears to have been carelessly created from a copy of the
 	; above block of code. It makes no sense to advance by $10 on options
@@ -12468,8 +12467,7 @@ OptionScreen_Controls:
 	bne.s	+	; rts
 	andi.w	#button_B_mask|button_C_mask,d0
 	beq.s	+	; rts
-	move.w	(Sound_test_sound).w,d0
-	addi.w	#$80,d0
+	move.w	(Sound_test_sound).w,d0	; sound test numbers are sound IDs
 	jsrto	JmpTo_PlayMusic
 	lea	(level_select_cheat).l,a0
 	lea	(continues_cheat).l,a2
@@ -12529,7 +12527,7 @@ OptionScreen_CountdownText:
 OptionScreen_Choices:
 	dc.l (3-1)<<24|(Player_option&$FFFFFF)
 	dc.l (4-1)<<24|(Two_player_items&$FFFFFF)
-	dc.l ($80-1)<<24|(Sound_test_sound&$FFFFFF)
+	dc.l ($100-1)<<24|(Sound_test_sound&$FFFFFF)	; every sound ID ($00 = silence)
 
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 
@@ -13052,32 +13050,27 @@ LevSelControls_CheckLR:
 	bne.s	LevSelControls_SwitchSide	; no
 	move.w	(Sound_test_sound).w,d0
 	move.b	(Ctrl_1_Press).w,d1
+	; The sound test covers every sound ID ($00-$FF, $00 = silence);
+	; the byte arithmetic below wraps around.
 	btst	#button_left,d1
 	beq.s	+
 	subq.b	#1,d0
-	bcc.s	+
-	moveq	#$7F,d0
 
 +
 	btst	#button_right,d1
 	beq.s	+
 	addq.b	#1,d0
-	cmpi.w	#$80,d0
-	blo.s	+
-	moveq	#0,d0
 
 +
 	btst	#button_A,d1
 	beq.s	+
 	addi.b	#$10,d0
-	andi.b	#$7F,d0
 
 +
 	move.w	d0,(Sound_test_sound).w
 	andi.w	#button_B_mask|button_C_mask,d1
 	beq.s	+	; rts
-	move.w	(Sound_test_sound).w,d0
-	addi.w	#$80,d0
+	move.w	(Sound_test_sound).w,d0	; sound test numbers are sound IDs
 	jsrto	JmpTo_PlayMusic
 	lea	(debug_cheat).l,a0
 	lea	(super_sonic_cheat).l,a2
@@ -92745,14 +92738,9 @@ SndDAC_End
 ; Music pointers
 ; ---------------------------------------------------------------------------
 
-music_ptr macro DATA
-DATA.pointer label *
-	rom_ptr_z80	DATA
-    endm
 
 ; loc_F0000:
 MusicPoint1:	startBank
-		music_ptr	Mus_Continue
 
 Mus_Continue:	include	"sound/music/generated/9C - Continue.inc"
 
@@ -92849,36 +92837,6 @@ Snd_Sega:	include	"sound/PCM/generated/SEGA.inc"
 ; ------------------------------------------------------------------------------
 ; loc_F8000:
 MusicPoint2:	startBank
-		music_ptr	Mus_CNZ_2P
-		music_ptr	Mus_EHZ
-		music_ptr	Mus_MTZ
-		music_ptr	Mus_CNZ
-		music_ptr	Mus_MCZ
-		music_ptr	Mus_MCZ_2P
-		music_ptr	Mus_ARZ
-		music_ptr	Mus_DEZ
-		music_ptr	Mus_SpecStage
-		music_ptr	Mus_Options
-		music_ptr	Mus_Ending
-		music_ptr	Mus_EndBoss
-		music_ptr	Mus_CPZ
-		music_ptr	Mus_Boss
-		music_ptr	Mus_SCZ
-		music_ptr	Mus_OOZ
-		music_ptr	Mus_WFZ
-		music_ptr	Mus_EHZ_2P
-		music_ptr	Mus_2PResult
-		music_ptr	Mus_SuperSonic
-		music_ptr	Mus_HTZ
-		music_ptr	Mus_ExtraLife
-		music_ptr	Mus_Title
-		music_ptr	Mus_EndLevel
-		music_ptr	Mus_GameOver
-		music_ptr	Mus_Invincible
-		music_ptr	Mus_Emerald
-		music_ptr	Mus_HPZ
-		music_ptr	Mus_Drowning
-		music_ptr	Mus_Credits
 
 ; loc_F803C:
 Mus_HPZ:	include	"sound/music/generated/90 - HPZ.inc"

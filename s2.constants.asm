@@ -835,11 +835,11 @@ ObjID_ContinueChars =		id(ObjPtr_ContinueChars)	; DB
 ObjID_RingPrize =		id(ObjPtr_RingPrize)		; DC
 
 ; Music IDs
+; $00 means "nothing queued" (silence); music starts at $01 and sound effects
+; follow the last song, so new songs and sounds only need a playlist entry.
 offset :=	zMasterPlaylist
-ptrsize :=	1
-idstart :=	$81
-; $80 is reserved for silence, so if you make idstart $80 or less,
-; you may need to insert a dummy zMusIDPtr in the $80 slot
+ptrsize :=	4
+idstart :=	$01
 
 MusID__First = idstart
 MusID_2PResult =	id(zMusIDPtr_2PResult)	; 81
@@ -878,9 +878,7 @@ MusID__End =		id(zMusIDPtr__End)	; A0
 ; Sound IDs
 offset :=	SoundIndex
 ptrsize :=	2
-idstart :=	$A0
-; $80 is reserved for silence, so if you make idstart $80 or less,
-; you may need to insert a dummy SndPtr in the $80 slot
+idstart :=	MusID__End
 
 SndID__First = idstart
 SndID_Jump =		id(SndPtr_Jump)			; A0

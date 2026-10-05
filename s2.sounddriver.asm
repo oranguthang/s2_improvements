@@ -6,7 +6,7 @@
 ; ---------------------------------------------------------------------------
 
 FixDriverBugs = fixBugs
-OptimiseDriver = 0
+OptimiseDriver = 1
 
 ; ---------------------------------------------------------------------------
 ; NOTES:
@@ -37,7 +37,7 @@ OptimiseDriver = 0
 	; 	+05h	-- delay ticker before next volume decrease
 	; 	+06h	-- communication value
 	; 	+07h	-- "DAC is updating" flag (set to FFh until completion of DAC track change)
-	; 	+08h	-- When NOT set to 80h, 68K request new sound index to play
+	; 	+08h	-- When NOT 00h, 68K request new sound index to play
 	; 	+09h	-- SFX to Play queue slot
 	; 	+0Ah	-- Play stereo sound queue slot
 	; 	+0Bh	-- Unknown SFX Queue slot
@@ -51,7 +51,7 @@ OptimiseDriver = 0
 	; 	+13h	-- original tempo for speed shoe restore
 	; 	+14h	-- Speed shoes flag
 	; 	+15h	-- If 80h, FM Channel 6 is NOT in use (DAC enabled)
-	; 	+16h	-- value of which music bank to use (0 for MusicPoint1, $80 for MusicPoint2)
+	; 	+16h	-- ROM bank (address bits 15-22) of the current song
 	; 	+17h	-- Pal mode flag
 	;
 	; ** zTracksSongStart starts @ +18h
@@ -422,11 +422,11 @@ zUpdateEverything:
 	or	(ix+zVar.Queue2)		; This was missing in Sonic 1's driver, breaking the third queue slot.
 	call	nz,zCycleQueue			; If any of those are non-zero, cycle queue
 
-	; Apparently if this is 80h, it does not play anything new,
+	; If this is 00h, it does not play anything new,
 	; otherwise it cues up the next play (flag from 68K for new item)
 	ld	a,(zAbsVar.QueueToPlay)
-	cp	80h
-	call	nz,zPlaySoundByIndex		; If not 80h, we need to play something new!
+	or	a
+	call	nz,zPlaySoundByIndex		; If not 00h, we need to play something new!
 
 	; Spindash update
 	ld	a,(zSpindashPlayingCounter)
@@ -1495,7 +1495,7 @@ zResumeTrack:
 ; zsub_674
 zCycleQueue:
 	ld	a,(zAbsVar.QueueToPlay)		; Check if a sound request was made zComRange+08h
-	cp	80h				; Is queue slot equal to 80h?
+	or	a				; Is queue slot empty (00h)?
 	ret	nz				; If not, return
 	ld	hl,zAbsVar.Queue0		; Get address of next sound
     if OptimiseDriver
@@ -1553,16 +1553,8 @@ zQueueItem:
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 ; zsub_6B2
 zPlaySoundByIndex:
-	or	a				; is it sound 00?
-	jp	z,zClearTrackPlaybackMem	; if yes, jump to RESET EVERYTHING!!
-    if MusID__First-1 = 80h
-	ret	p				; return if it was (invalidates 00h-7Fh; maybe we don't want that someday?)
-    else
-	cp	MusID__First
-	ret	c				; return if id is less than the first music id
-    endif
-
-	ld	(ix+zVar.QueueToPlay),80h	; Rewrite zComRange+8 flag so we know nothing new is coming in
+	; Sound 00h means "nothing queued" and is filtered out by the caller.
+	ld	(ix+zVar.QueueToPlay),0		; Rewrite zComRange+8 flag so we know nothing new is coming in
 	cp	MusID__End			; is it music (less than index 20)?
 	jp	c,zPlayMusic			; if yes, play it
 	cp	SndID__First			; is it not a sound effect? (this check is redundant if MusID__End == SndID__First...)
@@ -1620,7 +1612,6 @@ zPlaySegaSound:
 	ld	de,Snd_Sega.size/2	; was: 30BAh
 	ld	a,2Ah			; DAC data register
 	ld	(zYM2612_A0),a		; Select it
-	ld	c,80h			; If QueueToPlay is not this, stops Sega PCM
 
 .loop:
 	; According to Kabuto, the Z80 suffers a delay of approximately 3.3 cycles for each ROM access.
@@ -1634,7 +1625,7 @@ zPlaySegaSound:
 
 	nop					; 4
 	ld	a,(zAbsVar.QueueToPlay)		; 13	; Get next item to play
-	cp	c				; 4	; Is it 80h?
+	or	a				; 4	; Is it 00h?
 	jr	nz,.stop			; 7	; If not, stop Sega PCM
 	ld	a,(hl)				; 7+3	; Get next PCM byte
 	ld	(zYM2612_D0),a			; 13	; Send to DAC
@@ -1746,36 +1737,31 @@ zBGMLoad:
 	ld	a,(hl)				; Get value at this location -> 'a'
 	ld	(zAbsVar.TempoTurbo),a		; Store 'a' here (provides an alternate tempo or something for speed up mode)
 	ld	hl,zMasterPlaylist		; Get address of the zMasterPlaylist
-	add	hl,de				; Add the 16-bit offset here
-	ld	a,(hl)				; Get "fixed" index
-	ld	b,a				; 'a' -> 'b'
-	; The following instructions enable a bankswitch routine
-	and	80h				; Get only 'bank' bit
-	ld	(zAbsVar.MusicBankNumber),a	; Store this (use to enable alternate bank)
-	ld	a,b				; Restore 'a'
+	add	hl,de				; Entries are 4 bytes long: bank, flags, pointer
+	add	hl,de
+	add	hl,de
+	add	hl,de
+	ld	a,(hl)				; Get the song's bank
+	inc	hl
+	ld	(zAbsVar.MusicBankNumber),a	; Store it for zBankSwitchToMusic
+	ld	a,(hl)				; Get the song's flags
+	inc	hl
 	add	a,a				; Adding a+a causes a possible overflow and a multiplication by 2
 	add	a,a				; Now multiplied by 4 and another possible overflow
 	ld	c,a				; Result -> 'c'
 	ccf					; Invert carry flag...
-	sbc	a,a				; ... so that this sets a to FFh if bit 6 of original a was clear (allow PAL double-update), zero otherwise (do not allow PAL double-update)
+	sbc	a,a				; ... so that this sets a to FFh if bit 6 of the flags was clear (allow PAL double-update), zero otherwise (do not allow PAL double-update)
 	ld	(zAbsVar.IsPalFlag),a		; Set IsPalFlag
 	ld	a,c				; Put prior multiply result back in
 	add	a,a				; Now multiplied by 8!
-	sbc	a,a				; This is FFh if bit 5 of original a was set (uncompressed song), zero otherwise (compressed song)
+	sbc	a,a				; This is FFh if bit 5 of the flags was set (uncompressed song), zero otherwise (compressed song)
 	push	af				; Backing up result...?
-	ld	a,b				; Put 80h based index -> 'a'
-	and	1Fh				; Strip the flag bits
-	add	a,a				; multiply by 2; now 'a' is offset into music table, save for the $8000
-	ld	e,a
-	ld	d,0				; de = a
-	ld	hl,zROMWindow
-	add	hl,de				; "hl" now contains 2-byte offset for music address table lookup
-	push	hl				; Save 'hl' (will be damaged by bank switch)
-	call	zBankSwitchToMusic		; Bank switch to start of music in ROM!
-	pop	hl				; Restore 'hl'
 	ld	e,(hl)
 	inc	hl
-	ld	d,(hl)				; Getting offset within bank to music -> de
+	ld	d,(hl)				; Getting the song's address in the ROM window -> de
+	push	de				; Save it (bank switch uses 'hl')
+	call	zBankSwitchToMusic		; Bank switch to start of music in ROM!
+	pop	de				; Restore song address
 
 	; If we bypass the Saxman decompressor, the Z80 engine starts
 	; with the assumption that we're already decompressed with 'de' pointing
@@ -2566,7 +2552,7 @@ zClearTrackPlaybackMem:
 	ld	(hl),0				; Starting byte is 00h
 	ld	bc,(zTracksSFXEnd-zAbsVar)-1	; For 695 bytes...
 	ldir					; 695 bytes of clearing! (Because it will keep copying the byte prior to the byte after; thus 00h repeatedly)
-	ld	a,80h
+	xor	a
 	ld	(zAbsVar.QueueToPlay),a		; Nothing is queued
 	call	zFMSilenceAll			; Silence FM
 	jp	zPSGSilenceAll			; Silence PSG
@@ -2622,9 +2608,9 @@ zInitMusicPlayback:
 	ld	(ix+zVar.SFXPriorityVal),b
 	ld	(ix+zVar.1upPlaying),c		; 1-up playing flag
     if OptimiseDriver
-	ld	(ix+zVar.QueueToPlay),80h
+	ld	(ix+zVar.QueueToPlay),0
     else
-	ld	a,80h
+	xor	a
 	ld	(zAbsVar.QueueToPlay),a
     endif
 
@@ -2831,19 +2817,19 @@ zFMNoteOff:
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 
 ; Performs a bank switch to where the music for the current track is at
-; (there are two possible bank locations for music)
+; (MusicBankNumber holds address bits 15-22 of the song's bank)
 
 ; zsub_C63:
 zBankSwitchToMusic:
 	ld	a,(zAbsVar.MusicBankNumber)
-	or	a
-	jr	nz,zSwitchToBank2
-
-	bankswitch MusicPoint1
-	ret
-
-zSwitchToBank2:
-	bankswitch MusicPoint2
+	ld	hl,zBankRegister
+	ld	(hl),a				; bit 15
+    rept 7
+	rra
+	ld	(hl),a				; bits 16-22
+    endm
+	xor	a
+	ld	(hl),a				; bit 23
 	ret
 ; End of function zBankSwitchToMusic
 
@@ -3815,8 +3801,14 @@ withinSameZ80Bank function label1, label2, getZ80BankBase(label1) == getZ80BankB
 
 MusFlag_SlowerOnPAL = 1 << 6 ; Song should play slower on PAL consoles.
 
+MusFlag_Uncompressed = 1 << 5 ; Set automatically for songs that are not Saxman-compressed.
+
+; Each song stores its own ROM bank, flags and address inside the Z80's ROM
+; window, so songs can live in any bank and a bank can hold any number of them.
+zmake68kBank function addr,(addr&7F8000h)/zROMWindow
 music_metadata macro DATA,FLAGS
-	db	(withinSameZ80Bank(DATA.pointer, MusicPoint2)<<7)|((~~DATA.is_compressed)<<5)|(FLAGS)|(getZ80BankOffset(DATA.pointer)/2)
+	db	zmake68kBank(DATA),((~~DATA.is_compressed)<<5)|(FLAGS)
+	dw	zmake68kPtr(DATA)
     endm
 
 ; zbyte_11F5h

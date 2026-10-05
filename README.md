@@ -190,6 +190,26 @@ Special Stage and `LevSelEntry_SoundTest` must be the last item of every page.
 Two pages were verified with a temporary copy of the stock page: NEXT and PREV
 redraw instantly and items on either page start their own zone.
 
+## Music and sound IDs
+
+Based on [Expand the music index to start at $00](https://info.sonicretro.org/SCHG_How-to:Expand_the_music_index_to_start_at_%2400_instead_of_%2480).
+`$00` means "nothing queued", music starts at `$01` and sound effects follow
+the last song (currently `$20`); command IDs (`$F8-$FF`) are unchanged. The
+sound tests in Options and Level Select cover `$00-$FF`, and their numbers
+are the sound IDs themselves, so test numbers and cheat codes are the same as
+before. Every `zMasterPlaylist` entry stores its song's ROM bank, flags and
+address, so songs can go in any bank and a bank can hold any number of them
+(the old limit was two banks of at most `$20` songs each). To add a song:
+include it in a bank (`startBank`/`finishBank`), add a `music_metadata` entry
+before `zMusIDPtr__End` with a `MusID_` constant, and a tempo byte to
+`zSpedUpTempoTable`; compressed songs are listed in
+`sound/music/list of compressed songs.txt`. `OptimiseDriver` is enabled to keep
+the Z80 code below the music buffer.
+
+All 31 songs, 81 sound effects, the SEGA chant and the speed-shoes tempo were
+compared with the previous build in Genesis Plus GX: same loudness and
+envelopes, with songs starting at most one frame apart.
+
 ## Branch range
 
 Sonic 2 has many `bsr.w`/`bra.w` branches within a few hundred bytes of the
