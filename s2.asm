@@ -67530,7 +67530,7 @@ Obj57_FallApart:	; make the digger thingies fall down
 	; This properly makes the right drill fall the opposite direction.
 	btst	#render_flags.x_flip,render_flags(a0)	; is Eggman facing right?
 	beq.s	.notfacingright2			; is not, branch
-	subi_.w	#2,sub5_x_pos(a0)
+	subi_.w	#2,sub2_x_pos(a0)
 
 .notfacingright2:
     endif
