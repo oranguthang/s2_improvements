@@ -119,6 +119,12 @@ the current choice is shown below the level list. With the slow-motion cheat
 enabled, **A** while paused returns to Level Select with water/checkpoint state
 reset and standard HUD graphics reloaded on starting a level.
 
+For testing builds, set `debugTesting = 1` at the top of `s2.asm`: Level Select,
+slow motion and Debug mode are then unlocked on boot without entering cheats.
+Objects that every zone can place (ring and all monitor types, whose art comes
+from the standard pattern load requests) live in the `dbglistcommon` macro used
+by every debug list; add new universal objects there.
+
 - [Restore level state after a Special Stage](https://info.sonicretro.org/SCHG_How-to:Restore_level_state_after_a_Special_Stage)
 
 Entering a Special Stage through a star post now preserves collected level rings,
