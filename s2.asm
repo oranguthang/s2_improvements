@@ -91462,7 +91462,7 @@ MapUnc_Sonic:			include		"mappings/sprite/Sonic.asm"
 
 MapRUnc_Sonic:			include		"mappings/spriteDPLC/Sonic.asm"
 
-ArtNem_Shield:			BINCLUDE	"art/nemesis/Shield.nem" ; retained for pixel regression checks
+	even
 ArtUnc_Shield:			BINCLUDE	"art/uncompressed/Shield.bin"
 	even
 ArtNem_Invincible_stars:	BINCLUDE	"art/nemesis/Invincibility stars.nem"

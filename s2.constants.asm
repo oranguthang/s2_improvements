@@ -2639,7 +2639,6 @@ ArtTile_ArtNem_SonicDust              = $049C
 ArtTile_ArtNem_Numbers                = $04AC
 ArtTile_ArtUnc_Shield                 = $04BE
 ArtTile_ArtUnc_Shield_P2              = $04CA ; independent 12-tile sidekick slot
-ArtTile_ArtNem_Shield                 = ArtTile_ArtUnc_Shield ; legacy name
 ArtTile_ArtNem_Invincible_stars       = $04DE
 ArtTile_ArtNem_Powerups               = $0680
 ArtTile_ArtNem_Ring                   = $06BC
