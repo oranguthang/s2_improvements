@@ -413,6 +413,14 @@ sky_chase_zone zoneID		$10
 ; set the number of zones
 no_of_zones = cur_zone_id
 
+; Player modes (Player_mode, and Player_option in the menus). The order matters:
+; several checks treat modes above PlayerMode_SonicAlone as Tails-led games.
+; When adding a character, search for PlayerMode_ and for 'tst.w (Player_mode)'.
+PlayerMode_SonicTails =	0	; Sonic with Tails as the sidekick
+PlayerMode_SonicAlone =	1
+PlayerMode_TailsAlone =	2
+PlayerMode_Count =	3	; Options, Level Select and the Special Stage HUD have one entry per mode
+
 ; Zone and act IDs
 emerald_hill_zone_act_1 =	(emerald_hill_zone<<8)|$00
 emerald_hill_zone_act_2 =	(emerald_hill_zone<<8)|$01

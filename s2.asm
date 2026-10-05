@@ -4878,7 +4878,7 @@ Level:
 	moveq	#PLCID_MilesLife2P,d0
 	tst.w	(Two_player_mode).w
 	bne.s	+
-	cmpi.w	#2,(Player_mode).w
+	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	bne.s	Level_ClrRam
 	addq.w	#PLCID_MilesLife-PLCID_MilesLife2P,d0
 +
@@ -5266,7 +5266,7 @@ Level_SetPlayerMode:
 	move.w	(Player_option).w,(Player_mode).w ; use the option chosen in the Options screen
 	rts
 +
-	move.w	#0,(Player_mode).w	; force Sonic and Tails
+	move.w	#PlayerMode_SonicTails,(Player_mode).w	; force Sonic and Tails
 	rts
 ; End of function Level_SetPlayerMode
 
@@ -6858,7 +6858,7 @@ SpecialStage:
 	move.l	#0,(Camera_Y_pos).w
 	move.l	#0,(Camera_X_pos_copy).w
 	move.l	#0,(Camera_Y_pos_copy).w
-	cmpi.w	#1,(Player_mode).w	; is this a Tails alone game?
+	cmpi.w	#PlayerMode_SonicAlone,(Player_mode).w	; is Tails the main character?
 	bgt.s	+			; if yes, branch
 	move.b	#ObjID_SonicSS,(MainCharacter+id).w ; load Obj09 (special stage Sonic)
 	tst.w	(Player_mode).w		; is this a Sonic and Tails game?
@@ -9765,7 +9765,7 @@ Obj5E:
 	bra.s	++
 ; ---------------------------------------------------------------------------
 +	move.w	(Player_mode).w,d1
-	andi.w	#3,d1
+	andi.w	#3,d1	; Special Stage HUD name frames: one per player mode, then the "TAILS" variants
 	tst.b	(Graphics_Flags).w
 	bpl.s	+
 	addq.w	#3,d1 ; set special stage Tails name to "TAILS" instead of MILES
@@ -10036,7 +10036,7 @@ Obj87_Init:
 	move.w	d0,sub7_y_pos-subspr_data(a1)	; sub7_y_pos
 	tst.b	(SS_2p_Flag).w
 	bne.s	+++
-	cmpi.w	#0,(Player_mode).w
+	cmpi.w	#PlayerMode_SonicTails,(Player_mode).w
 	beq.s	+
 	subi_.b	#1,mainspr_childsprites(a0)
 	move.w	#$94,sub2_x_pos-subspr_data(a1)	; sub2_x_pos
@@ -10089,7 +10089,7 @@ loc_7480:
 	lea	sub2_x_pos(a0),a1
 	movea.l	a1,a2
 	addq.w	#sub2_mapframe-sub2_x_pos,a2	; a2 = sub2_mapframe(a0)
-	cmpi.w	#2,(Player_mode).w
+	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	beq.s	loc_74EA
 	move.b	(MainCharacter+ss_rings_hundreds).w,d0
 	beq.s	+
@@ -10117,7 +10117,7 @@ loc_7480:
 	addi_.w	#8,d1
 	addq.w	#next_subspr,d5
 	dbf	d4,-
-	cmpi.w	#1,(Player_mode).w
+	cmpi.w	#PlayerMode_SonicAlone,(Player_mode).w
 	beq.s	loc_7536
 
 loc_74EA:
@@ -10586,7 +10586,7 @@ ContinueScreen:
 	bsr.w	NemDec
 	move.l	#vdpComm(tiles_to_bytes(ArtTile_ArtNem_MiniContinue),VRAM,WRITE),(VDP_control_port).l
 	lea	(ArtNem_MiniSonic).l,a0
-	cmpi.w	#2,(Player_mode).w
+	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	bne.s	+
 	lea	(ArtNem_MiniTails).l,a0
 +
@@ -12386,7 +12386,7 @@ OptionScreen_Select_Not1P:
     endif
 	move.b	#GameModeID_2PLevelSelect,(Game_Mode).w ; => LevelSelectMenu2P
 	move.b	#0,(Current_Zone_2P).w
-	move.w	#0,(Player_mode).w
+	move.w	#PlayerMode_SonicTails,(Player_mode).w
 	rts
 ; ===========================================================================
 ; loc_90D8:
@@ -12525,7 +12525,7 @@ OptionScreen_CountdownText:
 ; ===========================================================================
 ; word_917A:
 OptionScreen_Choices:
-	dc.l (3-1)<<24|(Player_option&$FFFFFF)
+	dc.l (PlayerMode_Count-1)<<24|(Player_option&$FFFFFF)
 	dc.l (4-1)<<24|(Two_player_items&$FFFFFF)
 	dc.l ($100-1)<<24|(Sound_test_sound&$FFFFFF)	; every sound ID ($00 = silence)
 
@@ -12693,6 +12693,7 @@ boxData macro txtlabel,vramAddr
 	boxData	TextOptScr_VsModeItems,VRAM_Plane_A_Name_Table+planeLoc(64,9,11)
 	boxData	TextOptScr_SoundTest,VRAM_Plane_A_Name_Table+planeLoc(64,9,19)
 
+; Player mode names (one entry per PlayerMode_*), "Miles" and "Tails" variants
 off_92D2:
 	dc.l TextOptScr_SonicAndMiles
 	dc.l TextOptScr_SonicAlone
@@ -12701,6 +12702,10 @@ off_92DE:
 	dc.l TextOptScr_SonicAndTails
 	dc.l TextOptScr_SonicAlone
 	dc.l TextOptScr_TailsAlone
+off_92DE_End:
+    if ((off_92DE-off_92D2)<>(PlayerMode_Count*4))||((off_92DE_End-off_92DE)<>(PlayerMode_Count*4))
+	error "The Options player name tables need one entry per player mode"
+    endif
 off_92EA:
 	dc.l TextOptScr_AllKindsItems
 	dc.l TextOptScr_TeleportOnly
@@ -13094,7 +13099,7 @@ LevSelControls_SwitchSide:	; not in soundtest, not up/down pressed
 	btst	#button_C,(Ctrl_1_Press).w
 	beq.s	+
 	addq.w	#1,(Player_option).w
-	cmpi.w	#2,(Player_option).w
+	cmpi.w	#PlayerMode_Count-1,(Player_option).w
 	bls.s	+
 	clr.w	(Player_option).w
 +
@@ -13197,7 +13202,7 @@ LevelSelect_MarkFields:
 LevelSelect_DrawPlayerOption:
 	move.l	#vdpComm(VRAM_Plane_A_Name_Table+planeLoc(64,3,24),VRAM,WRITE),(VDP_control_port).l
 	move.w	(Player_option).w,d0
-	cmpi.w	#2,d0
+	cmpi.w	#PlayerMode_Count-1,d0
 	bls.s	.valid
 	moveq	#0,d0
 .valid:
@@ -13212,8 +13217,12 @@ LevelSelect_DrawPlayerOption:
 	move.w	d0,(a6)
 	dbf	d1,.loop
 	rts
-LevelSelect_PlayerText:
+LevelSelect_PlayerText:	; one entry per PlayerMode_*
 	dc.l TextLevSel_SonicTails,TextLevSel_Sonic,TextLevSel_Tails
+LevelSelect_PlayerText_End:
+    if (LevelSelect_PlayerText_End-LevelSelect_PlayerText)<>(PlayerMode_Count*4)
+	error "LevelSelect_PlayerText needs one entry per player mode"
+    endif
 
 LevelSelect_DrawSoundNumber:
 	move.l	#vdpComm(VRAM_Plane_A_Name_Table+planeLoc(64,34,18),VRAM,WRITE),(VDP_control_port).l
@@ -13491,7 +13500,7 @@ EndingSequence:
 	clr.b	(Super_Sonic_flag).w
 	cmpi.b	#7,(Emerald_count).w
 	bne.s	+
-	cmpi.w	#2,(Player_mode).w
+	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	beq.s	+
 	st.b	(Super_Sonic_flag).w
 	move.b	#-1,(Super_Sonic_palette).w
@@ -13499,7 +13508,7 @@ EndingSequence:
 	move.w	#$30,(Palette_frame).w
 +
 	moveq	#0,d0
-	cmpi.w	#2,(Player_mode).w
+	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	beq.s	+
 	tst.b	(Super_Sonic_flag).w
 	bne.s	++
@@ -14010,7 +14019,7 @@ ObjCC_Index:	offsetTable
 ObjCC_Init:
 	lea	(ObjB2_SubObjData).l,a1
 	jsrto	JmpTo_LoadSubObject_Part3
-	cmpi.w	#2,(Player_mode).w
+	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	bne.s	+
 	move.b	#4,mapping_frame(a0)
 	move.b	#1,anim(a0)
@@ -15592,7 +15601,7 @@ DeformBgLayer:
 	lea	(Camera_X_pos_diff).w,a4
 	lea	(Camera_Delay).w,a5
 	lea	(Sonic_Pos_Record_Buf).w,a6
-	cmpi.w	#2,(Player_mode).w
+	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	bne.s	+
 	lea	(Camera_Delay_P2).w,a5
 	lea	(Tails_Pos_Record_Buf).w,a6
@@ -15604,7 +15613,7 @@ DeformBgLayer:
 	lea	(Camera_Boundaries).w,a2
 	lea	(Camera_Y_pos_diff).w,a4
 	move.w	(Camera_Y_pos_bias).w,d3
-	cmpi.w	#2,(Player_mode).w
+	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	bne.s	+
 	move.w	(Camera_Y_pos_bias_P2).w,d3
 +
@@ -26507,7 +26516,7 @@ super_shoes:
 	lea	(MainCharacter).w,a0
 	cmpa.w	a0,a1			; did the main character break the monitor?
 	bne.s	super_shoes_Tails	; if not, branch
-	cmpi.w	#2,(Player_mode).w	; is player using Tails?
+	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w	; is player using Tails?
 	beq.s	super_shoes_Tails	; if yes, branch
 	lea	(Sonic_top_speed).w,a2
 	jsr	(ApplySpeedSettings).l
@@ -26515,7 +26524,7 @@ super_shoes:
     else
 	cmpa.w	#MainCharacter,a1	; did the main character break the monitor?
 	bne.s	super_shoes_Tails	; if not, branch
-	cmpi.w	#2,(Player_mode).w	; is player using Tails?
+	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w	; is player using Tails?
 	beq.s	super_shoes_Tails	; if yes, branch
 	move.w	#$C00,(Sonic_top_speed).w	; set stats
 	move.w	#$18,(Sonic_acceleration).w
@@ -28440,7 +28449,7 @@ loc_140CE:
 
 loc_14102:
 	moveq	#0,d0
-	cmpi.w	#2,(Player_mode).w
+	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	bne.s	loc_14118
 	addq.w	#1,d0
 	btst	#7,(Graphics_Flags).w
@@ -28889,7 +28898,7 @@ Obj6F_InitResultTitle:
 	beq.w	DeleteObject
 	moveq	#1,d0		; "Sonic got a"
 +
-	cmpi.w	#2,(Player_mode).w
+	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	bne.s	+
 	addq.w	#1,d0		; "Miles got a" or "Miles has all the"
 	btst	#7,(Graphics_Flags).w
@@ -29026,7 +29035,7 @@ Obj6F_TallyScore:
 	move.w	#$78,anim_frame_duration(a0)
 	tst.w	(Perfect_rings_flag).w
 	bne.s	+
-	cmpi.w	#2,(Player_mode).w
+	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	beq.s	++		; rts
 	tst.b	(Got_Emerald).w
 	beq.s	++		; rts
@@ -29078,7 +29087,7 @@ Obj6F_TallyPerfect:
 	jsr	(PlaySound).l
 	addq.b	#4,routine(a0)
 	move.w	#$78,anim_frame_duration(a0)
-	cmpi.w	#2,(Player_mode).w
+	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	beq.s	+		; rts
 	tst.b	(Got_Emerald).w
 	beq.s	+		; rts
@@ -35361,7 +35370,7 @@ loc_192A0:
 	tst.b	obj0D_finalanim(a0)
 	bne.w	loc_19350
 	move.b	#3,obj0D_finalanim(a0)
-	cmpi.w	#2,(Player_mode).w
+	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	bne.s	loc_192BC
 	move.b	#4,obj0D_finalanim(a0)
 
@@ -35522,7 +35531,7 @@ Load_EndOfAct:
 	move.b	#ObjID_Results,id(a1) ; load obj3A (end of level results screen)
 +
 	moveq	#PLCID_Results,d0
-	cmpi.w	#2,(Player_mode).w
+	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	bne.s	+
 	moveq	#PLCID_ResultsTails,d0
 +
@@ -36690,7 +36699,7 @@ loc_19E30:
 	move.w	a0,d1
 	subi.w	#Object_RAM,d1
 	bne.s	loc_19E76
-	cmpi.w	#2,(Player_mode).w
+	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	beq.s	loc_19E76
 	jsr	(Sonic_ResetOnFloor_Part2).l
 	bra.s	loc_19E7C
@@ -39967,7 +39976,7 @@ Speedsettings:
 ; Sprite_1B8A4: Object_Tails:
 Obj02:
 	; a0=character
-	cmpi.w	#2,(Player_mode).w
+	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	bne.s	+
 	move.w	(Camera_Min_X_pos).w,(Tails_Min_X_pos).w
 	move.w	(Camera_Max_X_pos).w,(Tails_Max_X_pos).w
@@ -40010,7 +40019,7 @@ Obj02_Init:
 	move.w	#$C,(Tails_acceleration).w	; set Tails' acceleration
 	move.w	#$80,(Tails_deceleration).w	; set Tails' deceleration
     endif
-	cmpi.w	#2,(Player_mode).w
+	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	bne.s	Obj02_Init_2Pmode
 	tst.b	(Last_star_pole_hit).w
 	bne.s	Obj02_Init_Continued
@@ -42216,7 +42225,7 @@ Tails_ResetOnFloor_Part3:
     if fixBugs
 	; Without this check, AI Tails will ruin the player's
 	; combo when he touches the floor.
-	cmpi.w	#2,(Player_mode).w
+	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	bne.s	+
     endif
 	move.w	#0,(Chain_Bonus_counter).w
@@ -42345,7 +42354,7 @@ Obj02_Dead:
 
 ; loc_1CC6C:
 Obj02_CheckGameOver:
-	cmpi.w	#2,(Player_mode).w	; is it a Tails Alone game?
+	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w	; is it a Tails Alone game?
 	beq.w	CheckGameOver		; if yes, branch... goodness, code reuse
 	move.b	#1,(Scroll_lock_P2).w
 	move.b	#0,spindash_flag(a0)
@@ -43830,7 +43839,7 @@ Obj35_OtherLayersUpdate:
 	movea.w	parent(a0),a1 ; a1=character
 	btst	#status_secondary.invincible,status_secondary(a1)
 	beq.w	DeleteObject
-	cmpi.w	#2,(Player_mode).w
+	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	beq.s	+
 	lea	(Sonic_Pos_Record_Index).w,a5
 	lea	(Sonic_Pos_Record_Buf).w,a6
@@ -44009,7 +44018,7 @@ Obj08_Init:
 	cmpa.w	#Sonic_Dust,a0
 	beq.s	+
 	move.b	#1,obj08_belongs_to_tails(a0)
-	cmpi.w	#2,(Player_mode).w
+	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	beq.s	+
 	move.w	#make_art_tile(ArtTile_ArtNem_TailsDust,0,0),art_tile(a0)
 	move.w	#Sidekick,parent(a0)
@@ -72640,7 +72649,7 @@ Obj5A_RingsNeeded:
 ; ===========================================================================
 +
 	move.w	(Ring_count).w,d0
-	cmpi.w	#1,(Player_mode).w
+	cmpi.w	#PlayerMode_SonicAlone,(Player_mode).w
 	blt.s	+
 	beq.s	++
 	move.w	(Ring_count_2P).w,d0
@@ -73254,7 +73263,7 @@ Obj5A_CreateRingReqMessage:
 Obj5A_PrintCheckpointMessage:
 	move.w	#$80,d3				; x
 	bsr.w	Obj5A_CreateCheckpointWingedHand
-	cmpi.w	#1,(Player_mode).w
+	cmpi.w	#PlayerMode_SonicAlone,(Player_mode).w
 	ble.s	loc_35D6E
 	addi.w	#palette_line_1,art_tile(a1)
 	addi.w	#palette_line_1,art_tile(a2)
@@ -79867,7 +79876,7 @@ ObjB2_Init:
 	move.b	subtype(a0),d0
 	subi.b	#$4E,d0
 	move.b	d0,routine(a0)
-	cmpi.w	#2,(Player_mode).w
+	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	bne.s	+
 	cmpi.b	#8,d0
 	bhs.s	+
@@ -80181,7 +80190,7 @@ loc_3AB18:
 	move.l	#(1<<24)|(0<<16)|(AniIDSonAni_Wait<<8)|(AniIDSonAni_Wait<<0),mapping_frame(a1)
 	move.w	#$100,anim_frame_duration(a1)
 	move.b	#$13,y_radius(a1)
-	cmpi.w	#2,(Player_mode).w
+	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	bne.s	+
 	move.b	#$F,y_radius(a1)
 + ; loc_3AB60:
@@ -80322,7 +80331,7 @@ loc_3AC84:
 	move.w	x_pos(a0),d0
 	subi.w	#$10,d0
 	move.w	d0,x_pos(a1)
-	cmpi.w	#2,(Player_mode).w
+	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	bne.s	loc_3ACC8
 	subi.w	#$10,y_pos(a1)
 
@@ -80626,7 +80635,7 @@ ObjB2_Animate_Pilot:
 	moveq	#0,d0
 	move.b	objoff_36(a0),d0
 	moveq	#Tails_pilot_frames_end-Tails_pilot_frames,d1
-	cmpi.w	#2,(Player_mode).w
+	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	bne.s	+
 	moveq	#Sonic_pilot_frames_end-Sonic_pilot_frames,d1
 + ; loc_3AF78:
@@ -80636,7 +80645,7 @@ ObjB2_Animate_Pilot:
 	moveq	#0,d0
 + ; loc_3AF80:
 	move.b	d0,objoff_36(a0)
-	cmpi.w	#2,(Player_mode).w
+	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	bne.s	+
 	move.b	Sonic_pilot_frames(pc,d0.w),d0
 	jmpto	JmpTo_LoadSonicDynPLC_Part2

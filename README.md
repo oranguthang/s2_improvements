@@ -190,6 +190,19 @@ Special Stage and `LevSelEntry_SoundTest` must be the last item of every page.
 Two pages were verified with a temporary copy of the stock page: NEXT and PREV
 redraw instantly and items on either page start their own zone.
 
+## Player modes
+
+`Player_mode` (and `Player_option` in the menus) use the `PlayerMode_*`
+constants from `s2.constants.asm` instead of 0/1/2, following the preparation
+part of [Add Extra Characters](https://info.sonicretro.org/SCHG_How-to:Add_Extra_Characters_To_Sonic_2).
+`PlayerMode_Count` drives the Options and Level Select choices, and the
+assembler checks that the Options and Level Select name tables have one entry
+per mode. The order matters: some checks treat modes above
+`PlayerMode_SonicAlone` as Tails-led games and `tst.w (Player_mode)` tests for
+Sonic and Tails. When adding a character, search for `PlayerMode_` and
+`tst.w (Player_mode)`; the Special Stage HUD name frames (`andi.w #3`) also
+need a frame per mode.
+
 ## Music and sound IDs
 
 Based on [Expand the music index to start at $00](https://info.sonicretro.org/SCHG_How-to:Expand_the_music_index_to_start_at_%2400_instead_of_%2480).
