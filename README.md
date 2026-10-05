@@ -141,6 +141,11 @@ behavior, and new acts, demos, VS and Level Select do not reuse Special Stage st
   (Sonic 2 installation per the [official guide](https://github.com/vladikcomper/md-modules/blob/master/modules/errorhandler/docs/installation/Sonic_2_Github.md);
   see [the debugger guide](_debug/md-debugger/README.md))
 
+## Memory
+
+[MEMORY.md](MEMORY.md) lists the object fields and RAM the mod's features use
+and the RAM that is still free.
+
 ## Adding a zone
 
 Zone IDs are declared with `zoneID` in `s2.constants.asm`; `no_of_zones` follows

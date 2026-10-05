@@ -4094,3 +4094,6 @@ zPaused:	db 0 ; zbyte_1307 ; 0 = normal, -1 = pause all sound and music
 	if $>zMusicData
 		fatal "Your Z80 code won't fit before the music.. It's \{$-zMusicData}h bytes past the start of music data \{zMusicData}h"
 	endif
+	if MOMPASS=2
+		message "Z80 sound driver: \{zMusicData-$}h bytes free before the music buffer (each new song takes 4 playlist bytes and 1 tempo byte)."
+	endif
