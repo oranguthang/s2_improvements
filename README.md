@@ -17,20 +17,15 @@ upstream `380f37a`. The roll-jump collision-height fix from `a2f70eb` is already
 provided by upstream; the other 37 commits have been replayed with conflicts
 resolved.
 
-The default `preserveLegacyROM = 1` in `s2.compatibility.asm` retains the original
-ROM output with `gameRevision = 2`, `fixBugs = 1`, and `padToPowerOfTwo = 0`.
-It keeps the original implementations of newly changed upstream collision,
-boss, background, sprite-priority, and debug-list behavior, plus music modulation
-conversion. The newer upstream implementations remain available by setting
-`preserveLegacyROM = 0`; that mode intentionally produces a different ROM.
-The existing project improvements and earlier bug fixes remain enabled in both
-modes. Music assembly shares this setting, and the build script invalidates the
-generated music cache when it changes.
+All upstream fixes are enabled together with `fixBugs = 1`. The temporary
+`preserveLegacyROM` switch, which kept the ROM byte-identical to the old
+`master` during the migration, has been removed: it disabled real fixes (HTZ
+boss crash, running through walls, clipping onto floors from below, HTZ rising
+floor, OOZ launchers, ending music fade and others). The migration itself was
+verified before the switch was removed: `master` at `bfadfbd` and the ported
+branch built the same 1,081,322-byte ROM, MD5 `ca1f52e9cb999f5fa92d665d3eb508a4`.
 
-The reference ROM built from `master` at `bfadfbd` is 1,081,322 bytes and has MD5
-`ca1f52e9cb999f5fa92d665d3eb508a4`.
-
-After building, compare against the saved reference ROM using the bundled Lua:
+To compare two builds byte by byte, use the bundled Lua:
 
 ```bat
 build_tools\lua\lua.exe compare_roms.lua baseline.bin s2built.bin
@@ -54,9 +49,6 @@ Work continues on the current branch with separate local commits and no pushes.
 | Preserve level state after Special Stage | Implemented | Rings, object consumption and shields for both players; ordinary deaths and new levels |
 
 Hidden Palace from the official 2013 remake is a later project, outside this batch.
-The pre-improvement ROM remains the migration reference; new features intentionally
-change ROM bytes. The compatibility switch still controls only the newer upstream
-changes described above.
 
 ## Implemented Sonic Retro tutorials
 

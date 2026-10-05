@@ -554,17 +554,6 @@ smpsFMvoice macro voice,songID
 
 ; F0wwxxyyzz - Modulation - ww: wait time - xx: modulation speed - yy: change per step - zz: number of steps
 smpsModSet macro wait,speed,change,step
-	if preserveLegacyROM
-	dc.b	$F0
-	if (SonicDriverVer>=3)&&(SourceDriver<3)
-		dc.b	wait+1,speed,change,((step+1) * speed) & $FF
-	elseif (SonicDriverVer<3)&&(SourceDriver>=3)
-		dc.b	wait-1,speed,change,conv0To256(step)/conv0To256(speed)-1
-	else
-		dc.b	wait,speed,change,step
-	endif
-	;dc.b	speed,change,step
-	else
 	dc.b	$F0
 	if (SonicDriverVer==1)&&(SourceDriver==2)
 		dc.b	clampByte(wait-1)
@@ -587,7 +576,6 @@ smpsModSet macro wait,speed,change,step
 		dc.b	speed,change,conv0To256(step)/conv0To256(speed)-1
 	else
 		dc.b	speed,change,step
-	endif
 	endif
 	endm
 

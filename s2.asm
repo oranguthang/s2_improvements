@@ -28,9 +28,6 @@ fixBugs = 1
 ;	| If 1, enables all bug-fixes
 ;	| See also the 'FixDriverBugs' flag in 's2.sounddriver.asm'
 ;	| See also the 'FixMusicAndSFXDataBugs' flag in 'build.lua'
-	include "s2.compatibility.asm"
-upstreamFixes = fixBugs&~~preserveLegacyROM
-; Upstream fixes introduced after our original master are opt-in.
 
 allOptimizations = 0
 ;	| If 1, enables all optimizations
@@ -14674,7 +14671,7 @@ ChildObject_AD6E:	childObjectData objoff_3E, ObjID_TornadoHelixes, $00
 
 ; off_AD72:
 ObjCD_SubObjData:
-    if upstreamFixes
+    if fixBugs
 	subObjData Obj28_MapUnc_11E1C,make_art_tile(ArtTile_ArtNem_Animal_2,0,0),1<<render_flags.level_fg,1,8,0
     else
 	; This should use priority 1, not 2. As-is, it causes the birds to
@@ -15983,7 +15980,7 @@ SwScrl_WFZ:
 	lea	(TempArray_LayerDef).w,a2
 	move.l	d0,(a2)+				; Static parts of BG (generally no clouds in them)
 	move.l	d1,(a2)+				; Eggman's getaway ship
-    if upstreamFixes
+    if fixBugs
 	moveq	#0,d5
 	move.w	(Camera_X_pos_diff).w,d5	; get camera x-diff
 	ext.l	d5
@@ -36037,7 +36034,7 @@ SolidObject_TopBottom:
 ; ===========================================================================
 ; loc_19B06:
 SolidObject_InsideBottom:
-    if upstreamFixes
+    if fixBugs
 	; Squash the player while on the ground and at angles within
 	; [$18, -$18]. We need the angle check or else touching the bottom of
 	; a solid object while going up a steep slope or wall would also
@@ -36052,7 +36049,7 @@ SolidObject_InsideBottom:
 .inair:
     endif
 	tst.w	y_vel(a1)		; is Sonic moving vertically?
-    if ~~upstreamFixes
+    if ~~fixBugs
 	; The player will only be squashed while standing still or on flat
 	; ground. In ARZ, the uneven terrain will make the falling pillar tips
 	; unable to squash the player, who can get pushed through the ground.
@@ -36086,7 +36083,7 @@ loc_19B1C:
 ; ===========================================================================
 ; loc_19B28:
 SolidObject_Squash:
-    if ~~upstreamFixes
+    if ~~fixBugs
 	; This becomes redundant with the above squash-check fix.
 	btst	#status.player.in_air,status(a1)	; is Sonic in the air?
 	bne.s	loc_19B1C	; if yes, branch
@@ -36127,7 +36124,7 @@ SolidObject_Landed:
 	bmi.s	SolidObject_Miss	; if Sonic is right of object, branch
 	cmp.w	d2,d1			; is Sonic left of object?
 	bhs.s	SolidObject_Miss	; if yes, branch
-    if upstreamFixes
+    if fixBugs
 	; The original code checks the player's velocity to prevent them from
 	; sticking to the top of the object when moving upward. This is fine,
 	; except that it makes it possible for HTZ's rising floor to go right
@@ -36145,7 +36142,7 @@ SolidObject_Landed:
     endif
 	tst.w	y_vel(a1)		; is Sonic moving upwards?
 	bmi.s	SolidObject_Miss	; if yes, branch
-    if upstreamFixes
+    if fixBugs
 .skip:
     endif
 	sub.w	d3,y_pos(a1)		; correct Sonic's position
@@ -36437,7 +36434,7 @@ loc_19D92:
 ; d2 already has the full width of the log.
 ;loc_19D9C:
 PlatformObject11_cont:
-    if upstreamFixes
+    if fixBugs
 	; See fixes under SolidObject_Landed and PlatformObject_cont.
 	btst	#status.player.in_air,status(a1)
 	bne.s	.inair
@@ -36450,7 +36447,7 @@ PlatformObject11_cont:
     endif
 	tst.w	y_vel(a1)
 	bmi.w	return_19E8E
-    if upstreamFixes
+    if fixBugs
 .skip
     endif
 	move.w	x_pos(a1),d0
@@ -36463,7 +36460,7 @@ PlatformObject11_cont:
 ; ===========================================================================
 ;loc_19DBA:
 PlatformObject_cont:
-    if upstreamFixes
+    if fixBugs
 	; See fix under SolidObject_Landed.
 	; Strictly speaking, this fix isn't needed for any platform objects,
 	; but it's still applied for the sake of consistency. The angle check
@@ -36481,7 +36478,7 @@ PlatformObject_cont:
     endif
 	tst.w	y_vel(a1)
 	bmi.w	return_19E8E
-    if upstreamFixes
+    if fixBugs
 .skip
     endif
 	move.w	x_pos(a1),d0
@@ -36573,7 +36570,7 @@ return_19E8E:
 ; ===========================================================================
 ;loc_19E90:
 SlopedPlatform_cont:
-    if upstreamFixes
+    if fixBugs
 	; See fixes under SolidObject_Landed and PlatformObject_cont.
 	btst	#status.player.in_air,status(a1)
 	bne.s	.inair
@@ -36586,7 +36583,7 @@ SlopedPlatform_cont:
     endif
 	tst.w	y_vel(a1)
 	bmi.w	return_19E8E
-    if upstreamFixes
+    if fixBugs
 .skip
     endif
 	move.w	x_pos(a1),d0
@@ -36612,7 +36609,7 @@ loc_19EB6:
 ; Basically identical to PlatformObject_cont
 ;loc_19EC8:
 PlatformObject2_cont:
-    if upstreamFixes
+    if fixBugs
 	; See fixes under SolidObject_Landed and PlatformObject_cont.
 	btst	#status.player.in_air,status(a1)
 	bne.s	.inair
@@ -36625,7 +36622,7 @@ PlatformObject2_cont:
     endif
 	tst.w	y_vel(a1)
 	bmi.w	return_19E8E
-    if upstreamFixes
+    if fixBugs
 .skip
     endif
 	move.w	x_pos(a1),d0
@@ -37050,7 +37047,7 @@ Obj01_MdNormal:
 	bsr.w	Sonic_Move			; handle Sonic's left/right movement
 	bsr.w	Sonic_Roll			; check for rolling
 
-    if upstreamFixes
+    if fixBugs
 Obj01_MdNormal_Skip:
     endif
 	bsr.w	Sonic_LevelBound	; keep Sonic within level bounds and handle bottomless pits
@@ -37058,7 +37055,7 @@ Obj01_MdNormal_Skip:
 	bsr.w	AnglePos			; update Sonic's current angle as he walks along the floor
 	bsr.w	Sonic_SlopeRepel	; handle Sonic detaching from walls if not fast enough
 
-    if ~~upstreamFixes
+    if ~~fixBugs
 ; return_1A2DE:
 Obj01_MdNormal_Skip:
     endif
@@ -37620,7 +37617,7 @@ Obj01_Traction:
 ; stops Sonic from running through walls that meet the ground
 ; loc_1A64E:
 Obj01_CheckWallsOnGround:
-    if upstreamFixes
+    if fixBugs
 	; These lines were added in S3K to fix an oversight where Sonic could
 	; run through walls if he is upside-down, or moving on a wall when
 	; his angle was exactly $80 (most noticeable in Carnival Night in S3A).
@@ -37631,7 +37628,7 @@ Obj01_CheckWallsOnGround:
 	move.b	angle(a0),d0	; get Sonic's current angle in relation to the floor
 	addi.b	#$40,d0			; rotate it by 90 degrees
 	bmi.s	return_1A6BE	; if Sonic is upside down, branch (to prevent potential collision issues with loops)
-    if upstreamFixes
+    if fixBugs
 .noearlyexit:
     endif
 	move.b	#$40,d1			; Rotate 90 degrees clockwise
@@ -38902,7 +38899,7 @@ Sonic_HitFloor:
 	bsr.w	Sonic_CheckFloor
 	tst.w	d1
 	bpl.s	return_1AFE6
-    if upstreamFixes
+    if fixBugs
 	; When Sonic is moving down and a floor collision is detected, there exists
 	; a check that makes it so that he doesn't clip on top of a surface that
 	; he's too far below from. However, said check doesn't exist for when Sonic
@@ -38998,7 +38995,7 @@ Sonic_HitFloor2:
 	bsr.w	Sonic_CheckFloor
 	tst.w	d1
 	bpl.s	return_1B09E
-    if upstreamFixes
+    if fixBugs
 	; See explanation in Sonic_HitFloor
 	move.b	y_vel(a0),d2	; get Sonic's fall speed at the time of impact (upper byte only, pixel delta)
 	addq.b	#8,d2		; increase it by one tile
@@ -40861,7 +40858,7 @@ Obj02_Traction:
 ; stops Tails from running through walls that meet the ground
 ; loc_1C232:
 Obj02_CheckWallsOnGround:
-    if upstreamFixes
+    if fixBugs
 	; These lines were added in S3K to fix an oversight where Tails could
 	; run through walls if he is upside-down, or moving on a wall when
 	; his angle was exactly $80 (most noticeable in Carnival Night in S3A).
@@ -40872,7 +40869,7 @@ Obj02_CheckWallsOnGround:
 	move.b	angle(a0),d0
 	addi.b	#$40,d0
 	bmi.s	return_1C2A2
-    if upstreamFixes
+    if fixBugs
 .noearlyexit:
     endif
 	move.b	#$40,d1
@@ -41922,7 +41919,7 @@ Tails_HitFloor:
 	bsr.w	Sonic_CheckFloor
 	tst.w	d1
 	bpl.s	return_1CA96
-    if upstreamFixes
+    if fixBugs
 	; See explanation in Sonic_HitFloor
 	move.b	y_vel(a0),d2	; get Tails' fall speed at the time of impact (upper byte only, pixel delta)
 	addq.b	#8,d2		; increase it by one tile
@@ -42012,7 +42009,7 @@ Tails_HitFloor2:
 	bsr.w	Sonic_CheckFloor
 	tst.w	d1
 	bpl.s	return_1CB4E
-    if upstreamFixes
+    if fixBugs
 	; See explanation in Sonic_HitFloor
 	move.b	y_vel(a0),d2	; get Tails' fall speed at the time of impact (upper byte only, pixel delta)
 	addq.b	#8,d2		; increase it by one tile
@@ -48772,11 +48769,7 @@ Obj14_UpdateMappingAndCollision:
 	move.b	width_pixels(a0),d1
 	moveq	#8,d3
 	move.w	(sp)+,d4
-    if preserveLegacyROM
 	jmp	(SlopedPlatform).l
-    else
-	jmp	(SlopedPlatform).l
-    endif
 ; ===========================================================================
 
 return_21A74:
@@ -52588,7 +52581,7 @@ loc_252F0:
 	addq.b	#2,(a4)
 	move.w	x_pos(a0),x_pos(a1)
 	move.w	y_pos(a0),y_pos(a1)
-    if upstreamFixes
+    if fixBugs
 	; If Sonic/Tails fall into the launcher after being hurt, they will
 	; go through it while still activating the speed-doubling effect.
 	; Putting them into their normal state fixes the bug.
@@ -65608,7 +65601,7 @@ Obj52_Mobile_Flamethrower:
 	move.b	#$2F,objoff_3E(a0)
 
 loc_2FDAA:
-    if ~~upstreamFixes
+    if ~~fixBugs
 	; This branch is in the wrong place. Should the player defeat Eggman right as
 	; the flamethrower finishes, AnimateBoss will increment `boss_routine` by 2,
 	; making Obj52_Mobile read an invalid entry from off_2FD0E and crash the game.
@@ -65617,7 +65610,7 @@ loc_2FDAA:
 	bsr.w	loc_2FEDE
 	lea	(Ani_obj52).l,a1
 	bsr.w	AnimateBoss
-    if upstreamFixes
+    if fixBugs
 	; See above.
 	bsr.w	loc_300A4
     endif
@@ -67026,49 +67019,6 @@ BranchTo_JmpTo55_DeleteObject ; BranchTo
 ; ===========================================================================
 ; loc_30CCC:
 Obj89_Arrow_Platform:
-    if preserveLegacyROM
-    if fixBugs
-	; Run platform check every frame so standing bit is always updated,
-	; preventing the walking-in-air glitch when Sonic walks off the edge.
-	move.w	#$1B,d1
-	move.w	#1,d2
-	move.w	#2,d3
-	move.w	x_pos(a0),d4
-	jsrto	JmpTo8_PlatformObject
-    endif
-	tst.w	obj89_arrow_timer(a0)		; is timer set?
-	bne.s	Obj89_Arrow_Platform_Decay	; if yes, branch
-    if ~~fixBugs
-	move.w	#$1B,d1
-	move.w	#1,d2
-	move.w	#2,d3
-	move.w	x_pos(a0),d4
-	jsrto	JmpTo8_PlatformObject
-    endif
-    if fixBugs
-	; AI Tails normally does not cause the arrow they are standing on
-	; to fall, this fixes that.
-	btst	#status.npc.p2_standing,status(a0)	; is Tails standing on the arrow?
-	beq.s	.notTails				; if not, branch
-	move.w	#$1F,obj89_arrow_timer(a0)		; else, set timer
-
-.notTails:
-    endif
-	btst	#status.npc.p1_standing,status(a0)	; is Sonic standing on the arrow?
-	beq.s	return_30D02				; if not, branch
-	move.w	#$1F,obj89_arrow_timer(a0)		; else, set timer
-
-; loc_30CF4:
-Obj89_Arrow_Platform_Decay:
-	subi_.w	#1,obj89_arrow_timer(a0)	; decrement timer
-	bne.s	return_30D02			; branch, if timer hasn't expired
-	move.b	#6,obj89_arrow_routine(a0)	; => Obj89_Arrow_Sub6
-
-return_30D02:
-	rts
-; ===========================================================================
-; loc_30D04:
-    else
     if fixBugs
 	; PlatformObject originally only ran while the decay timer was zero, so once
 	; Sonic/Tails stepped on the arrow (and timer gets set) it stopped running
@@ -67128,7 +67078,6 @@ return_30D02:
     endif
 ; ===========================================================================
 ; loc_30D04:
-    endif
 
 Obj89_Arrow_ChkDropPlayers:
 	bclr	#p1_standing_bit,status(a0)
@@ -84088,7 +84037,7 @@ loc_3D9D6:
 	dbf	d6,-
 
 	moveq	#signextendB(MusID_FadeOut),d0
-    if upstreamFixes
+    if fixBugs
 	jsr	(PlayMusic).l
     else
 	; PlaySound ends up being clogged up by the explosion sounds,
@@ -89947,7 +89896,7 @@ DbgObjList_EHZ: dbglistheader
 	dbglistobj ObjID_Monitor,	Obj26_MapUnc_12D36,   8,   9, make_art_tile(ArtTile_ArtNem_Powerups,0,0)
 	dbglistobj ObjID_Starpost,	Obj79_MapUnc_1F424,   1,   0, make_art_tile(ArtTile_ArtNem_Checkpoint,0,0)
 	dbglistobj ObjID_PlaneSwitcher,	Obj03_MapUnc_1FFB8,   9,   1, make_art_tile(ArtTile_ArtNem_Ring,1,0)
-    if upstreamFixes
+    if fixBugs
 	dbglistobj ObjID_EHZWaterfall,	Obj49_MapUnc_20C50,   0,   1, make_art_tile(ArtTile_ArtNem_Waterfall,1,0)
     else
 	; Uses a blank frame (0) instead of the massive waterfall (1).
@@ -90199,7 +90148,7 @@ DbgObjList_CNZ: dbglistheader
 	dbglistobj ObjID_Flipper,	Obj86_MapUnc_2B45A,   0,   0, make_art_tile(ArtTile_ArtNem_CNZFlipper,2,0)
 	dbglistobj ObjID_Flipper,	Obj86_MapUnc_2B45A,   1,   4, make_art_tile(ArtTile_ArtNem_CNZFlipper,2,0)
 	dbglistobj ObjID_CNZRectBlocks,	ObjD2_MapUnc_2B694,   1,   0, make_art_tile(ArtTile_ArtNem_CNZSnake,2,0)
-    if ~~upstreamFixes
+    if ~~fixBugs
 	; The player can't even place this, since ObjD3 is dependent
 	; on ObjDC, making it worthless.
 	dbglistobj ObjID_BombPrize,	ObjD3_MapUnc_2B8D4,   0,   0, make_art_tile(ArtTile_ArtNem_CNZBonusSpike,0,0)
