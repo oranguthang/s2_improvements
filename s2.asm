@@ -27867,11 +27867,11 @@ titlecardobjdata macro routine,frame,width,duration,xstart,xstop,y
 ; word_13CD4:
 Obj34_TitleCardData:
 	titlecardobjdata  8,   0, $80, $1B, spriteScreenPositionX(screen_width+128), spriteScreenPositionXCentered(  0), spriteScreenPositionYCentered(-56)	; zone name
-	titlecardobjdata $A, $11, $40, $1C, spriteScreenPositionX(             -88), spriteScreenPositionXCentered( 40), spriteScreenPositionYCentered(-32)	; "ZONE"
-	titlecardobjdata $C, $12, $18, $1C, spriteScreenPositionX(             -24), spriteScreenPositionXCentered(104), spriteScreenPositionYCentered(-32)	; act number
+	titlecardobjdata $A, TitleCardFrame_Zone, $40, $1C, spriteScreenPositionX(             -88), spriteScreenPositionXCentered( 40), spriteScreenPositionYCentered(-32)	; "ZONE"
+	titlecardobjdata $C, TitleCardFrame_Act1, $18, $1C, spriteScreenPositionX(             -24), spriteScreenPositionXCentered(104), spriteScreenPositionYCentered(-32)	; act number
 	titlecardobjdata  2,   0,   0,   0,                                       0,                                  0,                                  0	; blue background
-	titlecardobjdata  4, $15, $48,   8, spriteScreenPositionX(screen_width+232), spriteScreenPositionXCentered( 72), spriteScreenPositionYCentered( 48)	; bottom yellow part
-	titlecardobjdata  6, $16,   8, $15, spriteScreenPositionX(               0), spriteScreenPositionXCentered(-48), spriteScreenPositionYCentered(  0)	; left red part
+	titlecardobjdata  4, TitleCardFrame_STH, $48,   8, spriteScreenPositionX(screen_width+232), spriteScreenPositionXCentered( 72), spriteScreenPositionYCentered( 48)	; bottom yellow part
+	titlecardobjdata  6, TitleCardFrame_RedStripes,   8, $15, spriteScreenPositionX(               0), spriteScreenPositionXCentered(-48), spriteScreenPositionYCentered(  0)	; left red part
 Obj34_TitleCardData_End:
 
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
@@ -27980,10 +27980,10 @@ Obj34_ActNumber:	; the act number, coming in
 	cmpi.b	#death_egg_zone,d0	; is it Death Egg Zone?
 	beq.s	BranchTo9_DeleteObject	; if yes, branch
 	move.b	(Current_Act).w,d1	; get the current act
-	addi.b	#$12,d1			; add $12 to it (this is the index of the "1" frame in the mappings)
+	addi.b	#TitleCardFrame_Act1,d1	; add the index of the "1" frame in the mappings
 	cmpi.b	#metropolis_zone_2,d0	; are we in Metropolis Zone Act 3?
 	bne.s	+			; if not, branch
-	moveq	#$14,d1			; use the "3" frame instead
+	moveq	#TitleCardFrame_Act3,d1	; use the "3" frame instead
 +
 	move.b	d1,mapping_frame(a0)	; set the mapping frame
 
@@ -29075,6 +29075,13 @@ Obj6F_SubObjectMetaData_End:
 ; Note: if you modify these mappings, also adjust the characters
 ;	loaded into VRAM in TitleCardLetters
 ; -------------------------------------------------------------------------------
+; The zone names take one frame per zone ID, so the frames after them move
+; when zones are added; use these constants instead of frame numbers.
+TitleCardFrame_Zone = no_of_zones		; "ZONE" text
+TitleCardFrame_Act1 = no_of_zones+1		; act numbers 1-3
+TitleCardFrame_Act3 = no_of_zones+3
+TitleCardFrame_STH = no_of_zones+4		; "SONIC THE HEDGEHOG" text
+TitleCardFrame_RedStripes = no_of_zones+5
 ; Obj34_MapUnc_147BA:
 MapUnc_TitleCards:	mappingsTable
 .zone_names:	zoneOrderedOffsetTable 2,1
@@ -90289,7 +90296,7 @@ LevelArtPointers:
 	levartptrs PLCID_Scz1,        PLCID_Scz2,      PalID_SCZ,  ArtKos_SCZ, BM16_WFZ, BM128_WFZ ; SCZ    ; SKY CHASE ZONE
 
     if (cur_zone_id<>no_of_zones)&&(MOMPASS=1)
-	message "Warning: Table LevelArtPointers has \{cur_zone_id/1.0} entries, but it should have \{no_of_zones/1.0} entries"
+	error "Table LevelArtPointers has \{cur_zone_id/1.0} entries, but it should have \{no_of_zones/1.0} entries"
     endif
 	!org LevelArtPointers+cur_zone_id*12
 

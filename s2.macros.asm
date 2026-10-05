@@ -222,7 +222,7 @@ zoneOffsetTableEntry macro value
 ; number of entries were declared
 zoneTableEnd macro
 	if (.cur_zone_id<>no_of_zones)&&(MOMPASS=1)
-	    message "Warning: Table \{.zone_table_name} has \{.cur_zone_id/1.0} entries, but it should have \{(no_of_zones)/1.0} entries"
+	    error "Table \{.zone_table_name} has \{.cur_zone_id/1.0} entries, but it should have \{(no_of_zones)/1.0} entries"
 	endif
 	!org .zone_table_addr+.cur_zone_id*.zone_entry_len*.zone_entries
     endm
