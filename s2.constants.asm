@@ -2712,6 +2712,6 @@ AniIDTailsAni_SwimUp = id(TailsAni_SwimUp_ptr) ; $27
 AniIDTailsAni_SwimCarry = id(TailsAni_SwimCarry_ptr) ; $28
 AniIDTailsAni_SwimTired = id(TailsAni_SwimTired_ptr) ; $29
 
-SndID_TailsGrab = (SndPtr_TailsGrab-SoundIndex)/2+$A0
-SndID_TailsFly = (SndPtr_TailsFly-SoundIndex)/2+$A0
-SndID_TailsTired = (SndPtr_TailsTired-SoundIndex)/2+$A0
+SndID_TailsGrab = (SndPtr_TailsGrab-SoundIndex)/2+SndID__First
+SndID_TailsFly = (SndPtr_TailsFly-SoundIndex)/2+SndID__First
+SndID_TailsTired = (SndPtr_TailsTired-SoundIndex)/2+SndID__First
