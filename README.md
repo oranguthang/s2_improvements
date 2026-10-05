@@ -141,6 +141,34 @@ behavior, and new acts, demos, VS and Level Select do not reuse Special Stage st
   (Sonic 2 installation per the [official guide](https://github.com/vladikcomper/md-modules/blob/master/modules/errorhandler/docs/installation/Sonic_2_Github.md);
   see [the debugger guide](_debug/md-debugger/README.md))
 
+## Adding a zone
+
+Zone IDs are declared with `zoneID` in `s2.constants.asm`; `no_of_zones` follows
+the list. Every per-zone table is a `zoneOrderedTable`/`zoneOrderedOffsetTable`
+(or `LevelArtPointers`), and the build stops if a table does not have exactly
+`no_of_zones` entries. To add a zone:
+
+1. Declare it after the last ID, e.g. `new_zone zoneID $11`, and its act
+   constants (`new_zone_act_1 = (new_zone<<8)|$00`).
+2. Build. The errors list every table that needs an entry (26 tables:
+   level art/blocks/palette, layouts, objects, rings, collision, start
+   positions, level size, camera, scrolling, level events, animated art and
+   blocks, palette cycles, water height and routine, music for 1P and VS,
+   animals, title card name and letters, debug list, demo script and level
+   order for 1P and VS). Add the entries in zone order.
+3. Draw the zone name in `MapUnc_TitleCards` and list its letters in
+   `TitleCardLetters`. The frames after the zone names move automatically;
+   use the `TitleCardFrame_*` constants instead of frame numbers.
+4. Add the zone to `LevelSelect_Order` if it should be selectable.
+
+This was verified with a temporary zone `$11` cloned from Emerald Hill: title
+card, art, objects, rings, Tails and gameplay matched EHZ. Limits: Level Select
+encodes special entries with bits 14 and 15 of the zone/act word, so zone IDs
+must stay below `$40`; zone offset tables use word offsets, so a table and its
+data must stay within 32 KB (the assembler reports an overflow). SCZ, WFZ and
+DEZ hand over to the next zone from their objects (`ObjB2`, the WFZ ending
+events and the Death Egg robot), not through `LevelOrder`.
+
 ## Regression checks
 
 `tests/test_stage1.py` executes assembled ROM routines with Unicorn 2.1.4 on
