@@ -89820,6 +89820,10 @@ Debug_PreparePlayer:
 ; Restore numbers immediately rather than waiting for the next whole second.
 Debug_RestoreHUD:
 	movem.l d0-d7/a0-a6,-(sp)
+	; This runs mid-frame, so keep V-int and H-int from changing the VDP
+	; address between the commands below and their data writes.
+	move	sr,-(sp)
+	move	#$2700,sr
 	bsr.w	Hud_Base
 	move.b	#1,(Update_HUD_score).w
 	move.b	#1,(Update_HUD_rings).w
@@ -89835,6 +89839,7 @@ Debug_RestoreHUD:
 	move.b	(Timer_second).w,d1
 	bsr.w	Hud_Secs
 .done:
+	move	(sp)+,sr
 	movem.l (sp)+,d0-d7/a0-a6
 	rts
 
