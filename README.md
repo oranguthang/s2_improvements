@@ -159,7 +159,7 @@ the list. Every per-zone table is a `zoneOrderedTable`/`zoneOrderedOffsetTable`
 3. Draw the zone name in `MapUnc_TitleCards` and list its letters in
    `TitleCardLetters`. The frames after the zone names move automatically;
    use the `TitleCardFrame_*` constants instead of frame numbers.
-4. Add the zone to `LevelSelect_Order` if it should be selectable.
+4. Add the zone to a Level Select page if it should be selectable (see below).
 
 This was verified with a temporary zone `$11` cloned from Emerald Hill: title
 card, art, objects, rings, Tails and gameplay matched EHZ. Limits: Level Select
@@ -168,6 +168,34 @@ must stay below `$40`; zone offset tables use word offsets, so a table and its
 data must stay within 32 KB (the assembler reports an overflow). SCZ, WFZ and
 DEZ hand over to the next zone from their objects (`ObjB2`, the WFZ ending
 events and the Death Egg robot), not through `LevelOrder`.
+
+## Level Select pages
+
+The Level Select is driven by `LevelSelect_Pages`, based on
+[Extend the Level Select](https://info.sonicretro.org/SCHG_How-to:Extend_the_Level_Select_in_Sonic_2).
+The game ships with one page; the selected page and item are remembered while
+the console is on. To add a page:
+
+1. Draw its 40x28 screen mappings (Enigma) from `mappings/misc/Level Select.bin`,
+   keeping the zone icon, sound test number and player option areas, and
+   include them like `MapEng_LevSel`.
+2. Write `Name_Order`, `Name_SwitchTable`, `Name_IconTable` and
+   `Name_MarkTable` with one entry per item, each followed by a `_End` label,
+   then `levselpagecheck Name` to verify their sizes.
+3. Add `levselpage Name, mappings` to `LevelSelect_Pages`.
+
+In order tables, `LevSelEntry_NextPage` and `LevSelEntry_PrevPage` switch pages
+(with wrap-around) when Start is pressed, `LevSelEntry_SpecialStage` starts the
+Special Stage and `LevSelEntry_SoundTest` must be the last item of every page.
+Two pages were verified with a temporary copy of the stock page: NEXT and PREV
+redraw instantly and items on either page start their own zone.
+
+## Branch range
+
+Sonic 2 has many `bsr.w`/`bra.w` branches within a few hundred bytes of the
+32 KB limit, so adding code can make the assembler report `jump distance too
+big` for an unrelated branch. Replace it with `jsr (Label).l` or
+`jmp (Label).l` (or the disassembly's `jsrto`/`jmpto` macros).
 
 ## Regression checks
 

@@ -1861,7 +1861,7 @@ LevSel_HoldTimer:		ds.w	1
 Level_select_zone:		ds.w	1
 Sound_test_sound:		ds.w	1
 Title_screen_option:		ds.b	1
-				ds.b	1	; $FFFFFF87 ; unused
+Level_select_page:		ds.b	1	; current page of the Level Select
 Current_Zone_2P:		ds.b	1
 Current_Act_2P:			ds.b	1
 Two_player_mode_copy:		ds.w	1

@@ -12716,29 +12716,17 @@ MenuScreen_LevelSelect:
 	clr.b	(SS_keep_level_state).w
 	clr.b	(Water_fullscreen_flag).w
 	clr.w	(Game_paused).w
-	; Load foreground (sans zone icon)
-	lea	(Chunk_Table).l,a1
-	lea	(MapEng_LevSel).l,a0	; 2 bytes per 8x8 tile, compressed
-	move.w	#make_art_tile(ArtTile_VRAM_Start,0,0),d0
-	bsr.w	EniDec
+	bsr.w	LevelSelect_ValidatePage
 
-	lea	(Chunk_Table).l,a1
-	move.l	#vdpComm(VRAM_Plane_A_Name_Table,VRAM,WRITE),d0
-	moveq	#40-1,d1
-	moveq	#28-1,d2	; 40x28 = whole screen
-	jsrto	JmpTo_PlaneMapToVRAM_H40	; display patterns
-
-	; Draw sound test number
-	moveq	#palette_line_0,d3
-	bsr.w	LevelSelect_DrawSoundNumber
-	bsr.w	LevelSelect_DrawPlayerOption
-
-	; Load zone icon
+	; Load zone icon mappings (shared by every page). They follow the page
+	; mappings, which always take a whole 40x28 screen.
 	lea	(Chunk_Table+planeLoc(40,0,28)).l,a1
 	lea	(MapEng_LevSelIcon).l,a0
 	move.w	#make_art_tile(ArtTile_ArtNem_LevelSelectPics,0,0),d0
 	bsr.w	EniDec
 
+	; Load and draw the current page (sans zone icon)
+	bsr.w	LevelSelect_DrawPage
 	bsr.w	LevelSelect_DrawIcon
 
 	clr.w	(Player_mode).w
@@ -12809,12 +12797,18 @@ LevelSelect_Main:	; routine running during level select
 
 ;loc_93F0:
 LevelSelect_PressStart:
+	bsr.w	LevelSelect_GetPage
+	movea.l	levselpage_order(a2),a0
 	move.w	(Level_select_zone).w,d0
 	add.w	d0,d0
-	move.w	LevelSelect_Order(pc,d0.w),d0
+	move.w	(a0,d0.w),d0
 	bmi.w	LevelSelect_Return	; sound test
-	cmpi.w	#$4000,d0
-	bne.s	LevelSelect_StartZone
+	cmpi.w	#LevSelEntry_NextPage,d0
+	beq.w	LevelSelect_NextPage
+	cmpi.w	#LevSelEntry_PrevPage,d0
+	beq.w	LevelSelect_PrevPage
+	cmpi.w	#LevSelEntry_SpecialStage,d0
+	bne.w	LevelSelect_StartZone
 
 ;LevelSelect_SpecialStage:
 	move.b	#GameModeID_SpecialStage,(Game_Mode).w ; => SpecialStage
@@ -12872,8 +12866,115 @@ LevelSelect_Order:
 	dc.w	sky_chase_zone_act_1	; 17
 	dc.w	wing_fortress_zone_act_1	; 18
 	dc.w	death_egg_zone_act_1	; 19
-	dc.w	$4000	; 20 - special stage
-	dc.w	$FFFF	; 21 - sound test
+	dc.w	LevSelEntry_SpecialStage	; 20
+	dc.w	LevSelEntry_SoundTest	; 21 - must be the last entry of every page
+LevelSelect_Order_End:
+
+; -----------------------------------------------------------------------------
+; Level Select pages
+;
+; Each page has its own screen mappings (Enigma, 40x28, leaving the zone icon,
+; the sound test number and the player option areas free) and its own order,
+; left/right switch, icon and mark tables with one entry per item. The sound
+; test must be the last item of every page. Items using LevSelEntry_NextPage
+; or LevSelEntry_PrevPage switch pages when Start is pressed on them, so zone
+; IDs used in the order tables must stay below $30.
+; -----------------------------------------------------------------------------
+LevSelEntry_NextPage = $3000
+LevSelEntry_SpecialStage = $4000
+LevSelEntry_PrevPage = $5000
+LevSelEntry_SoundTest = $FFFF
+
+levselpage_mappings = 0
+levselpage_order = 4
+levselpage_switch = 8
+levselpage_icons = $C
+levselpage_marks = $10
+levselpage_last = $14	; index of the last item (the sound test)
+levselpage_len = $16
+
+; levselpage name, mappings
+; declares a page whose tables are name_Order, name_SwitchTable,
+; name_IconTable and name_MarkTable, each followed by a matching _End label
+levselpage macro name,mappings
+	dc.l	mappings, name_Order, name_SwitchTable, name_IconTable, name_MarkTable
+	dc.w	(name_Order_End-name_Order)/2-1
+    endm
+
+; levselpagecheck name
+; place after a page's tables: checks that they all have one entry per item
+levselpagecheck macro name
+	if (name_SwitchTable_End-name_SwitchTable<>(name_Order_End-name_Order)/2)||(name_IconTable_End-name_IconTable<>(name_Order_End-name_Order)/2)||(name_MarkTable_End-name_MarkTable<>(name_Order_End-name_Order)*2)
+	    error "Level Select page name: the switch, icon and mark tables must have one entry per item"
+	endif
+    endm
+
+LevelSelect_Pages:
+	levselpage LevelSelect, MapEng_LevSel
+LevelSelect_Pages_End:
+LevelSelect_PageCount = (LevelSelect_Pages_End-LevelSelect_Pages)/levselpage_len
+
+; Returns a2 = the current page in LevelSelect_Pages.
+LevelSelect_GetPage:
+	moveq	#0,d0
+	move.b	(Level_select_page).w,d0
+	mulu.w	#levselpage_len,d0
+	lea	(LevelSelect_Pages).l,a2
+	adda.w	d0,a2
+	rts
+
+; Keeps the remembered page and item valid (e.g. after pages were removed).
+LevelSelect_ValidatePage:
+	cmpi.b	#LevelSelect_PageCount,(Level_select_page).w
+	blo.s	+
+	clr.b	(Level_select_page).w
++
+	bsr.s	LevelSelect_GetPage
+	move.w	levselpage_last(a2),d0
+	cmp.w	(Level_select_zone).w,d0
+	bhs.s	+
+	clr.w	(Level_select_zone).w
++
+	rts
+
+; Decompresses the current page into Chunk_Table and draws it, together with
+; the sound test number and the player option.
+LevelSelect_DrawPage:
+	bsr.s	LevelSelect_GetPage
+	movea.l	levselpage_mappings(a2),a0	; 2 bytes per 8x8 tile, compressed
+	lea	(Chunk_Table).l,a1
+	move.w	#make_art_tile(ArtTile_VRAM_Start,0,0),d0
+	jsr	(EniDec).l
+
+	lea	(Chunk_Table).l,a1
+	move.l	#vdpComm(VRAM_Plane_A_Name_Table,VRAM,WRITE),d0
+	moveq	#40-1,d1
+	moveq	#28-1,d2	; 40x28 = whole screen
+	jsrto	JmpTo_PlaneMapToVRAM_H40	; display patterns
+
+	moveq	#palette_line_0,d3
+	bsr.w	LevelSelect_DrawSoundNumber
+	bra.w	LevelSelect_DrawPlayerOption
+
+LevelSelect_NextPage:
+	addq.b	#1,(Level_select_page).w
+	cmpi.b	#LevelSelect_PageCount,(Level_select_page).w
+	blo.s	LevelSelect_ChangePage
+	clr.b	(Level_select_page).w
+	bra.s	LevelSelect_ChangePage
+
+LevelSelect_PrevPage:
+	subq.b	#1,(Level_select_page).w
+	bcc.s	LevelSelect_ChangePage
+	move.b	#LevelSelect_PageCount-1,(Level_select_page).w
+
+LevelSelect_ChangePage:
+	clr.w	(Level_select_zone).w
+	move	#$2700,sr
+	bsr.w	LevelSelect_DrawPage
+	bsr.w	LevelSelect_DrawIcon
+	move	#$2300,sr
+	bra.w	LevelSelect_Main
 ; ===========================================================================
 
 ;loc_9480:
@@ -12922,20 +13023,22 @@ LevSelControls:
 	move.b	(Ctrl_1_Held).w,d1
 	andi.b	#button_up_mask|button_down_mask,d1
 	beq.s	LevSelControls_CheckLR	; up/down not pressed, check for left & right
+	bsr.w	LevelSelect_GetPage
+	move.w	levselpage_last(a2),d2
 	move.w	(Level_select_zone).w,d0
 	btst	#button_up,d1
 	beq.s	+
 	subq.w	#1,d0	; decrease by 1
 	bcc.s	+	; >= 0?
-	moveq	#$15,d0	; set to $15
+	move.w	d2,d0	; wrap to the last item
 
 +
 	btst	#button_down,d1
 	beq.s	+
 	addq.w	#1,d0	; yes, add 1
-	cmpi.w	#$16,d0
-	blo.s	+	; smaller than $16?
-	moveq	#0,d0	; if not, set to 0
+	cmp.w	d2,d0
+	bls.s	+	; still on the page?
+	moveq	#0,d0	; if not, wrap to the first item
 
 +
 	move.w	d0,(Level_select_zone).w
@@ -12943,7 +13046,9 @@ LevSelControls:
 ; ===========================================================================
 ; loc_9522:
 LevSelControls_CheckLR:
-	cmpi.w	#$15,(Level_select_zone).w	; are we in the sound test?
+	bsr.w	LevelSelect_GetPage
+	move.w	levselpage_last(a2),d0
+	cmp.w	(Level_select_zone).w,d0	; are we in the sound test?
 	bne.s	LevSelControls_SwitchSide	; no
 	move.w	(Sound_test_sound).w,d0
 	move.b	(Ctrl_1_Press).w,d1
@@ -12988,8 +13093,9 @@ LevSelControls_SwitchSide:	; not in soundtest, not up/down pressed
 	move.b	(Ctrl_1_Press).w,d1
 	andi.b	#button_left_mask|button_right_mask,d1
 	beq.s	+				; no direction key pressed
+	movea.l	levselpage_switch(a2),a0
 	move.w	(Level_select_zone).w,d0	; left or right pressed
-	move.b	LevelSelect_SwitchTable(pc,d0.w),d0 ; set selected zone according to table
+	move.b	(a0,d0.w),d0		; set selected zone according to table
 	move.w	d0,(Level_select_zone).w
 +
 	btst	#button_C,(Ctrl_1_Press).w
@@ -13025,13 +13131,15 @@ LevelSelect_SwitchTable:
 	dc.b 6		; 19
 	dc.b 8		; 20
 	dc.b $A		; 21
+LevelSelect_SwitchTable_End:
 	even
 ; ===========================================================================
 
 ;loc_95B8:
 LevelSelect_MarkFields:
+	bsr.w	LevelSelect_GetPage
 	lea	(Chunk_Table).l,a4
-	lea	(LevSel_MarkTable).l,a5
+	movea.l	levselpage_marks(a2),a5
 	lea	(VDP_data_port).l,a6
 	moveq	#0,d0
 	move.w	(Level_select_zone).w,d0
@@ -13085,7 +13193,8 @@ LevelSelect_MarkFields:
 	move.w	d0,(a6)
 
 +
-	cmpi.w	#$15,(Level_select_zone).w
+	move.w	levselpage_last(a2),d0
+	cmp.w	(Level_select_zone).w,d0	; is the sound test marked?
 	bne.s	+
 	bsr.w	LevelSelect_DrawSoundNumber
 +
@@ -13136,9 +13245,9 @@ LevelSelect_DrawSoundNumber:
 
 ;loc_9688:
 LevelSelect_DrawIcon:
-	move.w	(Level_select_zone).w,d0
-	lea	(LevSel_IconTable).l,a3
-	lea	(a3,d0.w),a3
+	bsr.w	LevelSelect_GetPage
+	movea.l	levselpage_icons(a2),a3
+	adda.w	(Level_select_zone).w,a3
 	lea	(Chunk_Table+planeLoc(40,0,28)).l,a1
 	moveq	#0,d0
 	move.b	(a3),d0
@@ -13180,7 +13289,7 @@ LevelSelect_DrawIcon:
 	rts
 ; ===========================================================================
 ;byte_96D8
-LevSel_IconTable:
+LevelSelect_IconTable:
 	dc.b   0,0	;0	EHZ
 	dc.b   7,7	;2	CPZ
 	dc.b   8,8	;4	ARZ
@@ -13194,9 +13303,10 @@ LevSel_IconTable:
 	dc.b  $B	;$13	DEZ
 	dc.b  $C	;$14	Special Stage
 	dc.b  $E	;$15	Sound Test
+LevelSelect_IconTable_End:
 	even
 ;byte_96EE:
-LevSel_MarkTable:	; 4 bytes per level select entry
+LevelSelect_MarkTable:	; 4 bytes per level select entry
 ; line primary, 2*column ($E fields), line secondary, 2*column secondary (1 field)
 	dc.b   3,  6,  3,$24	;0
 	dc.b   3,  6,  4,$24
@@ -13221,6 +13331,8 @@ LevSel_MarkTable:	; 4 bytes per level select entry
 	dc.b  $C,$2C,  0,  0
 	dc.b  $F,$2C,  0,  0	;$14
 	dc.b $12,$2C,$12,$48
+LevelSelect_MarkTable_End:
+	levselpagecheck LevelSelect
 ; ===========================================================================
 ; loc_9746:
 CheckCheats:	; This is called from 2 places: the options screen and the level select screen
@@ -13580,14 +13692,14 @@ EndgameCredits:
 	bsr.w	WaitForVint
 	dbf	d0,-
 
-	bsr.w	Pal_FadeToBlack
+	jsr	(Pal_FadeToBlack).l
 	lea	(off_B2CA).l,a1
 	addq.w	#1,(CreditsScreenIndex).w
 	move.w	(CreditsScreenIndex).w,d0
 	lsl.w	#2,d0
 	move.l	(a1,d0.w),d0
 	bpl.s	--
-	bsr.w	Pal_FadeToBlack
+	jsr	(Pal_FadeToBlack).l
 	jsrto	JmpTo_ClearScreen
 	move.l	#vdpComm($0000,VRAM,WRITE),(VDP_control_port).l
 	lea	(ArtNem_EndingTitle).l,a0
