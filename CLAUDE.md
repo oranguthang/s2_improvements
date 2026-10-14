@@ -48,12 +48,14 @@ The user writes in Russian; answer in Russian.
     `PlayerMode_*` constants, MEMORY.md.
 
 ## Known risks / open items
-- Underwater swimming has never been played through in a real route.
-- Tails AI now respawns even while Sonic is airborne or underwater (e09dde6 removed those checks on purpose for swimming).
-- EHZ 2P demo: Tails now flies because the original P2 script presses jump mid-air.
-- CNZ assist demo shows flight only, no carry.
-- With the VS countdown set to OFF, zone music restarts when the second player passes the signpost.
-- Tails' air speed cap removal changed AI physics slightly (ARZ demo 1712->1710 frames, CPZ assist flight 881->877).
+- 2026-10-14: swimming, tired swimming, drowning while swimming, surfacing, carrying Sonic out of the water
+  and Tails' respawn while Sonic is underwater were checked in Genesis Plus GX (ARZ1, CPZ2) by scripted
+  inputs and RAM teleports, not by a full play-through. Cosmetic: when Tails lands while carrying, Sonic falls
+  in the hanging pose until he lands.
+- Tails AI respawns even while Sonic is airborne or underwater (e09dde6 removed those checks on purpose for swimming).
+- Flight and the assist are disabled in the four original title demos (scripts predate flight); the EHZ 2P
+  demo still drifts from frame 742 because Tails no longer has an air speed cap.
+- Tails' air speed cap removal changed AI physics slightly (ARZ demo 1712->1710 frames).
 - Sound IDs: SFX start at $20 now. Never compute IDs from a hard-coded $A0/$80 base (Tails flight sounds broke
   that way once); use `SndID__First`/`MusID__First` or the `MusID_`/`SndID_` constants.
 - See MEMORY.md before using SST bytes or RAM ($20/$21/$23 are per-character on players).
