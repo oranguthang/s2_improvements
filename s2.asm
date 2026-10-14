@@ -88941,7 +88941,7 @@ BuildHUD:
 	bmi.s	+
 	jsrto	JmpTo_DrawSprite_Loop	; draw frame
 +
-	rts
+	jmp	(HudDebug_DrawSprite).l	; and the debug coordinates
 ; End of function BuildHUD
 
 ; ===========================================================================
@@ -89286,8 +89286,7 @@ HudUpdate:
 	lea	(VDP_data_port).l,a6
 	tst.w	(Two_player_mode).w
 	bne.w	loc_40F50
-	tst.w	(Debug_placement_mode).w	; show coordinates only during placement
-	bne.w	loc_40E9A	; if yes, branch
+	jsr	(HudDebug_Overlay).l	; debug coordinates in the upper right corner (code/DebugHud.asm)
 	tst.b	(Update_HUD_score).w	; does the score need updating?
 	beq.s	Hud_ChkRings	; if not, branch
 	clr.b	(Update_HUD_score).w
@@ -93420,6 +93419,7 @@ Sound70:	include "sound/sfx/F0 - Oil Slide.asm"
 	even
 	include "code/Settings.asm"
 	include "code/Cheats.asm"
+	include "code/DebugHud.asm"
 
 ; end of 'ROM'
     if MDDebugger

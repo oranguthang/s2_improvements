@@ -384,14 +384,19 @@ def debug(repo):
                 expected=int(role=='MainCharacter' and enabled and pressed)
                 assert c.read('Debug_placement_mode',2)==expected
                 assert c.uc.reg_read(UC_M68K_REG_D0)==expected
-    for active in (False,True):
-        c=CPU(repo);c.write('Debug_mode_flag',1,2);c.write('Debug_placement_mode',2 if active else 0,2)
+    # Debug coordinates: a separate overlay whenever debug mode is available
+    # in a 1P game (and the sidekick's shield slot is free); SCORE stays.
+    for enabled,two_player,shield in ((False,0,0),(True,0,0),(True,1,0),(True,0,1)):
+        c=CPU(repo);c.write('Debug_mode_flag',int(enabled),2);c.write('Two_player_mode',two_player,2)
+        c.write(c.s['Sidekick']+c.s['id'],c.s['ObjID_Tails'])
+        c.write(c.s['Sidekick']+c.s['status_secondary'],1<<c.s['status_secondary.shield'] if shield else 0)
         calls=[]
         def coordinates(uc,pc,size,user):
             calls.append(pc)
+        c.uc.hook_add(UC_HOOK_CODE,coordinates,begin=c.s['HudDebug_DrawGlyphs'],end=c.s['HudDebug_DrawGlyphs'])
         c.uc.hook_add(UC_HOOK_CODE,coordinates,begin=c.s['HudDb_XY'],end=c.s['HudDb_XY'])
-        c.skip('HudDb_XY');c.call('HudUpdate')
-        assert bool(calls)==active
+        c.call('HudUpdate' if not two_player else 'HudDebug_Overlay')
+        assert len(calls)==(11 if enabled and not two_player and not shield else 0),(enabled,two_player,shield,len(calls))
     c=CPU(repo);c.skip('RunPLC_ROM');c.skip('PlaySound')
     c.write('Last_star_pole_hit',5);c.write('Last_star_pole_hit_2P',5)
     c.uc.reg_write(UC_M68K_REG_D0,c.s['chemical_plant_zone_act_1'])
