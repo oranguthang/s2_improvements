@@ -195,8 +195,25 @@ if include_symbols and not convsym then
 	convsym = tools.convsym
 end
 
+-- FeatureSoundDriver picks the sound driver: Sonic 2's (0), whose songs are
+-- compressed here, or Flamedriver (2), which assembles them from source.
+local sound_driver
+for line in io.lines("s2.asm") do
+	local value = line:match("^FeatureSoundDriver = (%d)")
+	if value then
+		sound_driver = tonumber(value)
+		break
+	end
+end
+if sound_driver == nil then
+	print("FeatureSoundDriver is missing from s2.asm.")
+	os.exit(1)
+end
+
 -- Compress music data and generate music-related assembler input.
-generate_music_data()
+if sound_driver == 0 then
+	generate_music_data()
+end
 
 -- Produce PCM and DPCM data.
 common.convert_pcm_files_in_directory("sound/PCM")
@@ -204,6 +221,9 @@ common.convert_dpcm_files_in_directory("sound/DAC")
 
 -- Build the ROM.
 local compression = improved_sound_driver_compression and "saxman-optimised" or "saxman-bugged"
+if sound_driver == 2 then
+	compression = "kosinski"	-- Flamedriver, decompressed with KosDec
+end
 common.build_rom_and_handle_failure("s2", output, "-D MDDebugger=1", "-p=0 -z=0," .. compression .. ",Size_of_Snd_driver_guess,after", true, repository)
 
 -- Patch the ROM with the correct sound driver size.

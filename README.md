@@ -173,6 +173,7 @@ features. The default build is unchanged by these switches.
 | `FeaturePeelOut` | Up + A/B/C while standing jumps, as in the original game. |
 | `FeatureVictoryPoses` | After the signpost the player runs off to the right before the results, as in the original game. |
 | `FeatureSuperTails` | Tails cannot turn Super. |
+| `FeatureS3KDrums` | With Flamedriver, Sonic 2 songs play Sonic 2's own kick, snare and timpani samples. |
 
 Two optional alternatives are off by default; 1 enables them:
 
@@ -191,6 +192,9 @@ it about 20 lag frames longer (1712 -> 1734 frames; the per-frame checks of the 
 in the same place costs 14. With
 `FeatureSpecialStageSelect`, Left/Right on SPECIAL STAGE choose the stage shown
 as 1-7 after the name, and an emerald that was already earned is not counted again.
+
+`FeatureSoundDriver` picks the sound driver: 2 (the default) is Flamedriver,
+0 is Sonic 2's own Z80 driver; see Sound driver below.
 
 With every switch at 0 the four original title demos play through without a
 death. Bug fixes from `fixBugs`, the Sonic Retro fix tutorials and the menu
@@ -329,6 +333,50 @@ the Z80 code below the music buffer.
 All 31 songs, 81 sound effects, the SEGA chant and the speed-shoes tempo were
 compared with the previous build in Genesis Plus GX: same loudness and
 envelopes, with songs starting at most one frame apart.
+
+## Sound driver
+
+With `FeatureSoundDriver = 2`, [Flamedriver](https://github.com/flamewing/flamedriver),
+Flamewing's improved Sonic 3 & Knuckles Z80 driver, plays all music and sound
+effects, as in s1_improvements. Its files are in `sound/flamedriver/`
+(`UPSTREAM_COMMIT.txt` names the version; the changes are the ID prefixes in
+`_smps2asm_inc.asm`, the quiet `DebugSoundbanks`, a disabled `shared` line, and
+`Tables.asm`, which holds the sample, music and sound effect tables in Sonic 2
+order). The Sonic 2 songs and effects stay the SMPS2ASM sources in
+`sound/music` and `sound/sfx`, converted for the driver while assembling;
+`sound/S3K Music Bank.asm` and `sound/S3K SFX Bank.asm` place them in 32 KiB
+banks, and the build Kosinski-compresses the Z80 program into the space
+reserved by `Size_of_Snd_driver_guess` (`SoundDriverLoad` decompresses it).
+Song IDs come from `Gen_Music_Table` and keep the `MusID_` names and numbers
+($01-$1F); sound effect IDs follow from `Gen_Sound_Table` (`SndID_` = $20 +
+position), so the sound tests and the IDs above are unchanged. To add a song,
+add it to `Gen_Music_Table` and to a bank in `sound/S3K Music Bank.asm`.
+
+The game keeps its Sonic 2 interface: `PlayMusic`, `PlaySound` and the pause
+code fill `Sound_Queue`, and `sndDriverInput` (V-Int, Z80 stopped) jumps to
+`SoundS3K_Input` in `sound/S3K Driver.asm`, which passes one song or command
+per frame and up to two sound effects to the driver. Speed shoes use the
+Sonic 3 & Knuckles tempo step of 8, the driver resumes the song under a 1-up
+by itself, Ring and RingLeft alternate as in Sonic 2 (they must stay next to
+each other in `Gen_Sound_Table`), and repeated Spin Dash revs rise in pitch as
+in Sonic 3 & Knuckles. The SEGA chant is Sonic 2's own sample, resampled by
+`tools/flamedriver_sega.py` to the driver's rate of about 14.4 kHz
+(`sound/flamedriver/Sega PCM.bin`; `--check` verifies it); the SEGA screen reads
+the controller without stopping the Z80 so the chant does not stall, and Start
+ends it through `StopSegaPCM`. Differences from Sonic 2's driver: a fade-out
+takes about 4.5 seconds instead of 3, and a pause leaves a faint decaying
+release tail.
+
+`FeatureS3KDrums` maps the DAC notes Sonic 2 songs use for the kick, snare and
+timpani to the Sonic 3 & Knuckles samples (timpani rates $0B, $0E, $15, $16 and
+$14, as in s1_improvements); 0 plays Sonic 2's samples through the same driver.
+
+With `FeatureSoundDriver = 0` the build compresses Sonic 2's Z80 driver and
+songs as before and the ROM is identical (up to `EndOfRom`) to the build before
+Flamedriver was added. With Flamedriver, all 31 songs, 81 sound effects, the
+SEGA chant and its Start skip, pause, speed shoes, fade-out and the 1-up
+jingle were checked by audio capture in Genesis Plus GX, with both drum
+settings.
 
 ## Branch range
 

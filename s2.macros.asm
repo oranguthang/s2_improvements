@@ -102,6 +102,7 @@ rom_ptr_z80 macro addr
 	dc.w z80_ptr(addr)
     endm
 
+	if FeatureSoundDriver<>SoundDriver_S3K	; Flamedriver's Macros.asm defines the same
 ; aligns the start of a bank, and detects when the bank's contents is too large
 ; can also print the amount of free space in a bank with DebugSoundbanks set
 startBank macro {INTLABEL}
@@ -120,6 +121,7 @@ finishBank macro
 		message "soundBank \{soundBankName} has $\{$8000+soundBankStart-*} bytes free at end."
 	endif
     endm
+	endif
 
 ; macro to replace the destination with its absolute value
 abs macro destination

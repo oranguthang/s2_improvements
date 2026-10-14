@@ -6,7 +6,11 @@
 ; they are all in units of bytes
 Size_of_DAC_samples =		$2F00
 Size_of_SEGA_sound =		$6174
+	if FeatureSoundDriver=SoundDriver_S3K
+Size_of_Snd_driver_guess =	$1400 ; Flamedriver, Kosinski-compressed by the build
+	else
 Size_of_Snd_driver_guess =	$F64 ; approximate post-compressed size of the Z80 sound driver
+	endif
 
 ; ---------------------------------------------------------------------------
 ; Object Status Table offsets (for everything between Object_RAM and Primary_Collision)
@@ -854,6 +858,7 @@ ObjID_ContinueIcons =		id(ObjPtr_ContinueIcons)	; DA
 ObjID_ContinueChars =		id(ObjPtr_ContinueChars)	; DB
 ObjID_RingPrize =		id(ObjPtr_RingPrize)		; DC
 
+	if FeatureSoundDriver<>SoundDriver_S3K
 ; Music IDs
 ; $00 means "nothing queued" (silence); music starts at $01 and sound effects
 ; follow the last song, so new songs and sounds only need a playlist entry.
@@ -999,6 +1004,37 @@ CmdID__End =		id(CmdPtr__End)		; FE
 MusID_Pause =		$7E+$80			; FE
 MusID_Unpause =		$7F+$80			; FF
 
+	else
+; Flamedriver numbers its songs from $01 in the order of Gen_Music_Table
+; (sound/flamedriver/Tables.asm), which keeps Sonic 2's order, so the MusID_*
+; IDs come straight from it. Its sound effects also count from $01; the game
+; keeps them right after the music, as before: SndID_x = zsfx_x moved up to
+; MusID__End. sndDriverInput ("sound/S3K Driver.asm") converts them back.
+SndID__First = MusID__End
+GameDeclSnd	macro sfxname
+SndID_sfxname = zsfx_sfxname-zsfx__First+SndID__First
+	endm
+	Gen_Sound_Table GameDeclSnd
+SndID__End = zsfx__End-zsfx__First+SndID__First
+; Sonic 2's other names for some of them
+SndID_LavaBall = SndID_ArrowFiring
+SndID_RingRight = SndID_Ring
+SndID_WingFortress = SndID_Helicopter
+SndID_LaserFloor = SndID_Scatter
+SndID_SpindashRev = SndID_Spindash
+
+; The commands keep Sonic 2's IDs; sndDriverInput handles them.
+CmdID__First = $F8
+MusID_StopSFX = $F8
+MusID_FadeOut = $F9
+SndID_SegaSound = $FA
+MusID_SpeedUp = $FB
+MusID_SlowDown = $FC
+MusID_Stop = $FD
+CmdID__End = $FE
+MusID_Pause = $FE
+MusID_Unpause = $FF
+	endif
     if MOMPASS > 1 ; Avoid undefined symbol errors by checking only after the first pass.
         if MusID__End > SndID__First
             fatal "You have too many SndPtrs. MusID__End ($\{MusID__End}) can't exceed SndID__First ($\{SndID__First})."
@@ -2771,6 +2807,8 @@ AniIDTailsAni_SwimTired = id(TailsAni_SwimTired_ptr) ; $29
 AniIDTailsAni_Victory = id(TailsAni_Victory_ptr) ; $2A (FeatureVictoryPoses)
 AniIDTailsAni_Transform = id(TailsAni_Transform_ptr) ; $2B (Super Tails)
 
+	if FeatureSoundDriver<>SoundDriver_S3K
 SndID_TailsGrab = (SndPtr_TailsGrab-SoundIndex)/2+SndID__First
 SndID_TailsFly = (SndPtr_TailsFly-SoundIndex)/2+SndID__First
 SndID_TailsTired = (SndPtr_TailsTired-SoundIndex)/2+SndID__First
+	endif

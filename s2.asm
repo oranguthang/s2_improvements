@@ -111,6 +111,12 @@ FeatureBurntDeath = 1
 ;	| Sonic plays the burnt death animation when killed by fire or lasers
 FeatureActMusic = 1
 ;	| Act 2 of EHZ, MCZ and CNZ plays the track from 2P mode; 0 = the same track in both acts
+FeatureSoundDriver = 2
+;	| 2: Flamedriver, the Sonic 3 & Knuckles Z80 sound driver, plays music and sound effects;
+;	| 0: Sonic 2's own Z80 sound driver
+FeatureS3KDrums = 1
+;	| With FeatureSoundDriver = 2, Sonic 2 songs use the Sonic 3 & Knuckles kick, snare and timpani;
+;	| 0 plays Sonic 2's own drum samples through the same driver
 
 ; Optional alternatives, off by default.
 FeatureInfiniteLives = 0
@@ -120,8 +126,14 @@ FeatureCDDrowning = 0
 ;	| If 1, the music keeps playing below 12 seconds of air and a warning sounds every
 ;	| second, as in Sonic CD; the countdown numbers still appear
 
-	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureCentiseconds|FeatureLightDash|FeaturePeelOut|FeatureVictoryPoses|FeatureSuperTails|FeatureBurntDeath|FeatureActMusic|FeatureInfiniteLives|FeatureCDDrowning)&~1
+	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureCentiseconds|FeatureLightDash|FeaturePeelOut|FeatureVictoryPoses|FeatureSuperTails|FeatureBurntDeath|FeatureActMusic|FeatureS3KDrums|FeatureInfiniteLives|FeatureCDDrowning)&~1
 		error "Feature options must be 0 or 1"
+	endif
+
+SoundDriver_Original = 0
+SoundDriver_S3K = 2
+	if (FeatureSoundDriver<>SoundDriver_Original)&&(FeatureSoundDriver<>SoundDriver_S3K)
+		error "FeatureSoundDriver must be 0 or 2"
 	endif
 
 ; >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -136,15 +148,24 @@ FeatureCDDrowning = 0
 	include "_debug/md-debugger/Debugger.asm"
 	endif
 
+	if FeatureSoundDriver=SoundDriver_S3K
+; Flamedriver: its constants, the MusID_ IDs from its music table (sound/flamedriver/Tables.asm)
+; and its SMPS2ASM, which converts the Sonic 2 song and sound sources while assembling.
+FixMusicAndSFXDataBugs = fixBugs
+	include	"sound/flamedriver/Definitions.asm"
+	endif
+
 ; >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ; Equates section - Names for variables.
 	include "s2.constants.asm"
 
+	if FeatureSoundDriver=SoundDriver_Original
 ; >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ; Expressing SMPS bytecode in a portable and human-readable form
 FixMusicAndSFXDataBugs = fixBugs
 SonicDriverVer = 2 ; Tell SMPS2ASM that we are targetting Sonic 2's sound driver
 	include "sound/_smps2asm_inc.asm"
+	endif
 
 ; >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ; Expressing sprite mappings and DPLCs in a portable and human-readable form
@@ -759,9 +780,13 @@ Vint_PCM:
 	andi.w	#$F,d0
 	bne.s	+
 
+	if FeatureSoundDriver=SoundDriver_S3K
+	bsr.w	ReadJoypads	; stopping the Z80 would stall Flamedriver's chant
+	else
 	stopZ80
 	bsr.w	ReadJoypads
 	startZ80
+	endif
 
 +
 	tst.w	(Demo_Time_left).w	; is there time left on the demo?
@@ -1359,6 +1384,7 @@ loc_1072:
 	movem.l	(sp)+,d0-a6
 	rte
 
+	if FeatureSoundDriver=SoundDriver_Original	; Flamedriver: "sound/S3K Driver.asm"
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 ; Input our music/sound selection to the sound driver.
 
@@ -1425,6 +1451,10 @@ sndDriverInput:
 
 	rts
 ; End of function sndDriverInput
+	else
+sndDriverInput:	; called with bsr from every V-Int routine
+	jmp	(SoundS3K_Input).l
+	endif
 
 	jmpTos JmpTo_LoadTilesAsYouMove,JmpTo_SegaScr_VInt
 
@@ -4314,6 +4344,9 @@ Sega_WaitEnd:
 	beq.s	Sega_WaitEnd		; if not, branch
 ; loc_395E:
 Sega_GotoTitle:
+	if FeatureSoundDriver=SoundDriver_S3K
+	jsr	(StopSegaPCM).l	; end the chant if Start cut it short
+	endif
 	clr.w	(SegaScr_PalDone_Flag).w
 	clr.w	(SegaScr_VInt_Subrout).w
 	move.b	#GameModeID_TitleScreen,(Game_Mode).w	; => TitleScreen
@@ -93161,6 +93194,7 @@ Objects_Null:
 
 
 
+	if FeatureSoundDriver=SoundDriver_Original	; Flamedriver: "sound/S3K Driver.asm"
 ; ---------------------------------------------------------------------------
 ; Subroutine to load the sound driver
 ; ---------------------------------------------------------------------------
@@ -93358,6 +93392,7 @@ MusicPoint1:	startBank
 Mus_Continue:	include	"sound/music/generated/9C - Continue.inc"
 
 	finishBank
+	endif
 
 	align $20
 
@@ -93425,6 +93460,7 @@ ArtNem_VinePulley:		BINCLUDE	"art/nemesis/Vine that lowers from MCZ.nem"
 ArtNem_MCZGateLog:		BINCLUDE	"art/nemesis/Drawbridge logs from MCZ.nem"
 	even
 
+	if FeatureSoundDriver=SoundDriver_Original
 ; ----------------------------------------------------------------------------------
 ; Filler (free space)
 ; ----------------------------------------------------------------------------------
@@ -93668,6 +93704,7 @@ Sound6F:	include "sound/sfx/EF - Large Laser.asm"
 Sound70:	include "sound/sfx/F0 - Oil Slide.asm"
 
 	finishBank
+	endif
 
 ; ---------------------------------------------------------------------------
 ; Code added by the mod that is only reached through jsr/jmp (...).l. Keeping it
@@ -93682,6 +93719,9 @@ Sound70:	include "sound/sfx/F0 - Oil Slide.asm"
 	include "code/PeelOut.asm"
 	include "code/VictoryPoses.asm"
 	include "code/SuperTails.asm"
+	if FeatureSoundDriver=SoundDriver_S3K
+	include "sound/S3K Driver.asm"
+	endif
 
 ; end of 'ROM'
     if MDDebugger
@@ -93705,5 +93745,7 @@ EndOfRom:
 		message "ROM size is $\{EndOfRom-StartOfRom} bytes (\{(EndOfRom-StartOfRom)/1024.0} KiB). About $\{paddingSoFar} bytes are padding. "
 	endif
 	; share these symbols externally (WARNING: don't rename, move or remove these labels!)
+	if FeatureSoundDriver=SoundDriver_Original
 	shared movewZ80CompSize
+	endif
 	END

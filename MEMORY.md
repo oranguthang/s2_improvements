@@ -85,3 +85,9 @@ first.
 
 The build prints how many bytes are left before the music buffer at `$1380`
 (currently `$118`). Each new song takes 4 playlist bytes and 1 tempo byte.
+
+With Flamedriver (`FeatureSoundDriver = 2`, the default) the driver has its own
+layout: the build prints `Z80 free space before stack` (currently `$41C`), and
+the compressed program must fit `Size_of_Snd_driver_guess` (`$1400`; about
+`$11C6` used). The 68000 side uses no extra RAM: `Sound_Queue` is read by
+`SoundS3K_Input`.
