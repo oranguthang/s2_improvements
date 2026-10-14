@@ -606,6 +606,46 @@ def homing_attack(repo):
     return {'jump_dash_follows_dpad':True,'one_dash_per_jump':True,'targets_ahead_only':True,
             'aims_at_upper_third':True}
 
+def settings_sram(repo):
+    """Settings record in odd-byte SRAM: defaults, round trip, checksum and value clamping."""
+    def cpu():
+        c=CPU(repo)
+        c.uc.mem_map(0x200000,0x10000); c.uc.mem_write(0x200000,bytes([0xFF])*0x10000)
+        c.uc.mem_map(0xA13000,0x1000)
+        return c
+    fields=['Level_select_flag','Debug_options_flag','Cheat_all_emeralds','Cheat_super_rings',
+            'Cheat_ring_drain','Cheat_god_mode']
+    words=['Player_option','Two_player_items','VS_countdown_option']
+    def values(c):
+        return [c.read(f) for f in fields]+[c.read(w,2) for w in words]
+    c=cpu(); c.call('Settings_Load')
+    assert values(c)==[0,0,0,50,1,0,0,0,0],('cold defaults',values(c))
+    want=[1,1,1,10,1,1,2,3,2]
+    for f,v in zip(fields+words,want):
+        c.write(f,v,2 if f in words else 1)
+    c.call('Settings_Save')
+    sram=bytes(c.uc.mem_read(0x200000,0x40))
+    assert sram[1:8:2]==b'S2DV',sram[:16].hex()
+    record=sram
+    for f in fields: c.write(f,0)
+    for w in words: c.write(w,0,2)
+    c.call('Settings_Load')
+    assert values(c)==want,('round trip',values(c))
+    assert c.read('Slow_motion_flag')==1,'level select unlock without slow motion'
+    # A corrupted byte makes the whole record invalid.
+    c=cpu(); c.uc.mem_write(0x200000,record); c.uc.mem_write(0x200001+2*9,bytes([0x32]))
+    c.call('Settings_Load')
+    assert values(c)==[0,0,0,50,1,0,0,0,0],('bad checksum',values(c))
+    # Out-of-range values are clamped; zero rings turn the drain off.
+    c=cpu()
+    for f,v in zip(fields+words,[7,2,9,33,5,3,9,8,7]):
+        c.write(f,v,2 if f in words else 1)
+    c.call('Settings_Normalize')
+    assert values(c)==[0,0,0,50,1,0,0,0,0],('clamp',values(c))
+    c.write('Cheat_super_rings',0); c.write('Cheat_ring_drain',1); c.call('Settings_Normalize')
+    assert c.read('Cheat_ring_drain')==0,'drain left on with zero rings'
+    return {'cold_defaults':True,'round_trip':True,'checksum_rejects_damage':True,'values_clamped':True}
+
 def title_palette(repo):
     def setup():
         c=CPU(repo)
@@ -657,6 +697,8 @@ def main():
         results['debug']=debug(args.repo)
     if symbols(args.repo/'s2.lst').get('FeatureSpecialStageState',0):
         results['special_stage_state']=special_stage_state(args.repo)
+    if 'Settings_Load' in symbols(args.repo/'s2.lst'):
+        results['settings_sram']=settings_sram(args.repo)
     results['rom_sha256']=hashlib.sha256((args.repo/'s2built.bin').read_bytes()).hexdigest()
     if args.report:
         args.report.write_text(json.dumps(results,indent=2)+'\n',encoding='utf-8')

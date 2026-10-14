@@ -1865,7 +1865,15 @@ SlotMachine_Slot3Pos:		ds.w	1
 SlotMachine_Slot3Speed:		ds.b	1
 SlotMachine_Slot3Rout:		ds.b	1
 
-				ds.b	$10	; $FFFFFF60-$FFFFFF6F ; seems unused
+; Settings saved in SRAM by code/Settings.asm (CrossResetRAM also keeps them over a reset)
+Cheat_all_emeralds:		ds.b	1	; 1 = act as if all seven emeralds were collected
+Cheat_super_rings:		ds.b	1	; rings needed to turn Super: 0, 10 or 50
+Cheat_ring_drain:		ds.b	1	; 1 = Super Sonic loses a ring every second
+Cheat_god_mode:			ds.b	1	; 1 = no damage, drowning or time over; pits bounce
+Cheats_menu_row:		ds.b	1	; selected CHEATS row
+				ds.b	1	; $FFFFFF65 ; unused
+Title_unlock_entries:		ds.w	1	; progress of the title code Up, Down, Down, Down, Left, Right
+				ds.b	8	; $FFFFFF68-$FFFFFF6F ; seems unused
 
 Player_mode:			ds.w	1	; 0 = Sonic and Tails, 1 = Sonic, 2 = Tails
 Player_option:			ds.w	1	; 0 = Sonic and Tails, 1 = Sonic, 2 = Tails
@@ -2223,6 +2231,11 @@ HW_Port_2_SCtrl =		$A10019
 HW_Expansion_TxData =		$A1001B
 HW_Expansion_RxData =		$A1001D
 HW_Expansion_SCtrl =		$A1001F
+HW_SRAM_Control =		$A130F1	; 1 = map the backup RAM over ROM above $200000
+
+; Odd-byte backup RAM for the settings record (code/Settings.asm)
+SRAM_Start =			$200001
+SRAM_End =			$20FFFF
 
 ; ---------------------------------------------------------------------------
 ; Art tile stuff

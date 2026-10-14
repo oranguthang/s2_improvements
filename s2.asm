@@ -225,9 +225,9 @@ ROMEndLoc:
 	dc.l EndOfRom-1		; End address of ROM
 	dc.l RAM_Start&$FFFFFF		; Start address of RAM
 	dc.l (RAM_End-1)&$FFFFFF	; End address of RAM
-	dc.b "    "		; Backup RAM ID
-	dc.l $20202020		; Backup RAM start address
-	dc.l $20202020		; Backup RAM end address
+	dc.b "RA",$F8,$20	; Backup RAM ID: battery-backed, odd bytes (settings, code/Settings.asm)
+	dc.l SRAM_Start		; Backup RAM start address
+	dc.l SRAM_End		; Backup RAM end address
 	dc.b "            "	; Modem support
 	dc.b "                                        "	; Notes (unused, anything can be put in this space, but it has to be 52 bytes.)
 	dc.b "JUE             " ; Country code (region)
@@ -471,6 +471,7 @@ ChecksumLoop:
 	move.b	(HW_Version).l,d0
 	andi.b	#$C0,d0
 	move.b	d0,(Graphics_Flags).w
+	jsr	(Settings_Load).l	; cheats, unlocks and options saved in SRAM
 	move.l	#'init',(Checksum_fourcc).w ; set flag so checksum won't be run again
 ; loc_370:
 GameInit:
@@ -12441,6 +12442,7 @@ OptionScreen_Main:
 ; ===========================================================================
 ; loc_909A:
 OptionScreen_Select:
+	jsr	(Settings_Save).l	; keep the options and any cheat code entered here
 	move.b	(Options_menu_box).w,d0
 	bne.s	OptionScreen_Select_Not1P
 	; Start a single player game
@@ -12900,6 +12902,7 @@ LevelSelect_Main:	; routine running during level select
 
 ;loc_93F0:
 LevelSelect_PressStart:
+	jsr	(Settings_Save).l	; keep the player option and any cheat code entered here
 	bsr.w	LevelSelect_GetPage
 	movea.l	levselpage_order(a2),a0
 	move.w	(Level_select_zone).w,d0
@@ -93367,6 +93370,13 @@ Sound6F:	include "sound/sfx/EF - Large Laser.asm"
 Sound70:	include "sound/sfx/F0 - Oil Slide.asm"
 
 	finishBank
+
+; ---------------------------------------------------------------------------
+; Code added by the mod that is only reached through jsr/jmp (...).l. Keeping it
+; here leaves the original code's short branches in range.
+; ---------------------------------------------------------------------------
+	even
+	include "code/Settings.asm"
 
 ; end of 'ROM'
     if MDDebugger
