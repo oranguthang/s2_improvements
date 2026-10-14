@@ -398,6 +398,15 @@ so they have no `Feature*` switch.
   All 86 Kosinski and Enigma assets in the ROM decompress to the same bytes,
   with the same registers, as with the original routines, using about a
   third fewer instructions.
+- `CalcAngle` is shorter, as in s1_improvements (after
+  [Improving CalcAngle subroutines](https://info.sonicretro.org/SCHG_How-to:Improving_CalcAngle_subroutines)),
+  and the airborne collision of Sonic and Tails picks its direction with
+  `CalcAirQuadrant` (`code/Math.asm`) instead of a division: it reproduces
+  `(CalcAngle-$20)&$C0`, including the table's rounding near the diagonals.
+  Both were compared with the original routines on 60000 speed pairs (edge
+  values, near-diagonal and random), with identical results, registers and
+  flags. The ARZ title demo, which runs at the edge of the frame budget, takes
+  5 frames less (1741 -> 1736).
 
 ## Branch range
 

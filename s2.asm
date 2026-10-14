@@ -3857,48 +3857,56 @@ Sine_Data:	BINCLUDE	"misc/sinewave.bin"
 
 ; sub_364E:
 CalcAngle:
-	movem.l	d3-d4,-(sp)
-	moveq	#0,d3
-	moveq	#0,d4
+	; Faster version, as in s1_improvements (after "Improving CalcAngle
+	; subroutines"): same angles; d1-d7 and all address registers are kept.
+	move.l	d3,-(sp)
+	moveq	#0,d3		; clear the upper word for the 32-bit shift below
 	move.w	d1,d3
-	move.w	d2,d4
-	or.w	d3,d4
-	beq.s	CalcAngle_Zero ; special case return if x and y are both 0
-	move.w	d2,d4
-
-	absw.w	d3	; calculate absolute value of x
-	absw.w	d4	; calculate absolute value of y
-	cmp.w	d3,d4
-	bhs.w	+	; if abs(y) >= abs(x)
-
-	lsl.l	#8,d4
-	divu.w	d3,d4
-	moveq	#0,d0
-	move.b	Angle_Data(pc,d4.w),d0
-	bra.s	++
+	bpl.s	+
+	neg.w	d3		; abs(x)
 +
+	moveq	#0,d0		; clear the upper word for the 32-bit shift below
+	move.w	d2,d0
+	bpl.s	+
+	neg.w	d0		; abs(y)
++
+	cmp.w	d3,d0
+	bhs.s	CalcAngle_YIsBigger	; if abs(y) >= abs(x)
+
+	lsl.l	#8,d0		; x is nonzero here
+	divu.w	d3,d0		; quotient < $100
+	move.w	d0,d3
+	moveq	#0,d0
+	move.b	Angle_Data(pc,d3.w),d0
+	bra.s	CalcAngle_Quadrant
+; ===========================================================================
+
+CalcAngle_YIsBigger:
+	tst.w	d0
+	beq.s	CalcAngle_Zero	; special case return if x and y are both 0
 	lsl.l	#8,d3
-	divu.w	d4,d3
+	divu.w	d0,d3		; quotient <= $100
 	moveq	#$40,d0
 	sub.b	Angle_Data(pc,d3.w),d0	; atan(y/x) = 90 - atan(x/y)
-+
+
+CalcAngle_Quadrant:
 	tst.w	d1
-	bpl.w	+
+	bpl.s	+
 	neg.w	d0
 	addi.w	#$80,d0	; place angle in appropriate quadrant
 +
 	tst.w	d2
-	bpl.w	+
+	bpl.s	+
 	neg.w	d0
 	addi.w	#$100,d0	; place angle in appropriate quadrant
 +
-	movem.l	(sp)+,d3-d4
+	movem.l	(sp)+,d3	; movem keeps the condition codes
 	rts
 ; ===========================================================================
 ; loc_36AA:
 CalcAngle_Zero:
-	move.w	#$40,d0	; angle = 90 degrees
-	movem.l	(sp)+,d3-d4
+	moveq	#$40,d0	; angle = 90 degrees
+	movem.l	(sp)+,d3
 	rts
 ; End of function CalcAngle
 
@@ -39023,9 +39031,7 @@ Sonic_DoLevelCollision:
 	move.b	lrb_solid_bit(a0),d5
 	move.w	x_vel(a0),d1
 	move.w	y_vel(a0),d2
-	jsr	(CalcAngle).l
-	subi.b	#$20,d0
-	andi.b	#$C0,d0
+	jsr	(CalcAirQuadrant).l	; code/Math.asm
 	cmpi.b	#$40,d0
 	beq.w	Sonic_HitLeftWall
 	cmpi.b	#$80,d0
@@ -42184,9 +42190,7 @@ Tails_DoLevelCollision:
 	move.b	lrb_solid_bit(a0),d5
 	move.w	x_vel(a0),d1
 	move.w	y_vel(a0),d2
-	jsr	(CalcAngle).l
-	subi.b	#$20,d0
-	andi.b	#$C0,d0
+	jsr	(CalcAirQuadrant).l	; code/Math.asm
 	cmpi.b	#$40,d0
 	beq.w	Tails_HitLeftWall
 	cmpi.b	#$80,d0
@@ -93392,6 +93396,7 @@ Sound70:	include "sound/sfx/F0 - Oil Slide.asm"
 	even
 	include "code/Settings.asm"
 	include "code/Decompression.asm"
+	include "code/Math.asm"
 	include "code/Cheats.asm"
 	include "code/DebugHud.asm"
 	include "code/QoL.asm"
