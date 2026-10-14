@@ -2689,6 +2689,7 @@ ArtTile_HUD_Score                     = ArtTile_HUD_Score_E + 2
 ArtTile_HUD_Rings                     = ArtTile_ArtNem_HUD + $30
 ArtTile_HUD_Minutes                   = ArtTile_ArtNem_HUD + $28
 ArtTile_HUD_Seconds                   = ArtTile_HUD_Minutes + 4
+ArtTile_HUD_Centiseconds              = (VRAM_Horiz_Scroll_Table+VRAM_Horiz_Scroll_Table_Size+$1F)/$20 ; 4 free tiles after the 1P horizontal scroll table (FeatureCentiseconds)
 ArtTile_ArtNem_2p_life_counter        = ArtTile_ArtNem_HUD + $2A
 ArtTile_ArtNem_2p_life_counter_lives  = ArtTile_ArtNem_2p_life_counter + 9
 ArtTile_ArtNem_life_counter           = ArtTile_ArtNem_HUD + $10A

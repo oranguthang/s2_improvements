@@ -13,6 +13,10 @@ Map_hud_a_0008:	spriteHeader
 	spritePiece	0, -$60, 4, 2, 8, 0, 0, 1, 0
 	spritePiece	$20, -$60, 1, 2, 0, 0, 0, 1, 0
 	spritePiece	$30, -$60, 3, 2, $30, 0, 0, 1, 0
+	if FeatureCentiseconds
+	spritePiece	$48, -$70, 1, 2, $2A, 0, 0, 1, 0	; second colon
+	spritePiece	$50, -$70, 2, 2, ArtTile_HUD_Centiseconds-ArtTile_ArtNem_HUD, 0, 0, 1, 0	; hundredths
+	endif
 	spritePiece	0, $40, 2, 2, $10A, 0, 0, 0, 0
 	spritePiece	$10, $40, 4, 2, $10E, 0, 0, 1, 0
 Map_hud_a_0008_End
@@ -26,6 +30,10 @@ Map_hud_a_005A:	spriteHeader
 	spritePiece	0, -$60, 4, 2, 8, 0, 0, 0, 0
 	spritePiece	$20, -$60, 1, 2, 0, 0, 0, 0, 0
 	spritePiece	$30, -$60, 3, 2, $30, 0, 0, 1, 0
+	if FeatureCentiseconds
+	spritePiece	$48, -$70, 1, 2, $2A, 0, 0, 1, 0	; second colon
+	spritePiece	$50, -$70, 2, 2, ArtTile_HUD_Centiseconds-ArtTile_ArtNem_HUD, 0, 0, 1, 0	; hundredths
+	endif
 	spritePiece	0, $40, 2, 2, $10A, 0, 0, 0, 0
 	spritePiece	$10, $40, 4, 2, $10E, 0, 0, 1, 0
 Map_hud_a_005A_End
@@ -39,6 +47,10 @@ Map_hud_a_00AC:	spriteHeader
 	spritePiece	0, -$60, 4, 2, 8, 0, 0, 1, 0
 	spritePiece	$20, -$60, 1, 2, 0, 0, 0, 1, 0
 	spritePiece	$30, -$60, 3, 2, $30, 0, 0, 1, 0
+	if FeatureCentiseconds
+	spritePiece	$48, -$70, 1, 2, $2A, 0, 0, 1, 0	; second colon
+	spritePiece	$50, -$70, 2, 2, ArtTile_HUD_Centiseconds-ArtTile_ArtNem_HUD, 0, 0, 1, 0	; hundredths
+	endif
 	spritePiece	0, $40, 2, 2, $10A, 0, 0, 0, 0
 	spritePiece	$10, $40, 4, 2, $10E, 0, 0, 1, 0
 Map_hud_a_00AC_End
@@ -52,6 +64,10 @@ Map_hud_a_00FE:	spriteHeader
 	spritePiece	0, -$60, 4, 2, 8, 0, 0, 0, 0
 	spritePiece	$20, -$60, 1, 2, 0, 0, 0, 0, 0
 	spritePiece	$30, -$60, 3, 2, $30, 0, 0, 1, 0
+	if FeatureCentiseconds
+	spritePiece	$48, -$70, 1, 2, $2A, 0, 0, 1, 0	; second colon
+	spritePiece	$50, -$70, 2, 2, ArtTile_HUD_Centiseconds-ArtTile_ArtNem_HUD, 0, 0, 1, 0	; hundredths
+	endif
 	spritePiece	0, $40, 2, 2, $10A, 0, 0, 0, 0
 	spritePiece	$10, $40, 4, 2, $10E, 0, 0, 1, 0
 Map_hud_a_00FE_End

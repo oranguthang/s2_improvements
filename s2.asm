@@ -97,12 +97,14 @@ FeatureFastSoundTest = 1
 ;	| Sound tests: B+A steps back by $10 (A already steps ahead by $10)
 FeatureSpecialStageSelect = 1
 ;	| Left/Right on SPECIAL STAGE in the Level Select choose the stage (1-7)
+FeatureCentiseconds = 1
+;	| The 1P clock also shows hundredths of a second (0:00:00), as in Sonic CD
 FeatureBurntDeath = 1
 ;	| Sonic plays the burnt death animation when killed by fire or lasers
 FeatureActMusic = 1
 ;	| Act 2 of EHZ, MCZ and CNZ plays the track from 2P mode; 0 = the same track in both acts
 
-	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureBurntDeath|FeatureActMusic)&~1
+	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureCentiseconds|FeatureBurntDeath|FeatureActMusic)&~1
 		error "Feature options must be 0 or 1"
 	endif
 
@@ -89393,6 +89395,9 @@ Hud_ChkTime:
 	bsr.w	Hud_Secs
 ; loc_40E38:
 Hud_ChkLives:
+	if FeatureCentiseconds
+	jsr	(Hud_Centiseconds).l	; hundredths after the seconds
+	endif
 	tst.b	(Update_HUD_lives).w	; does the lives counter need updating?
 	beq.s	Hud_ChkBonus	; if not, branch
 	clr.b	(Update_HUD_lives).w

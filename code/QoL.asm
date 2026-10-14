@@ -109,3 +109,33 @@ LevelSelect_SpecialStageNumber:
 	addi.w	#$10+1,d0			; menu font digits start at $10; stages count from 1
 	move.w	d0,(Chunk_Table+levsel_ss_number).l
 	rts
+
+; ---------------------------------------------------------------------------
+; FeatureCentiseconds: hundredths of a second after the 1P clock, after Selbi's
+; "Add Centiseconds HUD" guide (as in s1_improvements). Called by HudUpdate
+; every frame with a6 = VDP data port; the two digits use the four free tiles
+; after the horizontal scroll table (ArtTile_HUD_Centiseconds).
+; ---------------------------------------------------------------------------
+Hud_Centiseconds:
+	movem.l	d0-d1/a1/a3,-(sp)
+	moveq	#0,d0
+	move.b	(Timer_frame).w,d0
+	mulu.w	#100,d0
+	divu.w	#60,d0				; frames of this second -> hundredths
+	andi.l	#$FFFF,d0
+	divu.w	#10,d0				; tens in the low word, ones in the high word
+	move.l	#vdpComm(tiles_to_bytes(ArtTile_HUD_Centiseconds),VRAM,WRITE),VDP_control_port-VDP_data_port(a6)
+	lea	(Art_Hud).l,a1
+	bsr.s	.digit
+	swap	d0
+	bsr.s	.digit
+	movem.l	(sp)+,d0-d1/a1/a3
+	rts
+.digit:
+	move.w	d0,d1
+	lsl.w	#6,d1				; two tiles per digit
+	lea	(a1,d1.w),a3
+	moveq	#tiles_to_longwords(2)-1,d1
+-	move.l	(a3)+,(a6)
+	dbf	d1,-
+	rts
