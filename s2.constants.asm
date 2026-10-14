@@ -437,6 +437,24 @@ PlayerMode_SonicAlone =	1
 PlayerMode_TailsAlone =	2
 PlayerMode_Count =	3	; Options, Level Select and the Special Stage HUD have one entry per mode
 
+; The character in the Sonic slot (Main_character; MainCharacter is Obj01 either
+; way, so objects treat Knuckles as Sonic, as in Knuckles in Sonic 2).
+CharID_Sonic =		0
+CharID_Knuckles =	1	; FeatureKnuckles
+
+; Entries of the player select in Options and Level Select (Player_option).
+; ApplyPlayerOption (code/Knuckles.asm) turns one into Player_mode and Main_character.
+PlayerOption_SonicTails =	0
+PlayerOption_SonicAlone =	1
+PlayerOption_TailsAlone =	2
+PlayerOption_KnucklesTails =	3	; FeatureKnuckles
+PlayerOption_KnucklesAlone =	4	; FeatureKnuckles
+	if FeatureKnuckles
+PlayerOption_Count =	5
+	else
+PlayerOption_Count =	3
+	endif
+
 ; Zone and act IDs
 emerald_hill_zone_act_1 =	(emerald_hill_zone<<8)|$00
 emerald_hill_zone_act_2 =	(emerald_hill_zone<<8)|$01
@@ -557,6 +575,12 @@ PalID_SS3_2p =	id(PalPtr_SS3_2p) ; 24
 PalID_OOZ_B =	id(PalPtr_OOZ_B) ; 25
 PalID_Menu =	id(PalPtr_Menu) ; 26
 PalID_Result =	id(PalPtr_Result) ; 27
+	if FeatureKnuckles
+PalID_BGND_Knuckles =	id(PalPtr_BGND_Knuckles) ; 28
+PalID_HPZ_U_Knuckles =	id(PalPtr_HPZ_U_Knuckles) ; 29
+PalID_CPZ_U_Knuckles =	id(PalPtr_CPZ_U_Knuckles) ; 30
+PalID_ARZ_U_Knuckles =	id(PalPtr_ARZ_U_Knuckles) ; 31
+	endif
 
 ; PLC IDs
 offset :=	ArtLoadCues
@@ -1095,6 +1119,19 @@ AniIDSupSonAni_Transform	= id(SupSonAni_Transform_ptr)	; 31 ; $1F ; Exclusive to
 AniIDSonAni_Lying		= id(SonAni_Lying_ptr)		; 32 ; $20 ; Exclusive to Sonic
 AniIDSonAni_LieDown		= id(SonAni_LieDown_ptr)	; 33 ; $21 ; Exclusive to Sonic
 AniIDSonAni_Victory		= id(SonAni_Victory_ptr)	; 34 ; $22 ; Exclusive to Sonic (FeatureVictoryPoses)
+
+; Knuckles (FeatureKnuckles) uses the IDs above with his own scripts
+; (KnucklesAniData in code/Knuckles.asm), plus these:
+	if FeatureKnuckles
+offset :=	KnucklesAniData
+ptrsize :=	2
+idstart :=	0
+AniIDKnuxAni_Glide		= id(KnuxAni_Glide_ptr)		; 35 ; $23
+AniIDKnuxAni_FallAfterGlide	= id(KnuxAni_FallAfterGlide_ptr); 36 ; $24
+AniIDKnuxAni_ClimbLedge		= id(KnuxAni_ClimbLedge_ptr)	; 37 ; $25
+AniIDKnuxAni_LandAfterGlide	= id(KnuxAni_LandAfterGlide_ptr); 38 ; $26
+AniIDKnuxAni_ShadowBox		= id(KnuxAni_ShadowBox_ptr)	; 39 ; $27
+	endif
 
 
 offset :=	TailsAniData
@@ -1941,10 +1978,11 @@ Cheat_god_mode:			ds.b	1	; 1 = no damage, drowning or time over; pits bounce
 Cheats_menu_row:		ds.b	1	; selected CHEATS row
 Hud_centiseconds_frame:		ds.b	1	; Timer_frame whose hundredths are shown (FeatureCentiseconds)
 Title_unlock_entries:		ds.w	1	; progress of the title code Up, Down, Down, Down, Left, Right
-				ds.b	8	; $FFFFFF68-$FFFFFF6F ; seems unused
+Main_character:			ds.b	1	; CharID_*: who plays in the Sonic slot (set with Player_mode)
+				ds.b	7	; $FFFFFF69-$FFFFFF6F ; seems unused
 
 Player_mode:			ds.w	1	; 0 = Sonic and Tails, 1 = Sonic, 2 = Tails
-Player_option:			ds.w	1	; 0 = Sonic and Tails, 1 = Sonic, 2 = Tails
+Player_option:			ds.w	1	; PlayerOption_*
 
 Two_player_items:		ds.w	1
 VS_countdown_option:		ds.w	1	; 0 = 60 seconds, 1 = 90 seconds, 2 = off

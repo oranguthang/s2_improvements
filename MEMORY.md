@@ -56,6 +56,7 @@ Other objects:
 | `$FF44-$FF47` | `SS_saved_perfect_rings`, `SS_saved_perfect_flag` | Level state after a Special Stage |
 | `$FF60-$FF64` | `Cheat_all_emeralds`, `Cheat_super_rings`, `Cheat_ring_drain`, `Cheat_god_mode`, `Cheats_menu_row` | CHEATS page (saved in SRAM) |
 | `$FF66` | `Title_unlock_entries` (word) | Title unlock code progress |
+| `$FF68` | `Main_character` | Character in the Sonic slot (`CharID_*`, FeatureKnuckles) |
 | `$D400-$D42B` | `LightDash_RAM`, `Victory_pose`, `SuperTails_combo_*` | Light Dash state, victory pose flag, Super Tails' combo (cleared at level start) |
 | `$FF76` | `VS_countdown_option` (word) | VS finish countdown option |
 | `$FF87` | `Level_select_page` | Level Select pages |
@@ -72,7 +73,7 @@ runs.
 | `$E740-$E7FF` | 192 | Before `Ring_Positions` |
 | `$FA82-$FAFF` | 126 | After the sprite table page bytes |
 | `$DF80-$DFFF` | 128 | Only if the sprite table can never overflow into it |
-| `$FEB0-$FEBF`, `$FEFA-$FF0F`, `$FF12-$FF1F`, `$FF68-$FF6F` | 16, 22, 14, 8 | Persistent area (not cleared on level start) |
+| `$FEB0-$FEBF`, `$FEFA-$FF0F`, `$FF12-$FF1F`, `$FF69-$FF6F` | 16, 22, 14, 7 | Persistent area (not cleared on level start) |
 | `$F79A-$F7A6`, `$F7B4-$F7BD`, `$F676-$F67F` | 13, 10, 10 | |
 
 Plus about 60 single bytes and small gaps marked "seems unused" in

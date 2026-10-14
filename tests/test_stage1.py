@@ -270,7 +270,8 @@ def options_layout(repo):
     c=CPU(repo);base=c.s['Chunk_Table'];templates={}
     # OptionScreen_Choices stores limits in pointer bits 24..31. Real M68000
     # ignores those address bits; Unicorn needs explicit mirrored RAM pages.
-    aliases=[(limit<<24)|0xFF0000 for limit in (2,3,0x7F)]
+    table=c.s['OptionScreen_Choices']
+    aliases=sorted({(c.rom[table+4*i]<<24)|0xFF0000 for i in range(3)}-{0xFFFF0000})  # $FF is RAM itself
     for address in aliases:c.uc.mem_map(address,0x10000)
     for selected in (True,False):
         offset=0 if selected else 0x160
@@ -404,7 +405,8 @@ def debug(repo):
     assert c.read('Last_star_pole_hit')==c.read('Last_star_pole_hit_2P')==0
     assert c.read('Life_count')==c.read('Life_count_2P')==3
     c=CPU(repo);c.write('Level_select_zone',0,2)
-    for option in (1,2,0):
+    count=c.s.get('PlayerOption_Count',3)
+    for option in list(range(1,count))+[0]:
         c.write('Ctrl_1_Press',c.s['button_C_mask'])
         c.call('LevSelControls_SwitchSide');assert c.read('Player_option',2)==option
     return {'character_water_powerup_cycles':entries,'tails_hurt_and_death_rescue_cases':rescue,

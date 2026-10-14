@@ -59,7 +59,7 @@ Settings_Normalize:
 	clr.b	(Player_option).w		; the word options keep their value in the low byte
 	clr.b	(Two_player_items).w
 	clr.b	(VS_countdown_option).w
-	cmpi.b	#PlayerMode_Count,(Player_option+1).w
+	cmpi.b	#PlayerOption_Count,(Player_option+1).w
 	blo.s	+
 	clr.b	(Player_option+1).w
 +

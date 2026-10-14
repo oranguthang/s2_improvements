@@ -107,6 +107,8 @@ FeatureVictoryPoses = 1
 ;	| After the signpost or the capsule the player stays and poses, as in Sonic 3 & Knuckles
 FeatureSuperTails = 1
 ;	| In Tails Alone games Tails turns Super like Sonic (S3K pose and yellow fur cycle)
+FeatureKnuckles = 1
+;	| Knuckles from Knuckles in Sonic 2: KNUCKLES AND MILES and KNUCKLES ALONE in the player select
 FeatureBurntDeath = 1
 ;	| Sonic plays the burnt death animation when killed by fire or lasers
 FeatureActMusic = 1
@@ -129,7 +131,7 @@ FeatureCDDrowning = 0
 ;	| If 1, the music keeps playing below 12 seconds of air and a warning sounds every
 ;	| second, as in Sonic CD; the countdown numbers still appear
 
-	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureCentiseconds|FeatureLightDash|FeaturePeelOut|FeatureVictoryPoses|FeatureSuperTails|FeatureBurntDeath|FeatureActMusic|FeatureS3KDrums|FeatureImprovedMusic|FeatureInfiniteLives|FeatureCDDrowning)&~1
+	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureCentiseconds|FeatureLightDash|FeaturePeelOut|FeatureVictoryPoses|FeatureSuperTails|FeatureKnuckles|FeatureBurntDeath|FeatureActMusic|FeatureS3KDrums|FeatureImprovedMusic|FeatureInfiniteLives|FeatureCDDrowning)&~1
 		error "Feature options must be 0 or 1"
 	endif
 
@@ -3712,6 +3714,12 @@ PalPtr_SS3_2p:	palptr Pal_SS3_2p,3
 PalPtr_OOZ_B:	palptr Pal_OOZ_B, 1
 PalPtr_Menu:	palptr Pal_Menu,  0
 PalPtr_Result:	palptr Pal_Result,0
+	if FeatureKnuckles
+PalPtr_BGND_Knuckles:	palptr Pal_BGND_Knuckles, 0	; Knuckles' colours in the first line
+PalPtr_HPZ_U_Knuckles:	palptr Pal_HPZ_U_Knuckles, 0
+PalPtr_CPZ_U_Knuckles:	palptr Pal_CPZ_U_Knuckles, 0
+PalPtr_ARZ_U_Knuckles:	palptr Pal_ARZ_U_Knuckles, 0
+	endif
 
 ; ----------------------------------------------------------------------------
 ; This macro defines Pal_ABC and Pal_ABC_End, so palptr can compute the size of
@@ -3758,6 +3766,13 @@ Pal_SS4:   palette Special Stage 4.bin ; Special Stage 4 palette
 Pal_SS5:   palette Special Stage 5.bin ; Special Stage 5 palette
 Pal_SS6:   palette Special Stage 6.bin ; Special Stage 6 palette
 Pal_SS7:   palette Special Stage 7.bin ; Special Stage 7 palette
+	if FeatureKnuckles
+; Knuckles (tools/import_kis2.py): Sonic 2's palettes with Knuckles' colours 2-5
+Pal_BGND_Knuckles:  palette Knuckles and Tails.bin,SonicAndTails2.bin
+Pal_HPZ_U_Knuckles: palette HPZ underwater Knuckles.bin
+Pal_CPZ_U_Knuckles: palette CPZ underwater Knuckles.bin
+Pal_ARZ_U_Knuckles: palette ARZ underwater Knuckles.bin
+	endif
 Pal_SS1_2p:palette Special Stage 1 2p.bin ; Special Stage 1 2p palette
 Pal_SS2_2p:palette Special Stage 2 2p.bin ; Special Stage 2 2p palette
 Pal_SS3_2p:palette Special Stage 3 2p.bin ; Special Stage 3 2p palette
@@ -4778,6 +4793,9 @@ Level_InitWater:
 ; loc_407C:
 Level_LoadPal:
 	moveq	#PalID_BGND,d0
+	if FeatureKnuckles
+	jsr	(Knuckles_PalID).l	; Knuckles' colours if he plays
+	endif
 	bsr.w	PalLoad_Now	; load Sonic's palette line
 	tst.b	(Water_flag).w	; does level have water?
 	beq.s	Level_GetBgm	; if not, branch
@@ -4790,6 +4808,9 @@ Level_LoadPal:
 	moveq	#PalID_ARZ_U,d0	; palette number $17
 ; loc_409E:
 Level_WaterPal:
+	if FeatureKnuckles
+	jsr	(Knuckles_PalID).l
+	endif
 	bsr.w	PalLoad_Water_Now	; load underwater palette (with d0)
 	tst.b	(Last_star_pole_hit).w ; is it the start of the level?
 	beq.s	Level_GetBgm	; if yes, branch
@@ -4829,6 +4850,9 @@ Level_TtlCard:
 	jsr	(Hud_Base).l
 +
 	moveq	#PalID_BGND,d0
+	if FeatureKnuckles
+	jsr	(Knuckles_PalID).l
+	endif
 	bsr.w	PalLoad_ForFade	; load Sonic's palette line
 	jsr	(LevelSizeLoad).l
     if fixBugs
@@ -4960,6 +4984,9 @@ Level_FromCheckpoint:
 	beq.s	+
 	moveq	#PalID_ARZ_U,d0
 +
+	if FeatureKnuckles
+	jsr	(Knuckles_PalID).l
+	endif
 	bsr.w	PalLoad_Water_ForFade
 +
 	move.w	#-1,(TitleCard_ZoneName+titlecard_leaveflag).w
@@ -5073,10 +5100,10 @@ Level_SetPlayerMode:
 	beq.s	+			; if yes, branch
 	tst.w	(Two_player_mode).w	; 2P mode?
 	bne.s	+			; if yes, branch
-	move.w	(Player_option).w,(Player_mode).w ; use the option chosen in the Options screen
-	rts
+	jmp	(ApplyPlayerOption).l	; use the option chosen in the Options screen
 +
 	move.w	#PlayerMode_SonicTails,(Player_mode).w	; force Sonic and Tails
+	move.b	#CharID_Sonic,(Main_character).w
 	rts
 ; End of function Level_SetPlayerMode
 
@@ -12388,7 +12415,7 @@ OptionScreen_CountdownText:
 ; ===========================================================================
 ; word_917A:
 OptionScreen_Choices:
-	dc.l (PlayerMode_Count-1)<<24|(Player_option&$FFFFFF)
+	dc.l (PlayerOption_Count-1)<<24|(Player_option&$FFFFFF)
 	dc.l (4-1)<<24|(Two_player_items&$FFFFFF)
 	dc.l ($100-1)<<24|(Sound_test_sound&$FFFFFF)	; every sound ID ($00 = silence)
 
@@ -12556,18 +12583,26 @@ boxData macro txtlabel,vramAddr
 	boxData	TextOptScr_VsModeItems,VRAM_Plane_A_Name_Table+planeLoc(64,9,11)
 	boxData	TextOptScr_SoundTest,VRAM_Plane_A_Name_Table+planeLoc(64,9,19)
 
-; Player mode names (one entry per PlayerMode_*), "Miles" and "Tails" variants
+; Player select names (one entry per PlayerOption_*), "Miles" and "Tails" variants
 off_92D2:
 	dc.l TextOptScr_SonicAndMiles
 	dc.l TextOptScr_SonicAlone
 	dc.l TextOptScr_MilesAlone
+	if FeatureKnuckles
+	dc.l TextOptScr_KnucklesAndMiles
+	dc.l TextOptScr_KnucklesAlone
+	endif
 off_92DE:
 	dc.l TextOptScr_SonicAndTails
 	dc.l TextOptScr_SonicAlone
 	dc.l TextOptScr_TailsAlone
+	if FeatureKnuckles
+	dc.l TextOptScr_KnucklesAndTails
+	dc.l TextOptScr_KnucklesAlone
+	endif
 off_92DE_End:
-    if ((off_92DE-off_92D2)<>(PlayerMode_Count*4))||((off_92DE_End-off_92DE)<>(PlayerMode_Count*4))
-	error "The Options player name tables need one entry per player mode"
+    if ((off_92DE-off_92D2)<>(PlayerOption_Count*4))||((off_92DE_End-off_92DE)<>(PlayerOption_Count*4))
+	error "The Options player name tables need one entry per player option"
     endif
 off_92EA:
 	dc.l TextOptScr_AllKindsItems
@@ -12697,8 +12732,7 @@ LevelSelect_PressStart:
 	move.l	d0,(Score_2P).w
 	move.l	#5000,(Next_Extra_life_score).w
 	move.l	#5000,(Next_Extra_life_score_2P).w
-	move.w	(Player_option).w,(Player_mode).w
-	rts
+	jmp	(ApplyPlayerOption).l
 ; ===========================================================================
 
 ;loc_944C:
@@ -12996,7 +13030,7 @@ LevSelControls_SwitchSide:	; not in soundtest, not up/down pressed
 	btst	#button_C,(Ctrl_1_Press).w
 	beq.s	+
 	addq.w	#1,(Player_option).w
-	cmpi.w	#PlayerMode_Count-1,(Player_option).w
+	cmpi.w	#PlayerOption_Count-1,(Player_option).w
 	bls.s	+
 	clr.w	(Player_option).w
 +
@@ -13100,7 +13134,7 @@ LevelSelect_MarkFields:
 LevelSelect_DrawPlayerOption:
 	move.l	#vdpComm(VRAM_Plane_A_Name_Table+planeLoc(64,3,24),VRAM,WRITE),(VDP_control_port).l
 	move.w	(Player_option).w,d0
-	cmpi.w	#PlayerMode_Count-1,d0
+	cmpi.w	#PlayerOption_Count-1,d0
 	bls.s	.valid
 	moveq	#0,d0
 .valid:
@@ -13115,11 +13149,14 @@ LevelSelect_DrawPlayerOption:
 	move.w	d0,(a6)
 	dbf	d1,.loop
 	rts
-LevelSelect_PlayerText:	; one entry per PlayerMode_*
+LevelSelect_PlayerText:	; one entry per PlayerOption_*
 	dc.l TextLevSel_SonicTails,TextLevSel_Sonic,TextLevSel_Tails
+	if FeatureKnuckles
+	dc.l TextLevSel_KnucklesTails,TextLevSel_Knuckles
+	endif
 LevelSelect_PlayerText_End:
-    if (LevelSelect_PlayerText_End-LevelSelect_PlayerText)<>(PlayerMode_Count*4)
-	error "LevelSelect_PlayerText needs one entry per player mode"
+    if (LevelSelect_PlayerText_End-LevelSelect_PlayerText)<>(PlayerOption_Count*4)
+	error "LevelSelect_PlayerText needs one entry per player option"
     endif
 
 LevelSelect_DrawSoundNumber:
@@ -13324,6 +13361,11 @@ TextOptScr_SonicAndTails:	menutxt	"SONIC AND TAILS"	; byte_97EC:
 TextOptScr_SonicAlone:		menutxt	"SONIC ALONE    "	; byte_97FC:
 TextOptScr_MilesAlone:		menutxt	"MILES ALONE    "	; byte_980C:
 TextOptScr_TailsAlone:		menutxt	"TAILS ALONE    "	; byte_981C:
+	if FeatureKnuckles
+TextOptScr_KnucklesAndMiles:	menutxt	"KNUX AND MILES "
+TextOptScr_KnucklesAndTails:	menutxt	"KNUX AND TAILS "
+TextOptScr_KnucklesAlone:	menutxt	"KNUCKLES ALONE "
+	endif
 TextOptScr_VsModeItems:		menutxt	"* VS MODE ITEMS *"	; byte_982C:
 TextOptScr_AllKindsItems:	menutxt	"ALL KINDS ITEMS"	; byte_983E:
 TextOptScr_TeleportOnly:	menutxt	"TELEPORT ONLY  "	; byte_984E:
@@ -13336,6 +13378,10 @@ TextOptScr_SoundTest:		menutxt	"*  SOUND TEST   *"	; byte_985E:
 TextLevSel_SonicTails:		menutxt "C PLAYER: SONIC TAILS"
 TextLevSel_Sonic:		menutxt "C PLAYER: SONIC      "
 TextLevSel_Tails:		menutxt "C PLAYER: TAILS      "
+	if FeatureKnuckles
+TextLevSel_KnucklesTails:	menutxt "C PLAYER: KNUX TAILS "
+TextLevSel_Knuckles:		menutxt "C PLAYER: KNUCKLES   "
+	endif
 TextOptScr_0:			menutxt	"      00       "	; byte_9870:
 
 	charset ; reset character set
@@ -13520,7 +13566,7 @@ EndingSequence:
 EndgameCredits:
 	tst.b	(Credits_Trigger).w
 	beq.w	.return
-	bsr.w	Pal_FadeToBlack
+	jsr	(Pal_FadeToBlack).l
 	lea	(VDP_control_port).l,a6
 	move.w	#$8004,(a6)		; H-INT disabled
 	move.w	#$8200|(VRAM_EndSeq_Plane_A_Name_Table/$400),(a6)	; PNT A base: $C000
@@ -36841,6 +36887,12 @@ Obj01_Init:
 	move.b	#$13,y_radius(a0)	; this sets Sonic's collision height (2*pixels)
 	move.b	#9,x_radius(a0)	; this sets Sonic's Collision width (2*pixels)
 	move.l	#MapUnc_Sonic,mappings(a0)	; load Sonic's mappings
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	+
+	move.l	#MapUnc_Knuckles,mappings(a0)
++
+	endif
 	move.b	#2,priority(a0)	; set sprite priority
 	move.b	#$18,width_pixels(a0)	; set render width
 	move.b	#1<<render_flags.level_fg,render_flags(a0)	; set to playfield-positioned mode
@@ -37158,6 +37210,10 @@ Sonic_CarryOutSplash:
 ; ---------------------------------------------------------------------------
 ; loc_1A26E:
 Obj01_MdNormal_Checks:
+	if FeatureKnuckles
+	tst.b	(Main_character).w	; Knuckles has no blinking or getting up
+	bne.s	Obj01_MdNormal
+	endif
 	; If Sonic has been waiting for a while, and is tapping his foot
 	; impatiently, then make him blink once the player starts moving
 	; again. Likewise, if he's been waiting for so long that he's laying
@@ -37280,6 +37336,10 @@ AirRoll:
 	if FeatureAirRoll=0
 	rts				; Air Roll disabled
 	endif
+	if FeatureKnuckles
+	tst.b	(Main_character).w	; Knuckles glides instead
+	bne.w	.return
+	endif
 	moveq	#button_A_mask|button_B_mask|button_C_mask,d0
 	and.b	(Ctrl_1_Press_Logical).w,d0	; is A, B, or C pressed?
 	beq.s	.return			; if not, branch
@@ -37380,6 +37440,10 @@ Sonic_PanCamera:
 Sonic_HomingAttack:
 	if FeatureHomingAttack=0
 	rts				; Homing Attack disabled
+	endif
+	if FeatureKnuckles
+	tst.b	(Main_character).w	; Knuckles glides instead
+	bne.w	.homeend
 	endif
 	if FeatureTailsFlight
 	tst.w (Player_mode).w
@@ -37594,6 +37658,12 @@ Obj01_NotRight:
 	subq.w	#2,d2				; minus 4
 	add.w	x_pos(a0),d1		; get Sonic's current X-position
 	sub.w	x_pos(a1),d1		; subtract stood-on object's X-position
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	+
+	jmp	(Knuckles_BalanceOnObj).l	; code/Knuckles.asm
++
+	endif
 	tst.b	(Super_Sonic_flag).w	; is Sonic in his Super form?
 	bne.w	SuperSonic_Balance		; if yes, branch
 	cmpi.w	#2,d1					; is Sonic within 2px of the objects left edge?
@@ -37654,6 +37724,12 @@ Sonic_Balance:
 	jsr	(ChkFloorEdge).l	; get distance of Sonic to nearest floor
 	cmpi.w	#$C,d1			; is he within $C (12px) to floor?
 	blt.w	Sonic_Lookup	; if yes, don't do balance animation (would look awkward)
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	+
+	jmp	(Knuckles_BalanceOnLevel).l	; code/Knuckles.asm
++
+	endif
 	tst.b	(Super_Sonic_flag).w	; is Sonic in his Super form?
 	bne.w	SuperSonic_Balance2		; if yes, branch
 	cmpi.b	#3,next_tilt(a0)
@@ -38387,6 +38463,16 @@ Sonic_Jump:
 	beq.s	+
 	move.w	#$380,d2	; set lower jump speed if underwater
 +
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	++
+	move.w	#$600,d2	; Knuckles jumps lower, Super or not (Knuckles in Sonic 2)
+	btst	#status.player.underwater,status(a0)
+	beq.s	+
+	move.w	#$300,d2
++
++
+	endif
 	moveq	#0,d0
 	move.b	angle(a0),d0
 	subi.b	#$40,d0
@@ -38489,6 +38575,10 @@ return_1AB36:
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 
 Sonic_ToggleSuper:
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	bne.s	Sonic_ComboReturn
+	endif
 	tst.b	(Control_Locked).w		; are controls locked? (e.g. WFZ cutscene)
 	bne.s	Sonic_ComboReturn		; if yes, skip super toggle entirely
 	; If lock bit is set, wait until all jump buttons are released
@@ -38549,6 +38639,10 @@ Sonic_ComboReturn:
 
 ; loc_1AB38: test_set_SS:
 Sonic_CheckGoSuper:
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	bne.w	return_1ABA4
+	endif
 	tst.b	(Super_Sonic_flag).w	; is Sonic already Super?
 	if FeatureSuperToggle
 	bne.w	Sonic_RevertToNormal	; if yes, revert to normal manually
@@ -39550,6 +39644,12 @@ Obj01_Drowned:
 ; ---------------------------------------------------------------------------
     endif
 Sonic_Animate:
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	+
+	jmp	(Knuckles_Animate).l	; code/Knuckles.asm
++
+	endif
 	lea	(SonicAniData).l,a1
 	tst.b	(Super_Sonic_flag).w
 	beq.s	+
@@ -40019,6 +40119,13 @@ LoadSonicDynPLC_Part2:
 	lea	(MapRUnc_Sonic).l,a2		; load Sonic DPLC table
 	move.w	#tiles_to_bytes(ArtTile_ArtUnc_Sonic),d4	; starting VRAM tile
 	move.l	#ArtUnc_Sonic,d6		; base Sonic art pointer
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	+
+	lea	(MapRUnc_Knuckles).l,a2
+	move.l	#ArtUnc_Knuckles,d6
++
+	endif
 	jmp	(LoadDynPLC).l			; load DPLC
 
 return_1B89A:
@@ -46377,7 +46484,7 @@ Obj79_MakeSpecialStars:
 	moveq	#4-1,d1 ; execute the loop 4 times (1 for each star)
 	moveq	#0,d2
 
--	bsr.w	AllocateObjectAfterCurrent
+-	jsr	(AllocateObjectAfterCurrent).l
 	bne.s	+	; rts
 	_move.b	id(a0),id(a1) ; load obj79
 	move.l	#Obj79_MapUnc_1F4A0,mappings(a1)
@@ -90202,6 +90309,12 @@ Debug_ExitDebugMode:
 	bra.s	.characterReady
 .sonic:
 	move.l	#MapUnc_Sonic,mappings(a1)
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	+
+	move.l	#MapUnc_Knuckles,mappings(a1)
++
+	endif
 	move.w	#make_art_tile(ArtTile_ArtUnc_Sonic,0,0),art_tile(a1)
 	move.b	#$13,y_radius(a1)
 	move.b	#-1,(Sonic_LastLoadedDPLC).w
@@ -93414,6 +93527,7 @@ Sound70:	include "sound/sfx/F0 - Oil Slide.asm"
 	include "code/PeelOut.asm"
 	include "code/VictoryPoses.asm"
 	include "code/SuperTails.asm"
+	include "code/Knuckles.asm"
 	if FeatureSoundDriver=SoundDriver_S3K
 	include "sound/S3K Driver.asm"
 	endif

@@ -16,6 +16,10 @@ Sonic_PeelOut:
 	if FeaturePeelOut=0
 	rts					; Super Peel-Out disabled
 	endif
+	if FeatureKnuckles
+	tst.b	(Main_character).w		; Sonic only (Knuckles uses $23 for gliding)
+	bne.s	.return
+	endif
 	tst.b	peelout_flag(a0)
 	bne.s	.charge
 	tst.w	(Demo_mode_flag).w		; the title demos were recorded without it
