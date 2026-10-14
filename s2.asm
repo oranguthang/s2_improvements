@@ -30933,20 +30933,32 @@ DeleteObject2:
 
 ; sub_164F4:
 DisplaySprite:
-	lea	(Object_Display_Lists).w,a1
-	move.w	priority(a0),d0
-	lsr.w	#8-object_display_list_size_bits,d0
-	andi.w	#(1<<total_object_display_lists_bits-1)<<object_display_list_size_bits,d0
-	adda.w	d0,a1
-	cmpi.w	#object_display_list_size-2,(a1)
-	bhs.s	.return
-	addq.w	#2,(a1)
-	adda.w	(a1),a1
-	move.w	a0,(a1)
+	; Faster version, as in s1_improvements (after "Improve DisplaySprite
+	; subroutines"): the list comes from a table, and the entry count
+	; ($00-$7E) overflows into bit 7 exactly when the list is full.
+	moveq	#total_object_display_lists-1,d0
+	and.b	priority(a0),d0	; high byte of the priority word
+	add.w	d0,d0
+	movea.w	DisplaySprite_Lists(pc,d0.w),a1
+	move.w	(a1),d0
+	addq.b	#2,d0
+	bmi.s	.return		; the list is full
+	move.w	d0,(a1)
+	move.w	a0,(a1,d0.w)
 
 .return:
 	rts
 ; End of function DisplaySprite
+
+	if (object_display_list_size<>$80)||(total_object_display_lists<>8)
+		fatal "DisplaySprite needs eight display lists of $80 bytes"
+	endif
+DisplaySprite_Lists:
+.list := 0
+	rept total_object_display_lists
+	dc.w	Object_Display_Lists+.list*object_display_list_size
+.list := .list+1
+	endm
 
 ; ---------------------------------------------------------------------------
 ; Subroutine to display a sprite/object, when a1 is the object RAM
@@ -30956,16 +30968,15 @@ DisplaySprite:
 
 ; sub_16512:
 DisplaySprite2:
-	lea	(Object_Display_Lists).w,a2
-	move.w	priority(a1),d0
-	lsr.w	#8-object_display_list_size_bits,d0
-	andi.w	#(1<<total_object_display_lists_bits-1)<<object_display_list_size_bits,d0
-	adda.w	d0,a2
-	cmpi.w	#object_display_list_size-2,(a2)
-	bhs.s	.return
-	addq.w	#2,(a2)
-	adda.w	(a2),a2
-	move.w	a1,(a2)
+	moveq	#total_object_display_lists-1,d0
+	and.b	priority(a1),d0
+	add.w	d0,d0
+	movea.w	DisplaySprite_Lists(pc,d0.w),a2
+	move.w	(a2),d0
+	addq.b	#2,d0
+	bmi.s	.return		; the list is full
+	move.w	d0,(a2)
+	move.w	a1,(a2,d0.w)
 
 .return:
 	rts
@@ -30980,11 +30991,11 @@ DisplaySprite2:
 DisplaySprite3:
 	lea	(Object_Display_Lists).w,a1
 	adda.w	d0,a1
-	cmpi.w	#object_display_list_size-2,(a1)
-	bhs.s	.return
-	addq.w	#2,(a1)
-	adda.w	(a1),a1
-	move.w	a0,(a1)
+	move.w	(a1),d0
+	addq.b	#2,d0
+	bmi.s	.return		; the list is full
+	move.w	d0,(a1)
+	move.w	a0,(a1,d0.w)
 
 .return:
 	rts

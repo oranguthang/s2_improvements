@@ -407,6 +407,15 @@ so they have no `Feature*` switch.
   values, near-diagonal and random), with identical results, registers and
   flags. The ARZ title demo, which runs at the edge of the frame budget, takes
   5 frames less (1741 -> 1736).
+- `DisplaySprite`, `DisplaySprite2` and `DisplaySprite3` insert into the
+  display lists as in s1_improvements (after
+  [Improve DisplaySprite subroutines](https://info.sonicretro.org/SCHG_How-to:Improve_DisplaySprite_subroutines)):
+  the list address comes from a table and a full list is detected by the
+  entry count overflowing into bit 7, which needs eight lists of $80 bytes
+  (checked at assembly). None of the 473 call sites reads `d0`, `a1`/`a2` or
+  the flags afterwards, so the different values left there do not matter.
+  Compared with the original on 18000 random list states: identical lists and
+  registers. ARZ demo: 1736 -> 1731 frames.
 
 ## Branch range
 
