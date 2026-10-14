@@ -172,6 +172,7 @@ features. The default build is unchanged by these switches.
 | `FeatureLightDash` | A in the air never starts a Light Dash; it does the normal air move. |
 | `FeaturePeelOut` | Up + A/B/C while standing jumps, as in the original game. |
 | `FeatureVictoryPoses` | After the signpost the player runs off to the right before the results, as in the original game. |
+| `FeatureSuperTails` | Tails cannot turn Super. |
 
 Two optional alternatives are off by default; 1 enables them:
 
@@ -186,7 +187,7 @@ The second colon reuses the HUD colon tile and the two digits use the four
 free tiles after the horizontal scroll table (`$7FC-$7FF`); BuildHUD queues
 them by DMA from a lookup table only when the hundredths change. The ARZ title
 demo runs right at the edge of the frame budget, so even this small cost makes
-it about 20 lag frames longer (1712 -> 1734 frames); a 300-cycle empty loop
+it about 20 lag frames longer (1712 -> 1734 frames; the per-frame checks of the later features add a few more, 1742); a 300-cycle empty loop
 in the same place costs 14. With
 `FeatureSpecialStageSelect`, Left/Right on SPECIAL STAGE choose the stage shown
 as 1-7 after the name, and an emerald that was already earned is not counted again.
@@ -367,6 +368,7 @@ You assume any and all responsibility for using this content responsibly. Sonic 
 | Light Dash | Implemented | In the air, A next to a chain of at least three uncollected rings (64 pixels to the first, up to 72 between rings) dashes along it at 12 pixels per frame (6 under water), as in s1_improvements; without a chain A does the normal air move, and B/C never dash. Sonic and Tails Alone; the dash attacks badniks, follows curved chains and the ground, and leaves with the last link's direction. The targets are the rings manager's `Ring_Positions`, so no ring objects are involved. |
 | Super Peel-Out | Implemented | Standing still, hold Up and press A/B/C to charge (100 per frame up to twice the top speed, at most $1000); let go of Up to launch an upright run at that speed, or cancel below $600. As in s1_improvements; Sonic 2 has no figure-eight frames or Peel-Out sounds, so the charge runs the normal run cycle on the spot with the Spin Dash sounds. Sonic only; the charge state uses SST `$23` (`peelout_flag`). |
 | Victory poses | Implemented | After the signpost or the egg prison the player stays on screen: once landed the controls lock, he stops, the results start and Sonic shows the two-finger pose from AleDrawer2008's [Add Victory Poses In Sonic 1](https://info.sonicretro.org/SCHG_How-to:Add_Victory_Poses_In_Sonic_1), as in s1_improvements. `tools/import_victory_poses.py` makes frames $DB-$DC from s1_improvements' source bundle (`cd/Victory Sprites.png`); Sonic 2 keeps Sonic's colours at the same palette indices. While the clock is stopped the right level bound loses its $40 margin, so a player who keeps running stays on screen. In Tails Alone games Tails gives S3K's thumbs-up and kneels (`AniTails13`); `tools/import_tails_poses.py` imports those frames ($9C-$9D) and his Super transformation ($9E-$A0) from the S3K sprites in the same bundle, remapping S3K's colours to Sonic 2's player palette. His separate tails stay blank in these poses, whose frames use their tiles. 2P VS games keep the original ending. |
+| Super Tails | Implemented | In Tails Alone games, as in s1_improvements: with seven emeralds (or ALL EMERALDS) and SUPER RINGS rings, A+B or B+C during a jump turns Tails Super and back (a flight started by the first button is cancelled; a combo never starts later in a flight). He plays S3K's transformation pose (frames $9E-$A0, with its white flash), keeps his sprites, his fur (colours 11, 15, 14) runs S3K's six-frame yellow cycle and he moves with S3K's Super values (top speed $800, acceleration $18, deceleration $C0, halved under water). Rings drain as for Super Sonic; no stars or Flickies. The underwater palette is not cycled yet. |
 | Homing Attack and Jump Dash | Implemented | A, B or C in the air (once per jump; hitting a target allows another). Left/Right held at the press choose the direction. The Homing Attack takes the nearest badnik or intact monitor ahead within 150 pixels and aims at the upper third of its hitbox, as in s1_improvements; with no target Sonic dashes straight. Up + jump calls the Tails AI instead in Sonic and Tails games. |
 | Tails flight and underwater swimming poses | Implemented | Jump again in the air. Press a jump button repeatedly to flap upwards; the timer gives eight seconds of powered flight. Water uses separate swimming poses. |
 | Carry Sonic and fly assist | Implemented | The Tails AI can catch Sonic during a flight. While held, Left/Right steer, a fresh Up flaps, and a fresh jump lets Sonic go. |

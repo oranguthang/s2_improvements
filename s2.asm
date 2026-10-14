@@ -105,6 +105,8 @@ FeaturePeelOut = 1
 ;	| Standing still, hold Up and press A/B/C to charge a Super Peel-Out (Sonic)
 FeatureVictoryPoses = 1
 ;	| After the signpost or the capsule the player stays and poses, as in Sonic 3 & Knuckles
+FeatureSuperTails = 1
+;	| In Tails Alone games Tails turns Super like Sonic (S3K pose and yellow fur cycle)
 FeatureBurntDeath = 1
 ;	| Sonic plays the burnt death animation when killed by fire or lasers
 FeatureActMusic = 1
@@ -118,7 +120,7 @@ FeatureCDDrowning = 0
 ;	| If 1, the music keeps playing below 12 seconds of air and a warning sounds every
 ;	| second, as in Sonic CD; the countdown numbers still appear
 
-	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureCentiseconds|FeatureLightDash|FeaturePeelOut|FeatureVictoryPoses|FeatureBurntDeath|FeatureActMusic|FeatureInfiniteLives|FeatureCDDrowning)&~1
+	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureCentiseconds|FeatureLightDash|FeaturePeelOut|FeatureVictoryPoses|FeatureSuperTails|FeatureBurntDeath|FeatureActMusic|FeatureInfiniteLives|FeatureCDDrowning)&~1
 		error "Feature options must be 0 or 1"
 	endif
 
@@ -3202,6 +3204,12 @@ CyclingPal_WFZ2:
 
 ; sub_213E:
 PalCycle_SuperSonic:
+	if FeatureSuperTails
+	cmpi.b	#ObjID_Tails,(MainCharacter+id).w	; Super Tails in a Tails Alone game?
+	bne.s	+
+	jmp	(PalCycle_SuperTails).l
++
+	endif
 	move.b	(Super_Sonic_palette).w,d0
 	beq.s	.return	; return, if Sonic isn't super
 	bmi.w	.normal	; branch, if fade-in is done
@@ -4979,6 +4987,7 @@ Level_ClrRam:
 	clearRAM MiscLevelVariables,MiscLevelVariables_End
 	clr.w	(LightDash_active).w	; and LightDash_hitframe
 	clr.b	(Victory_pose).w
+	clr.w	(SuperTails_combo_timer).w	; and SuperTails_combo_buttons
 	clearRAM Misc_Variables,Misc_Variables_End
 	clearRAM Oscillating_Data,Oscillating_variables_End
 	tst.b	(SS_keep_level_state).w
@@ -40318,6 +40327,11 @@ ApplySpeedSettings:
 	tst.b	(Super_Sonic_flag).w		; is Sonic Super?
 	beq.s	+
 	addi.b	#24,d0				; if so, +24
+	if FeatureSuperTails
+	cmpi.b	#ObjID_Tails,id(a0)		; Super Tails (Tails Alone)?
+	bne.s	+
+	addi.b	#24,d0				; S3K's values for him, +48
+	endif
 +
 	lea	Speedsettings(pc,d0.w),a1
 	move.l	(a1)+,(a2)+			; set top_speed and acceleration
@@ -40340,6 +40354,12 @@ Speedsettings:
 	dc.w	$C00,	$30,	$100	; Super + Speed Shoes
 	dc.w	$500,	$18,	$80		; Super Underwater
 	dc.w	$A00,	$30,	$80		; Super Underwater + Speed Shoes
+	if FeatureSuperTails
+	dc.w	$800,	$18,	$C0		; Super Tails (S3K)
+	dc.w	$C00,	$30,	$C0		; Super Tails + Speed Shoes
+	dc.w	$400,	$C,		$60		; Super Tails Underwater
+	dc.w	$600,	$18,	$60		; Super Tails Underwater + Speed Shoes
+	endif
     endif
 ; ===========================================================================
 ; ----------------------------------------------------------------------------
@@ -40487,6 +40507,9 @@ Obj02_AfterMovement:
 	andi.w	#$7FF,y_pos(a0)			; perform wrapping of Sonic's y position
 +
 	bsr.s	Tails_Display
+	if FeatureSuperTails
+	jsr	(Tails_Super).l		; ring drain while Super
+	endif
 	bsr.w	Tails_RecordPos
 	bsr.w	Tails_Water
 	move.b	(Primary_Angle).w,next_tilt(a0)
@@ -41191,6 +41214,12 @@ Obj02_MdAir:
 	rts
 ; End of subroutine Obj02_MdAir
 Obj02_MdFly:
+	if FeatureSuperTails
+	jsr	(Tails_ToggleSuper).l	; the combo's second button cancels a new flight
+	beq.s	+
+	rts
++
+	endif
 	bsr.w Tails_Flying
 	bsr.w Tails_ChgJumpDir
 	bsr.w Tails_LevelBound
@@ -42063,6 +42092,10 @@ Tails_RollJump:
 Tails_JumpHeight:
 	tst.b	jumping(a0)	; is Tails jumping?
 	beq.s	Tails_UpVelCap	; if not, branch
+	if FeatureSuperTails
+	jsr	(Tails_ToggleSuper).l	; A+B or B+C: Super Tails
+	bne.w	return_1C70C
+	endif
 
 	move.w	#-$400,d1
 	btst	#status.player.underwater,status(a0)	; is Tails underwater?
@@ -93648,6 +93681,7 @@ Sound70:	include "sound/sfx/F0 - Oil Slide.asm"
 	include "code/LightDash.asm"
 	include "code/PeelOut.asm"
 	include "code/VictoryPoses.asm"
+	include "code/SuperTails.asm"
 
 ; end of 'ROM'
     if MDDebugger

@@ -1233,6 +1233,8 @@ LightDash_exit_x:		ds.w	1
 LightDash_exit_y:		ds.w	1
 Victory_pose:			ds.b	1	; the act results are up: Sonic poses (FeatureVictoryPoses)
 				ds.b	1
+SuperTails_combo_timer:		ds.b	1	; Super Tails' A+B / B+C window (FeatureSuperTails)
+SuperTails_combo_buttons:	ds.b	1	; jump buttons pressed in the window; bit 7 = wait for release
 LightDash_RAM_End:
 				ds.b	$200-(LightDash_RAM_End-LightDash_RAM)	; unused
 
