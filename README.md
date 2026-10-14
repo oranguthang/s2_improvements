@@ -291,6 +291,7 @@ You assume any and all responsibility for using this content responsibly. Sonic 
 
 | Change | Status | Notes |
 | --- | --- | --- |
+| Homing Attack and Jump Dash | Implemented | A, B or C in the air (once per jump; hitting a target allows another). Left/Right held at the press choose the direction. The Homing Attack takes the nearest badnik or intact monitor ahead within 150 pixels and aims at the upper third of its hitbox, as in s1_improvements; with no target Sonic dashes straight. Up + jump calls the Tails AI instead in Sonic and Tails games. |
 | Tails flight and underwater swimming poses | Implemented | Jump again in the air. Press a jump button repeatedly to flap upwards; the timer gives eight seconds of powered flight. Water uses separate swimming poses. |
 | Carry Sonic and fly assist | Implemented | The Tails AI can catch Sonic during a flight. While held, Left/Right steer, a fresh Up flaps, and a fresh jump lets Sonic go. |
 | Shield DPLC | Implemented | The shield uses uncompressed tiles on demand. Both players have separate 12-tile slots. |

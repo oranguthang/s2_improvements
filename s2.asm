@@ -37526,12 +37526,24 @@ Sonic_HomingAttack:
 	move.w	#SndID_SpindashRelease,d0
 	jsr	(PlaySound).l			; play spindash release sound
 
+	; The D-pad picks the direction, so the dash also works while
+	; air steering is locked; with no left or right Sonic keeps facing.
+	btst	#button_left,(Ctrl_1_Held_Logical).w
+	beq.s	.notleft
+	bset	#status.player.x_flip,status(a0)	; dash to the left
+.notleft:
+	btst	#button_right,(Ctrl_1_Held_Logical).w
+	beq.s	.notright
+	bclr	#status.player.x_flip,status(a0)	; dash to the right
+.notright:
+
 	bsr.s	FindHomingTarget		; check if any homing targets are in range
 	beq.s	RegularJumpdash			; if not, do a regular jumpdash instead
 
 	move.w	x_pos(a2),d1			; load target object's X coordinate
-	move.w	y_pos(a2),d2			; load target object's Y coordinate
 	sub.w	x_pos(a0),d1			; subtract Sonic's X-pos from target X coordinate
+	movea.l	a2,a1
+	bsr.w	Sonic_HomingTargetY		; aim at the same point the target was chosen by
 	sub.w	y_pos(a0),d2			; subtract Sonic's Y-pos from target Y coordinate
 	jsr	(CalcAngle).l			; calculate angle from Sonic to target (atan2 of dx,dy)
 	jsr	(CalcSine).l			; calculate sine (d0=Y-part) and cosine (d1=X-part) of angle
@@ -37582,9 +37594,10 @@ FindHomingTarget:
 	cmpi.w	#150,d1				; is X distance within range?
 	bhi.s	.next				; if too far, skip
 
-	; Y distance check
-	move.w	y_pos(a1),d1
-	sub.w	y_pos(a0),d1
+	; Y distance check, to the upper part of the target
+	bsr.s	Sonic_HomingTargetY
+	sub.w	y_pos(a0),d2
+	move.w	d2,d1
 	bpl.s	.ypos
 	neg.w	d1
 .ypos:
@@ -37609,9 +37622,7 @@ FindHomingTarget:
 	move.w	x_pos(a1),d1
 	sub.w	x_pos(a0),d1
 	muls.w	d1,d1				; dx^2
-	move.w	y_pos(a1),d2
-	sub.w	y_pos(a0),d2
-	muls.w	d2,d2				; dy^2
+	muls.w	d2,d2				; dy^2 (d2 = target Y - Sonic's Y from above)
 	add.l	d2,d1				; d1 = dx^2 + dy^2
 	bpl.s	.checkcloser
 	neg.l	d1				; make positive (abs)
@@ -37626,6 +37637,23 @@ FindHomingTarget:
 	dbf	d0,.loop			; loop through all objects
 
 	addq.l	#1,d3				; Z=1 if no target found (d3=$FFFFFFFF), Z=0 if found
+	rts
+
+; Aim at the middle of the upper third of the target's collision box, so low
+; targets do not pull Sonic into the floor (as in s1_improvements).
+; a1 = badnik or intact monitor; returns d2 = target Y. Clobbers d4/a3 only.
+; Touch_Sizes stores the half-height h, so the point is y_pos - floor(2*h/3).
+Sonic_HomingTargetY:
+	moveq	#0,d4
+	move.b	collision_flags(a1),d4
+	andi.w	#$3F,d4
+	add.w	d4,d4
+	lea	(Touch_Sizes).l,a3
+	move.b	1(a3,d4.w),d4			; collision half-height
+	add.w	d4,d4
+	divu.w	#3,d4
+	move.w	y_pos(a1),d2
+	sub.w	d4,d2
 	rts
 ; End of function Sonic_HomingAttack
 

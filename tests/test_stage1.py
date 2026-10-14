@@ -565,6 +565,47 @@ def special_stage_state(repo):
             'sparse_full_ring_consumption_table_bounded':True,'stale_snapshot_rejections':5,
             'title_card_shield_slots_run':True,'special_stage_rewards_preserved':True}
 
+def homing_attack(repo):
+    """Jump Dash follows the D-pad; the Homing Attack aims at the upper third of the target."""
+    import math
+    def run(held=0,facing_left=False,target=None,used=False):
+        c=CPU(repo); obj=c.s['MainCharacter']; s=c.s
+        c.write(obj+s['id'],s['ObjID_Sonic'])
+        c.write(obj+s['x_pos'],0x1000,2); c.write(obj+s['y_pos'],0x300,2)
+        c.write(obj+s['status'],0x06|(1 if facing_left else 0))
+        if used:
+            c.write(obj+s['homing_attack_byte'],1<<s['homing_attack_flag'])
+        c.write('Ctrl_1_Logical',held); c.write('Ctrl_1_Press_Logical',s['button_A_mask'])
+        if target:
+            dx,dy,size=target; o=s['Dynamic_Object_RAM']
+            c.write(o,s['ObjID_Buzzer']); c.write(o+s['collision_flags'],size)
+            c.write(o+s['x_pos'],0x1000+dx,2); c.write(o+s['y_pos'],0x300+dy,2)
+        c.skip('PlaySound')
+        c.call('Sonic_HomingAttack',obj)
+        sw=lambda v:v-0x10000 if v&0x8000 else v
+        return c,sw(c.read(obj+s['x_vel'],2)),sw(c.read(obj+s['y_vel'],2)),c.read(obj+s['status'])&1
+    c,xv,yv,left=run()
+    assert (xv,yv,left)==(0x800,0,0),('jump dash right',xv,yv)
+    c,xv,yv,left=run(held=c.s['button_left_mask'])
+    assert (xv,yv,left)==(-0x800,0,1),('d-pad left',xv,yv,left)
+    c,xv,yv,left=run(held=c.s['button_right_mask'],facing_left=True)
+    assert (xv,yv,left)==(0x800,0,0),('d-pad right',xv,yv,left)
+    c,xv,yv,left=run(used=True)
+    assert (xv,yv)==(0,0),'second air dash in one jump'
+    c,xv,yv,left=run(target=(-0x60,0x20,0x0B))
+    assert (xv,yv)==(0x800,0),'target behind Sonic was chosen'
+    # A low target: aim at y - 2h/3, not at its origin.
+    size=0x01  # half-height $14
+    h=c.rom[c.s['Touch_Sizes']+2*size+1]
+    aim=0x20-(2*h)//3
+    c,xv,yv,left=run(target=(0x60,0x20,size))
+    got=math.atan2(yv,xv); want=math.atan2(aim,0x60); centre=math.atan2(0x20,0x60)
+    assert abs(got-want)<0.05 and abs(got-want)<abs(got-centre),(xv,yv,aim)
+    c,xv,yv,left=run(held=c.s['button_left_mask'],target=(-0x60,0x20,size))
+    assert xv<0 and abs(math.atan2(yv,-xv)-want)<0.05,('target on the left after d-pad left',xv,yv)
+    return {'jump_dash_follows_dpad':True,'one_dash_per_jump':True,'targets_ahead_only':True,
+            'aims_at_upper_third':True}
+
 def title_palette(repo):
     def setup():
         c=CPU(repo)
@@ -610,6 +651,8 @@ def main():
         results['vs_countdown']=vs_countdown(args.repo)
         results['vs_signpost_music']=vs_signpost_music(args.repo)
         results['options_layout']=options_layout(args.repo)
+    if symbols(args.repo/'s2.lst').get('FeatureHomingAttack',0):
+        results['homing_attack']=homing_attack(args.repo)
     if 'Debug_PreparePlayer' in symbols(args.repo/'s2.lst'):
         results['debug']=debug(args.repo)
     if symbols(args.repo/'s2.lst').get('FeatureSpecialStageState',0):
