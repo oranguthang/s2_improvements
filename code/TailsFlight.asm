@@ -377,6 +377,18 @@ TailsCPU_Assist:
 	ori.w #button_C_mask<<8|button_C_mask,(Ctrl_2_Logical).w
 	rts
 .start:
+	; Start flying no faster than a released jump, as Tails_JumpHeight
+	; requires for the player; otherwise the AI keeps its full jump speed
+	; under the weak flight gravity and shoots far above Sonic.
+	move.w #-$400,d0
+	btst #status.player.underwater,status(a0)
+	beq.s +
+	move.w #-$200,d0
++
+	cmp.w y_vel(a0),d0
+	ble.s +
+	move.w d0,y_vel(a0)
++
 	bsr.w Tails_StartFlight
 .flap:
 	move.w y_pos(a0),d0
