@@ -1,5 +1,5 @@
 ; ---------------------------------------------------------------------------
-; Any character for player 2 in 2P VS (FeatureKnuckles)
+; Any character for either player in 2P VS (FeatureKnuckles)
 ;
 ; Player 2 picks Tails, Sonic or Knuckles (VS_player2, Options screen). Sonic
 ; and Knuckles are Obj01 in the Sidekick slot. Obj01 keeps its state in
@@ -9,6 +9,11 @@
 ; afterwards; Main_character then says who player 2 is. Everything Obj01 does
 ; for the player slot itself (rings, lives, star posts, position record,
 ; VRAM) checks a0 instead. P2_context_active is set while that happens.
+;
+; Player 1 plays Tails when the player select says MILES/TAILS ALONE. Tails
+; (Obj02) keeps his state in the "Tails" RAM, so as player 1 he runs with the
+; same exchange (player 1's RAM under Tails' names), his art goes to Sonic's
+; VRAM and his tails (VS_Tails_Tails_P1) follow it.
 ; ---------------------------------------------------------------------------
 
 ; Obj01 in the Sidekick slot (a0 = Sidekick)
@@ -19,6 +24,15 @@ VS_Obj01Player2:
 	jsr	(Obj01_Normal).l	; (debug placement belongs to player 1)
 	sf.b	(P2_context_active).w
 	; fall through: exchange the RAM back
+
+; Obj02 in the MainCharacter slot in 2P VS (a0 = MainCharacter)
+VS_Obj02Player1:
+	move.w	(Camera_Max_Y_pos_target).w,(VS_Max_Y_pos_target).w	; (not his: keep it)
+	bsr.s	VS_SwapPlayerContext
+	st.b	(P2_context_active).w
+	jsr	(Obj02_Normal).l
+	sf.b	(P2_context_active).w
+	bra.s	VS_SwapPlayerContext
 
 ; Exchanges player 1's Obj01 RAM with player 2's. Keeps every register.
 VS_SwapPlayerContext:
@@ -92,10 +106,11 @@ VS_SwapBytes:
 ; Returns Z=1 if player 2 is Tails (InitPlayers then loads him as usual).
 ; ---------------------------------------------------------------------------
 VS_InitPlayer2:
-	bsr.s	VS_Player2Option
+	bsr.w	VS_Player2Option
 	tst.b	d0		; VSPlayer2_Tails?
 	beq.s	.return
-	move.b	VS_Player2Characters(pc,d0.w),(Player2_character).w
+	lea	VS_Player2Characters(pc),a1
+	move.b	(a1,d0.w),(Player2_character).w
 	move.b	#ObjID_Sonic,(Sidekick+id).w	; Obj01 as player 2
 	move.b	#$13,(Sidekick+y_radius).w
 	move.w	(MainCharacter+x_pos).w,(Sidekick+x_pos).w
@@ -118,6 +133,15 @@ VS_Player2LifePLC:
 	tst.w	(Two_player_mode).w
 	beq.s	.return
 	movem.l	d0-d1,-(sp)
+	bsr.w	VS_Player1IsTails	; player 1's life icon (and Sonic 1-up icon) is Tails'
+	beq.s	.player2
+	moveq	#PLCID_MilesLife,d0
+	tst.b	(Graphics_Flags).w
+	bpl.s	.miles
+	moveq	#PLCID_TailsLife,d0
+.miles:
+	jsr	(LoadPLC).l
+.player2:
 	bsr.s	VS_Player2Option
 	move.w	d0,d1
 	movem.l	(sp)+,d0
@@ -143,6 +167,122 @@ VS_Player2Option:
 	blo.s	.return
 	moveq	#VSPlayer2_Tails,d0
 .return:
+	rts
+
+; ---------------------------------------------------------------------------
+; Level start (InitPlayers, 2P VS): Tails as player 1 for MILES/TAILS ALONE.
+; ---------------------------------------------------------------------------
+VS_InitPlayer1:
+	bsr.s	VS_Player1IsTails
+	beq.s	.return
+	move.b	#ObjID_Tails,(MainCharacter+id).w
+	move.b	#$F,(MainCharacter+y_radius).w
+	addq.w	#4,(MainCharacter+y_pos).w
+.return:
+	rts
+
+; Z=0 if player 1 plays Tails in this 2P VS game (not in demos)
+VS_Player1IsTails:
+	tst.w	(Two_player_mode).w
+	beq.s	.no
+	tst.w	(Demo_mode_flag).w
+	bne.s	.no
+	cmpi.w	#PlayerOption_TailsAlone,(Player_option).w
+	bne.s	.no
+	andi	#~4,ccr		; Z=0
+	rts
+.no:
+	ori	#4,ccr		; Z=1
+	rts
+
+; Obj02_Init for player 1 in VS (RAM exchanged): Sonic's VRAM, player 1's star
+; post, and his tails in VS_Tails_Tails_P1
+VS_Obj02Player1Init:
+	move.w	#make_art_tile(ArtTile_ArtUnc_Sonic,0,0),art_tile(a0)
+	jsr	(Adjust2PArtPointer).l
+	move.b	#$C,top_solid_bit(a0)
+	move.b	#$D,lrb_solid_bit(a0)
+	move.w	x_pos(a0),(Saved_x_pos).w
+	move.w	y_pos(a0),(Saved_y_pos).w
+	move.w	art_tile(a0),(Saved_art_tile).w
+	move.w	top_solid_bit(a0),(Saved_Solid_bits).w
+	move.b	#0,flips_remaining(a0)
+	move.b	#4,flip_speed(a0)
+	move.b	#30,air_left(a0)
+	move.b	#ObjID_TailsTails,(VS_Tails_Tails_P1+id).w
+	move.w	a0,(VS_Tails_Tails_P1+parent).w
+	st.b	(VS_TailsTails_P1_DPLC).w
+	jmp	(Obj02_Control).l
+
+; LoadTailsTailsDynPLC for player 1's tails (a0 = VS_Tails_Tails_P1)
+VS_LoadTailsTailsP1DynPLC:
+	move.b	mapping_frame(a0),d0
+	cmp.b	(VS_TailsTails_P1_DPLC).w,d0
+	beq.s	.return
+	move.b	d0,(VS_TailsTails_P1_DPLC).w
+	lea	(MapRUnc_Tails).l,a2
+	move.w	#tiles_to_bytes(ArtTile_ArtUnc_Sonic+$10),d4
+	move.l	#ArtUnc_Tails,d6
+	jmp	(LoadDynPLC).l
+.return:
+	rts
+
+; Obj02 death as player 1 in VS: player 1's lives, time over, star post and
+; rings. Scroll_lock_P2 and the camera are player 1's here.
+VS_Obj02Player1GameOver:
+	addq.b	#1,(Update_HUD_lives).w
+	subq.b	#1,(Life_count).w
+	bne.s	.reset
+	move.w	#0,restart_countdown(a0)
+	move.b	#ObjID_GameOver,(GameOver_GameText+id).w ; load Obj39
+	move.b	#ObjID_GameOver,(GameOver_OverText+id).w ; load Obj39
+	move.b	#1,(GameOver_OverText+mapping_frame).w
+	move.w	a0,(GameOver_GameText+parent).w
+	clr.b	(Time_Over_flag).w
+.finished:
+	clr.b	(Update_HUD_timer).w
+	clr.b	(Update_HUD_timer_2P).w
+	move.b	#8,routine(a0)	; => Obj02_Gone
+	move.w	#MusID_GameOver,d0
+	jsr	(PlayMusic).l
+	moveq	#PLCID_GameOver,d0
+	jmp	(LoadPLC).l
+.reset:
+	tst.b	(Time_Over_flag_2P).w
+	beq.s	.player1TimeOver
+	tst.b	(Time_Over_flag).w
+	beq.s	.respawn
+	move.w	#0,restart_countdown(a0)
+	clr.b	(Update_HUD_timer).w
+	clr.b	(Update_HUD_timer_2P).w
+	move.b	#8,routine(a0)
+	rts
+.player1TimeOver:
+	tst.b	(Time_Over_flag).w
+	beq.s	.respawn
+	move.w	#0,restart_countdown(a0)
+	move.b	#ObjID_TimeOver,(TimeOver_TimeText+id).w ; load Obj39
+	move.b	#ObjID_TimeOver,(TimeOver_OverText+id).w ; load Obj39
+	move.b	#2,(TimeOver_TimeText+mapping_frame).w
+	move.b	#3,(TimeOver_OverText+mapping_frame).w
+	move.w	a0,(TimeOver_TimeText+parent).w
+	bra.s	.finished
+.respawn:
+	move.b	#0,(Scroll_lock_P2).w	; player 1's while his Tails runs
+	move.b	#$A,routine(a0)	; => Obj02_Respawning
+	move.w	(Saved_x_pos).w,x_pos(a0)
+	move.w	(Saved_y_pos).w,y_pos(a0)
+	move.w	(Saved_art_tile).w,art_tile(a0)
+	move.w	(Saved_Solid_bits).w,top_solid_bit(a0)
+	clr.w	(Ring_count).w
+	clr.b	(Extra_life_flags).w
+	move.b	#0,obj_control(a0)
+	move.b	#5,anim(a0)
+	move.w	#0,x_vel(a0)
+	move.w	#0,y_vel(a0)
+	move.w	#0,inertia(a0)
+	move.b	#1<<status.player.in_air,status(a0)
+	move.w	#0,move_lock(a0)
 	rts
 
 VS_Player2Characters:

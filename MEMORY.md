@@ -31,6 +31,7 @@ Other objects:
 | Scattered rings (Obj37) | `lostrings_timer` = `objoff_1F` | Per-ring deletion timer (Fix Ring Timers) |
 | Tails' tails (Obj05) | `Obj05_parent_prev_anim` = `objoff_30` | Subanimation fix |
 | Shield (Obj38) | `objoff_30`, `objoff_32` | Last DPLC frame and VRAM destination (separate slots for both players) |
+| Signpost (Obj0D) | `obj0D_player2face` = `objoff_37` | 2P: player 2's Obj01 passed first (bit 7) and is Knuckles (bit 0) |
 
 ## VRAM and SRAM
 
@@ -58,9 +59,10 @@ Other objects:
 | `$FF60-$FF64` | `Cheat_all_emeralds`, `Cheat_super_rings`, `Cheat_ring_drain`, `Cheat_god_mode`, `Cheats_menu_row` | CHEATS page (saved in SRAM) |
 | `$FF66` | `Title_unlock_entries` (word) | Title unlock code progress |
 | `$FF68` | `Main_character` | Character in the Sonic slot (`CharID_*`, FeatureKnuckles) |
+| `VS_Tails_Tails_P1` | object slot | The last of the five free reserved object slots: player 1 Tails' tails in VS |
 | `$FF69`, `$FF6A` | `VS_player2`, `Player2_character` | Player 2's VS character option and his Obj01's `CharID_*` (FeatureKnuckles) |
 | `$D400-$D42D` | `LightDash_RAM`, `Victory_pose`, `SuperTails_combo_*`, `Gliding_collision_flags`, `Disable_wall_grab` | Light Dash state, victory pose flag, Super Tails' combo, Knuckles' glide (cleared at level start) |
-| `$D42E-$D461` | `VS_LightDash_RAM_P2`, `VS_Camera_pan_P2`, `VS_Max_Y_pos_target`, `VS_Super_flag_P2`, `P2_context_active` | Player 2's Obj01 in VS: his copy of the block above and of the variables his camera lacks (code/VSPlayers.asm) |
+| `$D42E-$D462` | `VS_LightDash_RAM_P2`, `VS_Camera_pan_P2`, `VS_Max_Y_pos_target`, `VS_Super_flag_P2`, `P2_context_active`, `VS_TailsTails_P1_DPLC` | Characters in VS: player 2's copy of the block above and of the variables his camera lacks, and player 1 Tails' tails DPLC frame (code/VSPlayers.asm) |
 | `$FF76` | `VS_countdown_option` (word) | VS finish countdown option |
 | `$FF87` | `Level_select_page` | Level Select pages |
 
@@ -72,7 +74,7 @@ runs.
 
 | Address | Size | Notes |
 |---|---|---|
-| `$D462-$D5FF` | 414 | Between player 2's Obj01 state and the collision index |
+| `$D463-$D5FF` | 413 | Between the VS character state and the collision index |
 | `$E740-$E7FF` | 192 | Before `Ring_Positions` |
 | `$FA82-$FAFF` | 126 | After the sprite table page bytes |
 | `$DF80-$DFFF` | 128 | Only if the sprite table can never overflow into it |

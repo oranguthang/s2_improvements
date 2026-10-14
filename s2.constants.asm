@@ -1247,6 +1247,7 @@ TitleCard_Left:			; level title card: red part on the left
 				ds.b	object_size
 				ds.b	object_size
 				ds.b	object_size
+VS_Tails_Tails_P1:		; Tails' tails when he is player 1 in VS (FeatureKnuckles)
 				ds.b	object_size
 
 CPZPylon:			; Pylon in the foreground in CPZ
@@ -1334,7 +1335,8 @@ VS_LightDash_RAM_P2:		ds.b	LightDash_RAM_End-LightDash_RAM	; his copy of the blo
 VS_Camera_pan_P2:		ds.w	1	; his Camera_pan (player 2's camera has none)
 VS_Max_Y_pos_target:		ds.w	1	; his Camera_Max_Y_pos_target while he runs
 VS_Super_flag_P2:		ds.b	1	; his Super_Sonic_flag (always 0)
-P2_context_active:		ds.b	1	; nonzero while his Obj01 runs (RAM exchanged)
+P2_context_active:		ds.b	1	; nonzero while the RAM is exchanged (player 2's Obj01 or player 1's Tails runs)
+VS_TailsTails_P1_DPLC:		ds.b	1	; TailsTails_LastLoadedDPLC of player 1's tails in VS
 VS_RAM_End:
 				ds.b	$200-(VS_RAM_End-LightDash_RAM)	; unused
 

@@ -359,8 +359,9 @@ original code.
 
 ## Characters in 2P VS
 
-Player 1 plays the character of the player select (Sonic, or Knuckles for a
-Knuckles entry). Player 2's character is chosen in Options: with PLAYER
+Player 1 plays the character of the player select (Sonic; Tails for MILES/TAILS
+ALONE; Knuckles for a Knuckles entry). Player 2's character is chosen in
+Options: with PLAYER
 SELECT highlighted, **A** on either controller cycles the second line,
 **A 2P VS MILES/SONIC/KNUCKLES** (`VS_player2`, saved with the settings).
 Title screen demos always use Tails.
@@ -381,11 +382,18 @@ Tails 1-up monitor icon, so his life icon art also replaces that icon
 (`tools/vs_faces.py`); the 2P signpost shows the face of whoever passed it
 first.
 
+Tails as player 1 is the same thing the other way round: Obj02 keeps his
+state in the "Tails" RAM, so in the `MainCharacter` slot he runs with the
+same exchange, his art goes to Sonic's VRAM, his tails are a second Obj05 in
+a reserved slot (`VS_Tails_Tails_P1`, with its own DPLC frame), he records
+into Sonic's position buffer and keeps player 1's star post, lives and rings
+(`VS_Obj02Player1GameOver`). Tails against Tails works too.
+
 Limits: Sonic and Knuckles use the same palette entries (2-5 of line 0), so
 in a Sonic against Knuckles game player 2 takes player 1's colours (a blue
 Knuckles or a red Sonic, as with the grey shield and stars, which follow
-player 1). The tiebreak Special Stage has no Knuckles as player 2: player 2
-plays it as Tails. Player 1 is never Tails in VS.
+player 1). The tiebreak Special Stage keeps Sonic 2's pair: player 1 plays
+it as Sonic (or Knuckles) and player 2 as Tails.
 
 ## Music and sound IDs
 

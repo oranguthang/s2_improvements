@@ -5165,6 +5165,9 @@ InitPlayers:
     if fixBugs
 	move.b	#$13,(MainCharacter+y_radius).w	; Set Sonic's y-radius
     endif
+	if FeatureKnuckles
+	jsr	(VS_InitPlayer1).l	; Tails as player 1 in VS?
+	endif
 
 	cmpi.b	#wing_fortress_zone,(Current_Zone).w
 	beq.s	+ ; skip loading Tails if this is WFZ
@@ -35826,7 +35829,11 @@ loc_192A0:
 	tst.b	obj0D_finalanim(a0)
 	bne.w	loc_19350
 	move.b	#3,obj0D_finalanim(a0)
+	if FeatureKnuckles
+	cmpi.b	#ObjID_Tails,(MainCharacter+id).w	; Tails Alone, or Tails as player 1 in VS
+	else
 	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
+	endif
 	bne.s	loc_192BC
 	move.b	#4,obj0D_finalanim(a0)
 
@@ -40773,6 +40780,14 @@ Speedsettings:
 ; Sprite_1B8A4: Object_Tails:
 Obj02:
 	; a0=character
+	if FeatureKnuckles
+	cmpa.w	#MainCharacter,a0	; Tails as player 1 in VS?
+	bne.s	.notPlayer1
+	tst.w	(Two_player_mode).w
+	beq.s	.notPlayer1
+	jmp	(VS_Obj02Player1).l	; code/VSPlayers.asm
+.notPlayer1:
+	endif
 	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	bne.s	+
 	move.w	(Camera_Min_X_pos).w,(Tails_Min_X_pos).w
@@ -40782,6 +40797,9 @@ Obj02:
 	beq.s	+
 	jmp	(DebugMode).l
 +
+	if FeatureKnuckles
+Obj02_Normal:
+	endif
 	moveq	#0,d0
 	move.b	routine(a0),d0
 	move.w	Obj02_Index(pc,d0.w),d1
@@ -40816,6 +40834,14 @@ Obj02_Init:
 	move.w	#$C,(Tails_acceleration).w	; set Tails' acceleration
 	move.w	#$80,(Tails_deceleration).w	; set Tails' deceleration
     endif
+	if FeatureKnuckles
+	cmpa.w	#MainCharacter,a0	; player 1 in VS: his VRAM, star post and tails
+	bne.s	.notVSPlayer1
+	tst.w	(Two_player_mode).w
+	beq.s	.notVSPlayer1
+	jmp	(VS_Obj02Player1Init).l
+.notVSPlayer1:
+	endif
 	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	bne.s	Obj02_Init_2Pmode
 	tst.b	(Last_star_pole_hit).w
@@ -40861,6 +40887,15 @@ Obj02_Init_Continued:
 Obj02_Control:
 	cmpa.w	#MainCharacter,a0
 	bne.s	Obj02_Control_Joypad2
+	if FeatureKnuckles
+	tst.w	(Two_player_mode).w	; player 1 in VS (Tails' RAM is his now)
+	beq.s	.tailsAlone
+	tst.b	(Control_Locked_P2).w
+	bne.s	Obj02_Control_Part2
+	move.w	(Ctrl_1).w,(Ctrl_2_Logical).w
+	bra.s	Obj02_Control_Part2
+.tailsAlone:
+	endif
 	bsr.w	Tails_TryEnterDebug
 	tst.b	d0
 	bne.w	Obj02_DebugReturn
@@ -41489,6 +41524,13 @@ return_1BF36:
 
 ; loc_1BF38:
 Tails_RecordPos:
+	if FeatureKnuckles
+	cmpa.w	#MainCharacter,a0	; player 1 in VS: player 1's camera reads Sonic's record
+	bne.s	.record
+	tst.w	(Two_player_mode).w
+	bne.w	Sonic_RecordPos
+.record:
+	endif
 	move.w	(Tails_Pos_Record_Index).w,d0
 	lea	(Tails_Pos_Record_Buf).w,a1
 	lea	(a1,d0.w),a1
@@ -42603,6 +42645,12 @@ Tails_UpdateSpindash:
 	move.b	d0,(Horiz_scroll_delay_val_P2).w
 	; Back up the position array index for later.
 	move.b	(Tails_Pos_Record_Index+1).w,(Horiz_scroll_delay_val_P2+1).w
+	if FeatureKnuckles
+	cmpa.w	#MainCharacter,a0	; player 1 in VS (Horiz_scroll_delay_val_P2 is his now)
+	bne.s	.delayIndex
+	move.b	(Sonic_Pos_Record_Index+1).w,(Horiz_scroll_delay_val_P2+1).w
+.delayIndex:
+	endif
     else
 	add.w	d0,d0
 	andi.w	#$1F00,d0 ; This line is not necessary, as none of the removed bits are ever set in the first place
@@ -43273,6 +43321,12 @@ Obj02_CheckGameOver:
 ; ---------------------------------------------------------------------------
 ; loc_1CCA2:
 Obj02_CheckGameOver_2Pmode:
+	if FeatureKnuckles
+	cmpa.w	#MainCharacter,a0	; player 1 in VS?
+	bne.s	.player2
+	jmp	(VS_Obj02Player1GameOver).l
+.player2:
+	endif
 	addq.b	#1,(Update_HUD_lives_2P).w
 	subq.b	#1,(Life_count_2P).w
 	bne.s	Obj02_ResetLevel
@@ -43798,6 +43852,12 @@ TailsAni_Transform:	dc.b 2,$9E,$9E,$9F,$A0,$9F,$A0,$9F,$A0,$9F,$A0,$9F,$A0,$FD,0
 
 ; loc_1D184:
 LoadTailsTailsDynPLC:
+	if FeatureKnuckles
+	cmpa.w	#VS_Tails_Tails_P1,a0	; player 1's tails in VS
+	bne.s	.notVSPlayer1
+	jmp	(VS_LoadTailsTailsP1DynPLC).l
+.notVSPlayer1:
+	endif
 	move.b	mapping_frame(a0),d0			; get Tails' Tails' current frame
 	cmp.b	(TailsTails_LastLoadedDPLC).w,d0	; has the frame changed?
 	beq.s	return_1D1FE				; if not, nothing to do
@@ -43824,6 +43884,14 @@ LoadTailsDynPLC_Part2:
 	lea	(MapRUnc_Tails).l,a2		; load Tails DPLC table
 	move.w	#tiles_to_bytes(ArtTile_ArtUnc_Tails),d4	; starting VRAM tile
 	move.l	#ArtUnc_Tails,d6		; base Tails art pointer
+	if FeatureKnuckles
+	cmpa.w	#MainCharacter,a0	; player 1 in VS: Sonic's VRAM
+	bne.s	.vram
+	tst.w	(Two_player_mode).w
+	beq.s	.vram
+	move.w	#tiles_to_bytes(ArtTile_ArtUnc_Sonic),d4
+.vram:
+	endif
 	jmp	(LoadDynPLC).l			; load DPLC
 
 return_1D1FE:
@@ -43852,6 +43920,12 @@ Obj05_Init:
 	addq.b	#2,routine(a0) ; => Obj05_Main
 	move.l	#MapUnc_Tails,mappings(a0)
 	move.w	#make_art_tile(ArtTile_ArtUnc_Tails_Tails,0,0),art_tile(a0)
+	if FeatureKnuckles
+	cmpa.w	#VS_Tails_Tails_P1,a0	; player 1's tails in VS: after his body in Sonic's VRAM
+	bne.s	.vram
+	move.w	#make_art_tile(ArtTile_ArtUnc_Sonic+$10,0,0),art_tile(a0)
+.vram:
+	endif
 	bsr.w	Adjust2PArtPointer
 	move.b	#2,priority(a0)
 	move.b	#$18,width_pixels(a0)
