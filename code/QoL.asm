@@ -37,3 +37,18 @@ ExtraLives_Count:
 	ori	#4,ccr				; Z=1
 	movem.l	(sp)+,d0/a2/a4
 	rts
+
+; ---------------------------------------------------------------------------
+; FeatureInvincibilityFlash: the invincibility stars (Obj35) blink during the
+; last two seconds, as in s1_improvements. d0 = display priority list.
+; ---------------------------------------------------------------------------
+InvStars_Display:
+	movea.w	parent(a0),a1			; a1 = character
+	cmpi.w	#2*60,invincibility_time(a1)
+	bhi.s	.show
+	btst	#2,(Level_frame_counter+1).w	; every star blinks together
+	bne.s	.hide
+.show:
+	jmp	(DisplaySprite3).l
+.hide:
+	rts

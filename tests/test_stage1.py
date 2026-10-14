@@ -694,6 +694,20 @@ def extra_lives(repo):
         assert collect(100,0)==(1,1),'no life after losing the rings'
     return {'every_hundred':'on' if every else 'off','thresholds_checked':True}
 
+def invincibility_flash(repo):
+    """The invincibility stars blink during the last two seconds."""
+    def shown(time,frame):
+        c=CPU(repo); star=c.s['Sidekick']+0x80; player=c.s['MainCharacter']
+        c.write(star+c.s['parent'],player&0xFFFF,2); c.write(player+c.s['invincibility_time'],time,2)
+        c.write('Level_frame_counter',frame,2)
+        calls=[]
+        c.uc.hook_add(UC_HOOK_CODE,lambda uc,pc,size,user:calls.append(pc),begin=c.s['DisplaySprite3'],end=c.s['DisplaySprite3'])
+        c.skip('DisplaySprite3'); c.call('InvStars_Display',star)
+        return bool(calls)
+    assert shown(600,4) and shown(121,4),'stars hidden too early'
+    assert shown(120,0) and not shown(120,4) and not shown(1,5),'no blink in the last two seconds'
+    return {'blinks_last_two_seconds':True}
+
 def title_palette(repo):
     def setup():
         c=CPU(repo)
@@ -750,6 +764,8 @@ def main():
     if 'Cheat_GodModeActive' in symbols(args.repo/'s2.lst'):
         results['god_mode']=god_mode(args.repo)
     results['extra_lives']=extra_lives(args.repo)
+    if 'InvStars_Display' in symbols(args.repo/'s2.lst'):
+        results['invincibility_flash']=invincibility_flash(args.repo)
     results['rom_sha256']=hashlib.sha256((args.repo/'s2built.bin').read_bytes()).hexdigest()
     if args.report:
         args.report.write_text(json.dumps(results,indent=2)+'\n',encoding='utf-8')

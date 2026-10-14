@@ -91,12 +91,14 @@ FeatureTailsFlight = 1
 ;	| in the air calls the Tails AI to carry Sonic. Two extra title demos show it.
 FeatureExtraLives = 1
 ;	| An extra life for every 100 rings; 0 = only at 100 and 200 rings
+FeatureInvincibilityFlash = 1
+;	| The invincibility stars blink during the last two seconds
 FeatureBurntDeath = 1
 ;	| Sonic plays the burnt death animation when killed by fire or lasers
 FeatureActMusic = 1
 ;	| Act 2 of EHZ, MCZ and CNZ plays the track from 2P mode; 0 = the same track in both acts
 
-	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureBurntDeath|FeatureActMusic)&~1
+	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureBurntDeath|FeatureActMusic)&~1
 		error "Feature options must be 0 or 1"
 	endif
 
@@ -44153,7 +44155,11 @@ loc_1DA44:
 
 +	add.b	d0,obj35_table_offset(a0)
 	move.w	#object_display_list_size*1,d0
+	if FeatureInvincibilityFlash
+	jmp	(InvStars_Display).l	; blinks before invincibility runs out
+	else
 	jmp	(DisplaySprite3).l
+	endif
 ; ===========================================================================
 ; loc_1DA80:
 Obj35_OtherLayersUpdate:
@@ -44226,7 +44232,11 @@ loc_1DAE4:
 
 +	add.b	d0,obj35_table_offset(a0)
 	move.w	#object_display_list_size*1,d0
+	if FeatureInvincibilityFlash
+	jmp	(InvStars_Display).l	; blinks before invincibility runs out
+	else
 	jmp	(DisplaySprite3).l
+	endif
 ; ===========================================================================
 ; loc_1DB2C:
 Obj35_GetSpriteParams:
