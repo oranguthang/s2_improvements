@@ -84,10 +84,17 @@ FeatureLamppostRings = 1
 ;	| Star posts keep the ring count; 0 = restart from a star post with no rings
 FeatureSpecialStageState = 1
 ;	| Coming back from a Special Stage keeps rings, shields and destroyed objects
+FeatureSpringPoses = 1
+;	| Sonic twirls after a spring launch, as in Sonic CD; 0 = original spring pose
+FeatureTailsFlight = 1
+;	| Tails flies and swims (jump again in the air); in Sonic and Tails games Up + jump
+;	| in the air calls the Tails AI to carry Sonic. Two extra title demos show it.
 FeatureBurntDeath = 1
 ;	| Sonic plays the burnt death animation when killed by fire or lasers
+FeatureActMusic = 1
+;	| Act 2 of EHZ, MCZ and CNZ plays the track from 2P mode; 0 = the same track in both acts
 
-	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureBurntDeath)&~1
+	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureBurntDeath|FeatureActMusic)&~1
 		error "Feature options must be 0 or 1"
 	endif
 
@@ -4702,8 +4709,10 @@ DemoLevels:
 DemoLevels_TailsAssist:
 	; These zones already have original demos, so their scripts are chosen
 	; by demo slot (see Demo_GetTailsAssistScript) instead of by zone.
+	if FeatureTailsFlight
 	dc.w	chemical_plant_zone_act_1	; CPZ Tails Flight Assist demonstration
 	dc.w	casino_night_zone_act_1		; CNZ Tails Flight Assist demonstration
+	endif
 DemoLevels_End:
 
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
@@ -4785,9 +4794,17 @@ CopyrightText_End:
 ; byte_3EA0:
 MusicList: zoneOrderedTable 1,2
 	zoneTableEntry.b MusID_EHZ	; EHZ Act 1
+	if FeatureActMusic
 	zoneTableEntry.b MusID_EHZ_2P	; EHZ Act 2
+	else
+	zoneTableEntry.b MusID_EHZ	; EHZ Act 2
+	endif
 	zoneTableEntry.b MusID_EHZ	; Zone 1 Act 1
+	if FeatureActMusic
 	zoneTableEntry.b MusID_EHZ_2P	; Zone 1 Act 2
+	else
+	zoneTableEntry.b MusID_EHZ	; Zone 1 Act 2
+	endif
 	zoneTableEntry.b MusID_MTZ	; WZ Act 1
 	zoneTableEntry.b MusID_MTZ	; WZ Act 2
 	zoneTableEntry.b MusID_OOZ	; Zone 3 Act 1
@@ -4807,9 +4824,17 @@ MusicList: zoneOrderedTable 1,2
 	zoneTableEntry.b MusID_OOZ	; OOZ Act 1
 	zoneTableEntry.b MusID_OOZ	; OOZ Act 2
 	zoneTableEntry.b MusID_MCZ	; MCZ Act 1
+	if FeatureActMusic
 	zoneTableEntry.b MusID_MCZ_2P	; MCZ Act 2
+	else
+	zoneTableEntry.b MusID_MCZ	; MCZ Act 2
+	endif
 	zoneTableEntry.b MusID_CNZ	; CNZ Act 1
+	if FeatureActMusic
 	zoneTableEntry.b MusID_CNZ_2P	; CNZ Act 2
+	else
+	zoneTableEntry.b MusID_CNZ	; CNZ Act 2
+	endif
 	zoneTableEntry.b MusID_CPZ	; CPZ Act 1
 	zoneTableEntry.b MusID_CPZ	; CPZ Act 2
 	zoneTableEntry.b MusID_DEZ	; DEZ Act 1
@@ -5994,8 +6019,10 @@ Demo_TailsAssistIndex:
 	rts
 ; ===========================================================================
 DemoTailsAssistScripts:
+	if FeatureTailsFlight
 	dc.l	Demo_CPZ_TailsAssist
 	dc.l	Demo_CNZ_TailsAssist
+	endif
 DemoTailsAssistScripts_End:
 	if (DemoTailsAssistScripts_End-DemoTailsAssistScripts)/4<>(DemoLevels_End-DemoLevels_TailsAssist)/2
 		fatal "DemoTailsAssistScripts must have one script per Tails Flight Assist demo."
@@ -36238,8 +36265,10 @@ SolidObject_TestClearPush:
 	beq.s	SolidObject_NoCollision	; if not, branch
 	cmpi.b	#AniIDSonAni_Roll,anim(a1)
 	beq.s	Solid_NotPushing
-	cmpi.b #AniIDSonAni_Hang2,anim(a1)
+	if FeatureTailsFlight
+	cmpi.b #AniIDSonAni_Hang2,anim(a1)	; carried by Tails?
 	beq.s Solid_NotPushing
+	endif
     if fixBugs
 	; Prevent Sonic or Tails from entering their running animation when
 	; stood next to solid objects while charging a Spin Dash, dying, or
@@ -37475,6 +37504,7 @@ Sonic_HomingAttack:
 	if FeatureHomingAttack=0
 	rts				; Homing Attack disabled
 	endif
+	if FeatureTailsFlight
 	tst.w (Player_mode).w
 	bne.s .normal
 	tst.w (Two_player_mode).w
@@ -37482,8 +37512,9 @@ Sonic_HomingAttack:
 	cmpi.b #ObjID_Tails,(Sidekick+id).w
 	bne.s .normal
 	btst #button_up,(Ctrl_1_Held_Logical).w
-	bne.s .homeend
+	bne.s .homeend			; Up + jump calls Tails instead
 .normal:
+	endif
 	tst.b	(Control_Locked).w		; are Sonic's controls locked (cutscene)?
 	bne.s	.homeend			; if yes, branch
 	btst	#homing_attack_flag,homing_attack_byte(a0)			; was the homing attack already used this jump?
@@ -39950,7 +39981,11 @@ SonAni_Float:	dc.b   7,$54,$59,$FF
 	rev02even
 SonAni_Float2:	dc.b   7,$54,$55,$56,$57,$58,$FF
 	rev02even
+	if FeatureSpringPoses
 SonAni_Spring:	dc.b 3,$D6,$D7,$D8,$D9,$DA,$D6,$D7,$D8,$D9,$DA,$D6,$D7,$D8,$D9,$DA,$FD,0
+	else
+SonAni_Spring:	dc.b $2F,$5B,$FD,  0
+	endif
 	rev02even
 SonAni_Hang:	dc.b   1,$50,$51,$FF
 	rev02even
@@ -40387,8 +40422,14 @@ TailsCPU_Spawning:
 	bne.s	return_1BB88
 	tst.b	obj_control(a1)
 	bne.s	return_1BB88
-	cmpi.b #6,routine(a1)
+	if FeatureTailsFlight
+	cmpi.b #6,routine(a1)		; respawn unless Sonic is dead
 	bhs.s return_1BB88
+	else
+	move.b	status(a1),d0
+	andi.b	#1<<status.player.in_air|1<<status.player.underwater|1<<status.player.prevent_tails_respawn|(1-FeatureRollJumpSteering)<<status.player.rolljumping,d0
+	bne.s	return_1BB88
+	endif
 ; loc_1BB54:
 TailsCPU_Respawn:
 	move.w	#4,(Tails_CPU_routine).w	; => TailsCPU_Flying
@@ -40419,8 +40460,12 @@ TailsCPU_Flying:
 	move.w	#0,(Tails_respawn_counter).w
 	move.w	#2,(Tails_CPU_routine).w	; => TailsCPU_Spawning
 	move.b	#$81,obj_control(a0)
+	if FeatureTailsFlight
 	andi.b #1<<status.player.underwater,status(a0)
 	bset #status.player.in_air,status(a0)
+	else
+	move.b	#1<<status.player.in_air,status(a0)
+	endif
 	move.w	#0,x_pos(a0)
 	move.w	#0,y_pos(a0)
 	bra.w	Tails_FlyingAnimation
@@ -40439,6 +40484,16 @@ TailsCPU_Flying_Part2:
 	sub.b	d2,d3
 	move.w	(a2,d3.w),(Tails_CPU_target_x).w
 	move.w	2(a2,d3.w),(Tails_CPU_target_y).w
+	if FeatureTailsFlight=0
+	tst.b	(Water_flag).w
+	beq.s	+
+	move.w	(Water_Level_1).w,d0
+	subi.w	#$10,d0
+	cmp.w	(Tails_CPU_target_y).w,d0
+	bge.s	+
+	move.w	d0,(Tails_CPU_target_y).w	; stay above the water while flying back
++
+	endif
 	move.w	x_pos(a0),d0
 	sub.w	(Tails_CPU_target_x).w,d0
 	beq.s	loc_1BC54
@@ -40486,8 +40541,15 @@ loc_1BC64:
 	add.w	d2,y_pos(a0)
 
 loc_1BC68:
+	if FeatureTailsFlight
 	cmpi.b #6,(MainCharacter+routine).w
 	bhs.s return_1BCDE
+	else
+	lea	(Sonic_Stat_Record_Buf).w,a2
+	move.b	2(a2,d3.w),d2
+	andi.b	#$D2,d2
+	bne.s	return_1BCDE
+	endif
 	or.w	d0,d1
 	bne.s	return_1BCDE
     if fixBugs
@@ -40536,8 +40598,12 @@ TailsCPU_Normal:
 	move.b	#0,spindash_flag(a0)
 	move.w	#0,spindash_counter(a0)
 	move.b	#$81,obj_control(a0)
+	if FeatureTailsFlight
 	andi.b #1<<status.player.underwater,status(a0)
 	bset #status.player.in_air,status(a0)
+	else
+	move.b	#1<<status.player.in_air,status(a0)
+	endif
 	bra.w	Tails_FlyingAnimation
 ; ---------------------------------------------------------------------------
 ; loc_1BD0E:
@@ -40670,8 +40736,12 @@ TailsCPU_Despawn:
 	move.w	#0,(Tails_respawn_counter).w
 	move.w	#2,(Tails_CPU_routine).w	; => TailsCPU_Spawning
 	move.b	#$81,obj_control(a0)
+	if FeatureTailsFlight
 	andi.b #1<<status.player.underwater,status(a0)
 	bset #status.player.in_air,status(a0)
+	else
+	move.b	#1<<status.player.in_air,status(a0)
+	endif
 	move.w	#$4000,x_pos(a0)
 	move.w	#0,y_pos(a0)
 	bra.w	Tails_FlyingAnimation
@@ -42378,13 +42448,15 @@ Tails_ResetOnFloor_Part2:
 	subq.w	#1,y_pos(a0)	; move Tails up 1 pixel so the increased height doesn't push him slightly into the ground
 ; loc_1CB80:
 Tails_ResetOnFloor_Part3:
+	if FeatureTailsFlight
 	clr.b flying(a0)
 	cmpa.w #Sidekick,a0
 	bne.s .keepai
 	tst.w (Two_player_mode).w
 	bne.s .keepai
-	move.w #6,(Tails_CPU_routine).w
+	move.w #6,(Tails_CPU_routine).w	; landing ends an assist
 .keepai:
+	endif
 	bclr	#status.player.in_air,status(a0)
 	if FeatureRollJumpSteering=0
 	bclr	#status.player.rolljumping,status(a0)
@@ -42403,8 +42475,10 @@ Tails_ResetOnFloor_Part3:
 	move.b	#0,flip_turned(a0)
 	move.b	#0,flips_remaining(a0)
 	move.w	#0,(Tails_Look_delay_counter).w
+	if FeatureTailsFlight
 	cmpi.b #AniIDTailsAni_Fly,anim(a0)
 	bhs.s Tails_LandedWalk
+	endif
 	cmpi.b	#AniIDSonAni_Hang2,anim(a0)
 	bne.s	return_1CBC4
 Tails_LandedWalk:
@@ -50086,6 +50160,10 @@ loc_225FC:
 	cmpi.w #4,(Tails_CPU_routine).w
 	beq.w return_22718
 .notrespawning:
+	if FeatureTailsFlight=0
+	cmpi.b	#$20,anim(a1)
+	beq.w	return_22718
+	endif
 
 	moveq	#0,d3
 	cmpi.w	#$A0,d2

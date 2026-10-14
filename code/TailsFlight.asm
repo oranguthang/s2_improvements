@@ -5,6 +5,9 @@
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 
 Tails_CheckFlying:
+	if FeatureTailsFlight=0
+	rts					; Tails flight disabled
+	endif
 	tst.b	flying(a0)			; is Tails already flying?
 	bne.w	Tails_NoFlight			; if yes, branch
 	tst.w	(Demo_mode_flag).w		; is a title demo playing?
@@ -109,6 +112,10 @@ Tails_Flying:
 ; =============== S U B R O U T I N E =======================================
 
 Tails_FlyingAnimation:
+	if FeatureTailsFlight=0
+	move.b	#AniIDTailsAni_Fly,anim(a0)	; the AI's respawn flight only
+	rts
+	endif
 	move.w #SndID_TailsFly,d1
 	moveq	#0,d0				; clear d0
 	tst.w	y_vel(a0)			; is Tails moving upwards?
@@ -321,6 +328,9 @@ Tails_CarryNoGrab:
 
 ; Up + a fresh jump while airborne requests Tails; Super button combos remain unchanged.
 Sonic_RequestTailsAssist:
+	if FeatureTailsFlight=0
+	rts					; Tails assist disabled
+	endif
 	tst.w (Two_player_mode).w
 	bne.s .return
 	tst.w (Demo_mode_flag).w		; is a title demo playing?
