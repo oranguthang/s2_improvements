@@ -1058,6 +1058,7 @@ AniIDSonAni_Balance4		= id(SonAni_Balance4_ptr)	; 30 ; $1E ; Exclusive to Sonic
 AniIDSupSonAni_Transform	= id(SupSonAni_Transform_ptr)	; 31 ; $1F ; Exclusive to Sonic
 AniIDSonAni_Lying		= id(SonAni_Lying_ptr)		; 32 ; $20 ; Exclusive to Sonic
 AniIDSonAni_LieDown		= id(SonAni_LieDown_ptr)	; 33 ; $21 ; Exclusive to Sonic
+AniIDSonAni_Victory		= id(SonAni_Victory_ptr)	; 34 ; $22 ; Exclusive to Sonic (FeatureVictoryPoses)
 
 
 offset :=	TailsAniData
@@ -1230,6 +1231,8 @@ LightDash_last_ring_x:		ds.w	1
 LightDash_last_ring_y:		ds.w	1
 LightDash_exit_x:		ds.w	1
 LightDash_exit_y:		ds.w	1
+Victory_pose:			ds.b	1	; the act results are up: Sonic poses (FeatureVictoryPoses)
+				ds.b	1
 LightDash_RAM_End:
 				ds.b	$200-(LightDash_RAM_End-LightDash_RAM)	; unused
 

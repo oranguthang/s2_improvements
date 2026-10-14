@@ -218,6 +218,8 @@ Map_Sonic:	mappingsTable
 	mappingsTableEntry.w	Map_Sonic_Extra_D8
 	mappingsTableEntry.w	Map_Sonic_Extra_D9
 	mappingsTableEntry.w	Map_Sonic_Extra_DA
+	mappingsTableEntry.w	Map_Sonic_Victory0	; $DB
+	mappingsTableEntry.w	Map_Sonic_Victory1	; $DC
 
 Map_Sonic_01AC:	spriteHeader
 Map_Sonic_01AC_End
@@ -1581,3 +1583,4 @@ Map_Sonic_Extra_DA:	spriteHeader
 	spritePiece	-10, 10, 3, 2, $C, 0, 0, 0, 0
 Map_Sonic_Extra_DA_End
 	even
+	include "mappings/sprite/Sonic victory.asm"

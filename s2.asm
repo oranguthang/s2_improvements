@@ -103,6 +103,8 @@ FeatureLightDash = 1
 ;	| In the air, A next to a chain of 3+ rings dashes along it (Sonic, Tails Alone)
 FeaturePeelOut = 1
 ;	| Standing still, hold Up and press A/B/C to charge a Super Peel-Out (Sonic)
+FeatureVictoryPoses = 1
+;	| After the signpost or the capsule the player stays and poses, as in Sonic 3 & Knuckles
 FeatureBurntDeath = 1
 ;	| Sonic plays the burnt death animation when killed by fire or lasers
 FeatureActMusic = 1
@@ -116,7 +118,7 @@ FeatureCDDrowning = 0
 ;	| If 1, the music keeps playing below 12 seconds of air and a warning sounds every
 ;	| second, as in Sonic CD; the countdown numbers still appear
 
-	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureCentiseconds|FeatureLightDash|FeaturePeelOut|FeatureBurntDeath|FeatureActMusic|FeatureInfiniteLives|FeatureCDDrowning)&~1
+	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureCentiseconds|FeatureLightDash|FeaturePeelOut|FeatureVictoryPoses|FeatureBurntDeath|FeatureActMusic|FeatureInfiniteLives|FeatureCDDrowning)&~1
 		error "Feature options must be 0 or 1"
 	endif
 
@@ -4976,6 +4978,7 @@ Level_ClrRam:
 	clearRAM Object_RAM,LevelOnly_Object_RAM_End ; clear object RAM and level-only object RAM
 	clearRAM MiscLevelVariables,MiscLevelVariables_End
 	clr.w	(LightDash_active).w	; and LightDash_hitframe
+	clr.b	(Victory_pose).w
 	clearRAM Misc_Variables,Misc_Variables_End
 	clearRAM Oscillating_Data,Oscillating_variables_End
 	tst.b	(SS_keep_level_state).w
@@ -35725,6 +35728,11 @@ Obj0D_Main_State3:
 	btst	#status.player.in_air,(MainCharacter+status).w
 	bne.s	loc_19434
     endif
+	if FeatureVictoryPoses
+	jsr	(Victory_Start).l	; stay on screen and pose (Z=0 while still airborne)
+	bne.w	return_194D0
+	bra.s	loc_1944C
+	endif
 	move.b	#1,(Control_Locked).w
 	move.w	#(button_right_mask<<8)|0,(Ctrl_1_Logical).w
     if ~~fixBugs
@@ -35743,6 +35751,9 @@ loc_1944C:
 	move.b	#0,routine_secondary(a0) ; => Obj0D_Main_StateNull
 ;loc_19452:
 Load_EndOfAct:
+	if FeatureVictoryPoses
+	jsr	(Victory_Pose).l	; the player poses while the results come in
+	endif
 	lea	(MainCharacter).w,a1 ; a1=character
 	clr.b	status_secondary(a1)
 	clr.b	(Update_HUD_timer).w
@@ -37816,6 +37827,13 @@ Obj01_NotRight:
 	bne.w	Obj01_ResetScr	; if yes, branch
 	bclr	#status.player.pushing,status(a0)	; clear pushing flag
 	move.b	#AniIDSonAni_Wait,anim(a0)			; use "standing" animation
+	if FeatureVictoryPoses
+	tst.b	(Victory_pose).w					; is the act over?
+	beq.s	+
+	move.b	#AniIDSonAni_Victory,anim(a0)		; pose instead of balancing or looking around
+	bra.w	Obj01_ResetScr
++
+	endif
 	btst	#status.player.on_object,status(a0)	; is Sonic standing on a platform object?
 	beq.w	Sonic_Balance						; if not, branch
 	moveq	#0,d0								; clear d0
@@ -38506,6 +38524,10 @@ Sonic_LevelBound:
 	addi.w	#screen_width-24,d0		; screen width - Sonic's width_pixels
 	tst.b	(Current_Boss_ID).w
 	bne.s	+
+	if FeatureVictoryPoses
+	tst.b	(Update_HUD_timer).w	; once the act is over the player stays on screen to pose
+	beq.s	+
+	endif
 	addi.w	#$40,d0
 +
 	cmp.w	d1,d0			; has Sonic touched the right boundary?
@@ -40101,6 +40123,7 @@ SonAni_Balance4_ptr:		offsetTableEntry.w SonAni_Balance4	; 30 ; $1E
 SupSonAni_Transform_ptr:	offsetTableEntry.w SupSonAni_Transform	; 31 ; $1F
 SonAni_Lying_ptr:		offsetTableEntry.w SonAni_Lying		; 32 ; $20
 SonAni_LieDown_ptr:		offsetTableEntry.w SonAni_LieDown	; 33 ; $21
+SonAni_Victory_ptr:		offsetTableEntry.w SonAni_Victory	; 34 ; $22
 
 SonAni_Walk:	dc.b $FF, $F,$10,$11,$12,$13,$14, $D, $E,$FF
 	rev02even
@@ -40182,6 +40205,8 @@ SonAni_Lying:	dc.b   9,  8,  9,$FF
 	rev02even
 SonAni_LieDown:	dc.b   3,  7,$FD,  0
 	even
+SonAni_Victory:	dc.b   7,$DB,$DC,$FF	; FeatureVictoryPoses
+	even
 
 ; ---------------------------------------------------------------------------
 ; Animation script - Super Sonic
@@ -40220,6 +40245,9 @@ SuperSonicAniData: offsetTable
 	offsetTableEntry.w SonAni_Balance3	; 29 ; $1D
 	offsetTableEntry.w SonAni_Balance4	; 30 ; $1E
 	offsetTableEntry.w SupSonAni_Transform	; 31 ; $1F
+	offsetTableEntry.w SupSonAni_Stand	; 32 ; $20 (never used while Super)
+	offsetTableEntry.w SupSonAni_Stand	; 33 ; $21 (never used while Super)
+	offsetTableEntry.w SupSonAni_Stand	; 34 ; $22 the act results revert Super first
 
 SupSonAni_Walk:		dc.b $FF,$77,$78,$79,$7A,$7B,$7C,$75,$76,$FF
 	rev02even
@@ -41860,6 +41888,10 @@ Tails_LevelBound:
 	addi.w	#screen_width-24,d0		; screen width - Tails's width_pixels
 	tst.b	(Current_Boss_ID).w
 	bne.s	+
+	if FeatureVictoryPoses
+	tst.b	(Update_HUD_timer).w	; once the act is over the player stays on screen to pose
+	beq.s	+
+	endif
 	addi.w	#$40,d0
 +
 	cmp.w	d1,d0			; has Tails touched the right boundary?
@@ -86610,6 +86642,10 @@ loc_3F406:
 	lea	next_object(a1),a1 ; a1=object
 	dbf	d0,-
 
+	if FeatureVictoryPoses
+	jsr	(Victory_Start).l	; wait until the player has landed, then stop him
+	bne.s	+
+	endif
 	jsr	(Load_EndOfAct).l
 	jmp	(DeleteObject).l
 ; ===========================================================================
@@ -92118,6 +92154,7 @@ ArtUnc_Waterfall3:	BINCLUDE	"art/uncompressed/ARZ waterfall patterns - 3.bin"
 ;---------------------------------------------------------------------------------------
 	align tiles_to_bytes(1)
 ArtUnc_Sonic:			BINCLUDE	"art/uncompressed/Sonic's art.bin"
+	BINCLUDE	"art/uncompressed/Sonic victory.bin"	; frames $DB-$DC (tools/import_victory_poses.py)
 	align tiles_to_bytes(1)
 ArtUnc_Tails:			BINCLUDE	"art/uncompressed/Tails's art.bin"
 
@@ -93592,6 +93629,7 @@ Sound70:	include "sound/sfx/F0 - Oil Slide.asm"
 	include "code/QoL.asm"
 	include "code/LightDash.asm"
 	include "code/PeelOut.asm"
+	include "code/VictoryPoses.asm"
 
 ; end of 'ROM'
     if MDDebugger

@@ -218,6 +218,8 @@
 	mappingsTableEntry.w	DPLC_Sonic_Extra_D8
 	mappingsTableEntry.w	DPLC_Sonic_Extra_D9
 	mappingsTableEntry.w	DPLC_Sonic_Extra_DA
+	mappingsTableEntry.w	DPLC_Sonic_Victory0
+	mappingsTableEntry.w	DPLC_Sonic_Victory1
 
 .frame0:	dplcHeader
 .frame0_End
@@ -1569,3 +1571,4 @@ DPLC_Sonic_Extra_DA:	dplcHeader
 	dplcEntry	2, $A83
 DPLC_Sonic_Extra_DA_End
 	even
+	include "mappings/spriteDPLC/Sonic victory.asm"

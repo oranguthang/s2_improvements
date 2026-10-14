@@ -56,7 +56,7 @@ Other objects:
 | `$FF44-$FF47` | `SS_saved_perfect_rings`, `SS_saved_perfect_flag` | Level state after a Special Stage |
 | `$FF60-$FF64` | `Cheat_all_emeralds`, `Cheat_super_rings`, `Cheat_ring_drain`, `Cheat_god_mode`, `Cheats_menu_row` | CHEATS page (saved in SRAM) |
 | `$FF66` | `Title_unlock_entries` (word) | Title unlock code progress |
-| `$D400-$D427` | `LightDash_RAM` | Light Dash state (cleared at level start) |
+| `$D400-$D429` | `LightDash_RAM`, `Victory_pose` | Light Dash state and the victory pose flag (cleared at level start) |
 | `$FF76` | `VS_countdown_option` (word) | VS finish countdown option |
 | `$FF87` | `Level_select_page` | Level Select pages |
 
@@ -68,7 +68,7 @@ runs.
 
 | Address | Size | Notes |
 |---|---|---|
-| `$D428-$D5FF` | 472 | Between the Light Dash state and the collision index |
+| `$D42A-$D5FF` | 470 | Between the Light Dash state and the collision index |
 | `$E740-$E7FF` | 192 | Before `Ring_Positions` |
 | `$FA82-$FAFF` | 126 | After the sprite table page bytes |
 | `$DF80-$DFFF` | 128 | Only if the sprite table can never overflow into it |
