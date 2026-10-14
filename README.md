@@ -164,6 +164,29 @@ features. The default build is unchanged by these switches.
 | `FeatureBurntDeath` | Fire hazards and lasers use the normal death animation. |
 | `FeatureTailsFlight` | Tails cannot fly or swim, Up + jump does not call the Tails AI, the AI respawns only while Sonic is on the ground and out of water, and the title screen plays only the four original demos. |
 | `FeatureActMusic` | Act 2 of EHZ, MCZ and CNZ plays the act 1 track. |
+| `FeatureExtraLives` | Rings give lives only at 100 and 200, as in the original game. |
+| `FeatureInvincibilityFlash` | The invincibility stars stay steady until they vanish. |
+| `FeatureFastSoundTest` | B+A no longer steps the sound tests back by $10 (A still steps ahead by $10). |
+| `FeatureSpecialStageSelect` | SPECIAL STAGE in the Level Select starts the next stage in order, without a number; replaying a stage can count its emerald twice. |
+| `FeatureCentiseconds` | The 1P clock shows minutes and seconds only. |
+
+Two optional alternatives are off by default; 1 enables them:
+
+| Option | When 1 |
+|---|---|
+| `FeatureInfiniteLives` | 1P games hide the lives counter and never end: dying (Time Over too) restarts the act without using a life, rings, score and 1-ups give no lives, and 1-up monitors give 10 rings. 2P VS games keep their lives. |
+| `FeatureCDDrowning` | As in Sonic CD, the music keeps playing below 12 seconds of air and the water warning sounds every second; the countdown numbers still appear. The invincibility music is no longer held back while air is low. |
+
+With `FeatureCentiseconds` the clock reads `0:00:00` (after Selbi's
+[Add Centiseconds HUD](https://info.sonicretro.org/SCHG_How-to:Add_Centiseconds_HUD)).
+The second colon reuses the HUD colon tile and the two digits use the four
+free tiles after the horizontal scroll table (`$7FC-$7FF`); BuildHUD queues
+them by DMA from a lookup table only when the hundredths change. The ARZ title
+demo runs right at the edge of the frame budget, so even this small cost makes
+it about 20 lag frames longer (1712 -> 1734 frames); a 300-cycle empty loop
+in the same place costs 14. With
+`FeatureSpecialStageSelect`, Left/Right on SPECIAL STAGE choose the stage shown
+as 1-7 after the name, and an emerald that was already earned is not counted again.
 
 With every switch at 0 the four original title demos play through without a
 death. Bug fixes from `fixBugs`, the Sonic Retro fix tutorials and the menu

@@ -35,7 +35,9 @@ Other objects:
 
 - The sidekick's shield slot (`ArtTile_ArtUnc_Shield_P2`, 12 tiles) also holds
   the debug coordinates overlay (11 tiles, `code/DebugHud.asm`) while the
-  sidekick has no shield. Levels have no other free VRAM.
+  sidekick has no shield.
+- `$7FC-$7FF` (after the 1P horizontal scroll table): the centiseconds digits
+  (`ArtTile_HUD_Centiseconds`). Levels have no other free VRAM.
 - SRAM: one settings record at the start of the odd-byte SRAM (see README
   "Cheats and settings"). The rest of `$200001-$20FFFF` is free.
 
