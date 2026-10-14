@@ -108,8 +108,11 @@ FeatureActMusic = 1
 FeatureInfiniteLives = 0
 ;	| If 1, 1P games hide the lives counter and never end: no Game Over or extra lives,
 ;	| and 1-up monitors give 10 rings. 2P VS games keep their lives.
+FeatureCDDrowning = 0
+;	| If 1, the music keeps playing below 12 seconds of air and a warning sounds every
+;	| second, as in Sonic CD; the countdown numbers still appear
 
-	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureCentiseconds|FeatureBurntDeath|FeatureActMusic|FeatureInfiniteLives)&~1
+	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureCentiseconds|FeatureBurntDeath|FeatureActMusic|FeatureInfiniteLives|FeatureCDDrowning)&~1
 		error "Feature options must be 0 or 1"
 	endif
 
@@ -26776,8 +26779,10 @@ invincible_monitor:
 	move.w	#20*60,invincibility_time(a1) ; 20 seconds
 	tst.b	(Current_Boss_ID).w	; don't change music during boss battles
 	bne.s	+
+	if FeatureCDDrowning=0
 	cmpi.b	#12,air_left(a1)	; or when drowning
 	bls.s	+
+	endif
 	move.w	#MusID_Invincible,d0
 	jsr	(PlayMusic).l
 +
@@ -37214,8 +37219,10 @@ Obj01_ChkInvin:
 	bne.s	Obj01_ChkShoes				; if time remains, branch
 	tst.b	(Current_Boss_ID).w			; is a boss fight active?
 	bne.s	Obj01_RmvInvin				; if yes, branch
+	if FeatureCDDrowning=0
 	cmpi.b	#12,air_left(a0)			; is drowning countdown active?
 	blo.s	Obj01_RmvInvin				; if yes, branch
+	endif
 	move.w	(Level_Music).w,d0			; load normal level music
 	jsr	(PlayMusic).l					; play normal level music
 ;loc_1A106:
@@ -40461,8 +40468,10 @@ Obj02_ChkInvinc:	; Checks if invincibility has expired and disables it if it has
 	bne.s	Obj02_ChkShoes
 	tst.b	(Current_Boss_ID).w	; Don't change music if in a boss fight
 	bne.s	Obj02_RmvInvin
+	if FeatureCDDrowning=0
 	cmpi.b	#12,air_left(a0)	; Don't change music if drowning
 	blo.s	Obj02_RmvInvin
+	endif
 	move.w	(Level_Music).w,d0
 	jsr	(PlayMusic).l
 ; loc_1BA96:
@@ -43756,12 +43765,20 @@ Obj0A_Countdown:
 	beq.s	Obj0A_WarnSound	; play ding sound when there are 15 seconds left
 	cmpi.w	#12,d0
 	bhi.s	Obj0A_ReduceAir	; play drowning theme when there are 12 seconds left
+	if FeatureCDDrowning
+	; As in Sonic CD: the music goes on and player 1 hears a warning every second.
+	tst.b	obj0a_character+3(a0)
+	bne.s	+
+	move.w	#SndID_WaterWarning,d0
+	jsr	(PlaySound).l
+	else
 	bne.s	+
 	; Play countdown music if this is player 1.
 	tst.b	obj0a_character+3(a0)
 	bne.s	+
 	move.w	#MusID_Countdown,d0
 	jsr	(PlayMusic).l
+	endif
 +
 	subq.b	#1,obj0a_seconds_between_numbers_timer(a0)
 	bpl.s	Obj0A_ReduceAir
@@ -43937,6 +43954,9 @@ return_1D81C:
 
 ; loc_1D81E:
 ResumeMusic:
+	if FeatureCDDrowning
+	bra.s	ResumeMusic_Done	; no countdown music to replace
+	endif
 	cmpi.b	#12,air_left(a1)
 	bhi.s	ResumeMusic_Done	; branch if countdown hasn't started yet
 
