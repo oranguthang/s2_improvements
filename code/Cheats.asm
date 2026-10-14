@@ -330,6 +330,12 @@ LevelSelect_DrawTexts:
 	dbf	d2,-
 	bra.s	.entry
 .done:
+	if FeatureSpecialStageSelect
+	cmpi.b	#0,(Level_select_page).w	; the stock page shows the Special Stage number
+	bne.s	+
+	jsr	(LevelSelect_SpecialStageNumber).l
++
+	endif
 	movem.l	(sp)+,d0-d2/a0-a3
 	rts
 

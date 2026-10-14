@@ -95,12 +95,14 @@ FeatureInvincibilityFlash = 1
 ;	| The invincibility stars blink during the last two seconds
 FeatureFastSoundTest = 1
 ;	| Sound tests: B+A steps back by $10 (A already steps ahead by $10)
+FeatureSpecialStageSelect = 1
+;	| Left/Right on SPECIAL STAGE in the Level Select choose the stage (1-7)
 FeatureBurntDeath = 1
 ;	| Sonic plays the burnt death animation when killed by fire or lasers
 FeatureActMusic = 1
 ;	| Act 2 of EHZ, MCZ and CNZ plays the track from 2P mode; 0 = the same track in both acts
 
-	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureBurntDeath|FeatureActMusic)&~1
+	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureBurntDeath|FeatureActMusic)&~1
 		error "Feature options must be 0 or 1"
 	endif
 
@@ -13232,6 +13234,10 @@ LevSelControls_CheckLR:
 ; ===========================================================================
 ; loc_958A:
 LevSelControls_SwitchSide:	; not in soundtest, not up/down pressed
+	if FeatureSpecialStageSelect
+	jsr	(LevelSelect_SpecialStageLR).l	; Left/Right choose the Special Stage on its item
+	bne.s	+
+	endif
 	move.b	(Ctrl_1_Press).w,d1
 	andi.b	#button_left_mask|button_right_mask,d1
 	beq.s	+				; no direction key pressed
@@ -13306,7 +13312,7 @@ LevelSelect_MarkFields:
 	swap	d1
 	move.l	d1,4(a6)
 
-	moveq	#$D,d2
+	moveq	#$D+FeatureSpecialStageSelect,d2	; one more for the Special Stage number
 -	move.w	(a1)+,d0
 	add.w	d3,d0
 	move.w	d0,(a6)
@@ -73920,10 +73926,18 @@ loc_36172:
 	moveq	#0,d0
 	move.b	(Current_Special_Stage).w,d0
 	lea	(Got_Emeralds_array).w,a0
+	if FeatureSpecialStageSelect
+	tst.b	(a0,d0.w)		; a stage replayed from the Level Select gives no second emerald
+	bne.s	+
+	addi_.b	#1,(Emerald_count).w
++
+	endif
 	st.b	(a0,d0.w)
 	st.b	(Got_Emerald).w
 	addi_.b	#1,(Current_Special_Stage).w
+	if FeatureSpecialStageSelect=0
 	addi_.b	#1,(Emerald_count).w
+	endif
 	st.b	(SS_Check_Rings_flag).w
 	bsr.w	SSClearObjs
 	move.l	(sp)+,d0
