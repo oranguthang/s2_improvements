@@ -24,6 +24,9 @@ Settings_Defaults:
 	clr.w	(Player_option).w
 	clr.w	(Two_player_items).w
 	clr.w	(VS_countdown_option).w
+	if FeatureKnuckles
+	clr.b	(VS_player2).w
+	endif
 	rts
 
 ; ---------------------------------------------------------------------------
@@ -71,6 +74,12 @@ Settings_Normalize:
 	bls.s	+
 	clr.b	(VS_countdown_option+1).w
 +
+	if FeatureKnuckles
+	cmpi.b	#VSPlayer2_Count,(VS_player2).w
+	blo.s	+
+	clr.b	(VS_player2).w
++
+	endif
 	movem.l	(sp)+,d0-d1/a0-a1
 	rts
 
@@ -91,6 +100,9 @@ Settings_Fields:
 	dc.w	(Player_option+1)&$FFFF		; Options: player select
 	dc.w	(Two_player_items+1)&$FFFF	; Options: VS items
 	dc.w	(VS_countdown_option+1)&$FFFF	; Options: VS countdown
+	if FeatureKnuckles
+	dc.w	VS_player2&$FFFF		; Options: player 2's VS character
+	endif
 Settings_Fields_End:
 
 ; d0.w = sum of the bytes before the checksum at a0. Clobbers d1/a0.

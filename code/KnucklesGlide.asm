@@ -39,6 +39,8 @@ Knuckles_JumpHeight:
 	; As in Knuckles in Sonic 2, the same press turns him Super when he can.
 	tst.b	(Super_Sonic_flag).w
 	bne.s	Knuckles_BeginGlide
+	tst.b	(P2_context_active).w	; player 2 in VS never turns Super
+	bne.s	Knuckles_BeginGlide
 	jsr	(HasAllEmeralds).l
 	bne.s	Knuckles_BeginGlide
 	moveq	#0,d0
@@ -102,9 +104,10 @@ Knuckles_ResetOnFloor_Part2:
 ; Touch_Monitor), as in Knuckles in Sonic 2.
 ; ---------------------------------------------------------------------------
 Knuckles_GlideAttacking:
-	cmpa.w	#MainCharacter,a0
-	bne.s	.no
-	tst.b	(Main_character).w
+	movem.l	a1,-(sp)
+	movea.l	a0,a1
+	jsr	(Player_IsKnuckles).l	; either player in VS (code/VSPlayers.asm)
+	movem.l	(sp)+,a1
 	beq.s	.no
 	cmpi.b	#1,glide_mode(a0)
 	beq.s	.yes
@@ -177,9 +180,10 @@ Knuckles_WFZWaitPose:
 ; Z=0 if a2 is Knuckles sliding on the ground after a glide (Obj08's dust).
 ; ---------------------------------------------------------------------------
 Knuckles_SlidingA2:
-	cmpa.w	#MainCharacter,a2
-	bne.s	.no
-	tst.b	(Main_character).w
+	movem.l	a1,-(sp)
+	movea.l	a2,a1
+	jsr	(Player_IsKnuckles).l
+	movem.l	(sp)+,a1
 	beq.s	.no
 	cmpi.b	#3,glide_mode(a2)
 	bne.s	.no
@@ -194,9 +198,7 @@ Knuckles_SlidingA2:
 ; Knuckles' glide or climb: a1 = the player.
 ; ---------------------------------------------------------------------------
 Knuckles_StopGlide:
-	cmpa.w	#MainCharacter,a1
-	bne.s	.return
-	tst.b	(Main_character).w
+	jsr	(Player_IsKnuckles).l
 	beq.s	.return
 	tst.b	glide_mode(a1)
 	beq.s	.return

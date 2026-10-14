@@ -444,6 +444,12 @@ PlayerMode_Count =	3	; Options, Level Select and the Special Stage HUD have one 
 CharID_Sonic =		0
 CharID_Knuckles =	1	; FeatureKnuckles
 
+; VS_player2: player 2's character in 2P VS (FeatureKnuckles)
+VSPlayer2_Tails =	0
+VSPlayer2_Sonic =	1
+VSPlayer2_Knuckles =	2
+VSPlayer2_Count =	3
+
 ; Entries of the player select in Options and Level Select (Player_option).
 ; ApplyPlayerOption (code/Knuckles.asm) turns one into Player_mode and Main_character.
 PlayerOption_SonicTails =	0
@@ -660,6 +666,8 @@ PLCID_ResultsTails =	id(PLCptr_ResultsTails) ; 42
 	if FeatureKnuckles
 PLCID_KnucklesLife =	id(PLCptr_KnucklesLife) ; 43
 PLCID_SignpostKnuckles = id(PLCptr_SignpostKnuckles) ; 44
+PLCID_SonicLife2P =	id(PLCptr_SonicLife2P)
+PLCID_KnucklesLife2P =	id(PLCptr_KnucklesLife2P)
 	endif
 	if FeatureHTZVS
 PLCID_Htz1_2P =		id(PLCptr_Htz1_2P)
@@ -1321,7 +1329,14 @@ SuperTails_combo_buttons:	ds.b	1	; jump buttons pressed in the window; bit 7 = w
 Gliding_collision_flags:	ds.b	1	; Knuckles' glide collision: status.player.in_air and .pushing bits (FeatureKnuckles)
 Disable_wall_grab:		ds.b	1	; bit 7 set: Knuckles cannot grab walls (FeatureKnuckles)
 LightDash_RAM_End:
-				ds.b	$200-(LightDash_RAM_End-LightDash_RAM)	; unused
+; Player 2's Obj01 in 2P VS (code/VSPlayers.asm, FeatureKnuckles)
+VS_LightDash_RAM_P2:		ds.b	LightDash_RAM_End-LightDash_RAM	; his copy of the block above
+VS_Camera_pan_P2:		ds.w	1	; his Camera_pan (player 2's camera has none)
+VS_Max_Y_pos_target:		ds.w	1	; his Camera_Max_Y_pos_target while he runs
+VS_Super_flag_P2:		ds.b	1	; his Super_Sonic_flag (always 0)
+P2_context_active:		ds.b	1	; nonzero while his Obj01 runs (RAM exchanged)
+VS_RAM_End:
+				ds.b	$200-(VS_RAM_End-LightDash_RAM)	; unused
 
 Primary_Collision:		ds.b	$300
 Secondary_Collision:		ds.b	$300
@@ -1991,7 +2006,9 @@ Cheats_menu_row:		ds.b	1	; selected CHEATS row
 Hud_centiseconds_frame:		ds.b	1	; Timer_frame whose hundredths are shown (FeatureCentiseconds)
 Title_unlock_entries:		ds.w	1	; progress of the title code Up, Down, Down, Down, Left, Right
 Main_character:			ds.b	1	; CharID_*: who plays in the Sonic slot (set with Player_mode)
-				ds.b	7	; $FFFFFF69-$FFFFFF6F ; seems unused
+VS_player2:			ds.b	1	; VSPlayer2_*: player 2's character in 2P VS (FeatureKnuckles)
+Player2_character:		ds.b	1	; CharID_* of player 2's Obj01 in 2P VS (VS_player2 Sonic/Knuckles)
+				ds.b	5	; $FFFFFF6B-$FFFFFF6F ; seems unused
 
 Player_mode:			ds.w	1	; 0 = Sonic and Tails, 1 = Sonic, 2 = Tails
 Player_option:			ds.w	1	; PlayerOption_*

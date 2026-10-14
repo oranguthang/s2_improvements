@@ -299,9 +299,18 @@ def options_layout(repo):
                 if y in (0,6,7) or x in (0,20,21):
                     i=(y*22+x)*2
                     assert block[i:i+2]==original[i:i+2],('damaged box border',row,selected,x,y)
+        # VS MODE ITEMS (and PLAYER SELECT once player 2 picks a character in
+        # VS) show their choice on row 3 and a second line on row 5
+        two_lines=(1,0) if 'VS_player2' in c.s else (1,)
         for y in (3,4,5):
-            if (row==1 and y==4) or (row!=1 and y in (3,5)):
+            if (row in two_lines and y==4) or (row not in two_lines and y in (3,5)):
                 assert block[y*44:(y+1)*44]==original[y*44:(y+1)*44],('stale text in shared box',row,selected,y)
+        if row==0 and 'VS_player2' in c.s:
+            names=(('TextOptScr_VSMiles','TextOptScr_VSSonic','TextOptScr_VSKnuckles'))
+            addr=c.s[names[c.read('VS_player2',1)]];length=c.rom[addr]+1;assert length==18
+            palette=0x6000 if selected else 0
+            expected=b''.join((palette+x).to_bytes(2,'big') for x in c.rom[addr+1:addr+1+length])
+            assert block[22*5*2+4:22*5*2+40]==expected
         if row==1:
             name=('TextOptScr_Countdown60','TextOptScr_Countdown90','TextOptScr_CountdownOff')[c.read('VS_countdown_option',2)]
             addr=c.s[name];length=c.rom[addr]+1;assert length==18
@@ -313,6 +322,8 @@ def options_layout(repo):
     # Execute the real shared-template redraw order when selection changes.
     for option in range(3):
         c.write('VS_countdown_option',option,2)
+        if 'VS_player2' in c.s:
+            c.write('VS_player2',option,1)
         previous=0
         for row in (1,2,0,2,1,0):
             draw(previous,False);draw(row,True);previous=row
@@ -623,18 +634,20 @@ def settings_sram(repo):
     fields=['Level_select_flag','Debug_options_flag','Cheat_all_emeralds','Cheat_super_rings',
             'Cheat_ring_drain','Cheat_god_mode']
     words=['Player_option','Two_player_items','VS_countdown_option']
+    extra=['VS_player2'] if 'VS_player2' in symbols(repo/'s2.lst') else []	# FeatureKnuckles
     def values(c):
-        return [c.read(f) for f in fields]+[c.read(w,2) for w in words]
+        return [c.read(f) for f in fields]+[c.read(w,2) for w in words]+[c.read(f) for f in extra]
+    defaults=[0,0,0,50,1,0,0,0,0]+[0]*len(extra)
     c=cpu(); c.call('Settings_Load')
-    assert values(c)==[0,0,0,50,1,0,0,0,0],('cold defaults',values(c))
-    want=[1,1,1,10,1,1,2,3,2]
-    for f,v in zip(fields+words,want):
+    assert values(c)==defaults,('cold defaults',values(c))
+    want=[1,1,1,10,1,1,2,3,2]+[2]*len(extra)
+    for f,v in zip(fields+words+extra,want):
         c.write(f,v,2 if f in words else 1)
     c.call('Settings_Save')
     sram=bytes(c.uc.mem_read(0x200000,0x40))
     assert sram[1:8:2]==b'S2DV',sram[:16].hex()
     record=sram
-    for f in fields: c.write(f,0)
+    for f in fields+extra: c.write(f,0)
     for w in words: c.write(w,0,2)
     c.call('Settings_Load')
     assert values(c)==want,('round trip',values(c))
@@ -642,13 +655,13 @@ def settings_sram(repo):
     # A corrupted byte makes the whole record invalid.
     c=cpu(); c.uc.mem_write(0x200000,record); c.uc.mem_write(0x200001+2*9,bytes([0x32]))
     c.call('Settings_Load')
-    assert values(c)==[0,0,0,50,1,0,0,0,0],('bad checksum',values(c))
+    assert values(c)==defaults,('bad checksum',values(c))
     # Out-of-range values are clamped; zero rings turn the drain off.
     c=cpu()
-    for f,v in zip(fields+words,[7,2,9,33,5,3,9,8,7]):
+    for f,v in zip(fields+words+extra,[7,2,9,33,5,3,9,8,7,3]):
         c.write(f,v,2 if f in words else 1)
     c.call('Settings_Normalize')
-    assert values(c)==[0,0,0,50,1,0,0,0,0],('clamp',values(c))
+    assert values(c)==defaults,('clamp',values(c))
     c.write('Cheat_super_rings',0); c.write('Cheat_ring_drain',1); c.call('Settings_Normalize')
     assert c.read('Cheat_ring_drain')==0,'drain left on with zero rings'
     return {'cold_defaults':True,'round_trip':True,'checksum_rejects_damage':True,'values_clamped':True}

@@ -4739,6 +4739,9 @@ Level:
 	bpl.s	+
 	addq.w	#PLCID_TailsLife2P-PLCID_MilesLife2P,d0
 +
+	if FeatureKnuckles
+	jsr	(VS_Player2LifePLC).l	; Sonic's or Knuckles' life icon for player 2
+	endif
 	bsr.w	LoadPLC
 ; loc_3F48:
 Level_ClrRam:
@@ -5170,6 +5173,13 @@ InitPlayers:
 	cmpi.b	#sky_chase_zone,(Current_Zone).w
 	beq.s	+ ; skip loading Tails if this is SCZ
 
+	if FeatureKnuckles
+	tst.w	(Two_player_mode).w
+	beq.s	.tails
+	jsr	(VS_InitPlayer2).l	; Sonic or Knuckles as player 2?
+	bne.s	+
+.tails:
+	endif
 	move.b	#ObjID_Tails,(Sidekick+id).w ; load Obj02 Tails object at $FFFFB040
 	move.w	(MainCharacter+x_pos).w,(Sidekick+x_pos).w
 	move.w	(MainCharacter+y_pos).w,(Sidekick+y_pos).w
@@ -12503,6 +12513,18 @@ OptionScreen_Controls:
 
 ; A cycles the countdown while VS MODE ITEMS is selected, on either pad.
 OptionScreen_CycleCountdown:
+	if FeatureKnuckles
+	tst.b	(Options_menu_box).w	; PLAYER SELECT: A cycles player 2's VS character
+	bne.s	.vsItems
+	btst	#button_A,d0
+	beq.s	.return
+	addq.b	#1,(VS_player2).w
+	cmpi.b	#VSPlayer2_Count,(VS_player2).w
+	blo.s	.return
+	clr.b	(VS_player2).w
+	rts
+.vsItems:
+	endif
 	cmpi.b	#1,(Options_menu_box).w
 	bne.s	.return
 	btst	#button_A,d0
@@ -12519,6 +12541,10 @@ OptionScreen_CycleCountdown:
 OptionScreen_DrawCountdown:
 	cmpi.b	#1,(Options_menu_box).w
 	beq.s	.draw
+	if FeatureKnuckles
+	tst.b	(Options_menu_box).w	; PLAYER SELECT: player 2's VS character
+	beq.s	.player2
+	endif
 	move.w	#make_art_tile(ArtTile_ArtNem_MenuBox,1,0),d1
 	tst.w	d0	; selected text uses palette 3; its box uses palette 0
 	beq.s	.clear
@@ -12539,10 +12565,32 @@ OptionScreen_DrawCountdown:
 	lea	OptionScreen_CountdownText(pc),a1
 	movea.l	(a1,d1.w),a1
 	bra.w	MenuScreenTextToRAM
+	if FeatureKnuckles
+.player2:
+	moveq	#0,d1
+	move.b	(VS_player2).w,d1
+	cmpi.b	#VSPlayer2_Count,d1
+	blo.s	.validPlayer2
+	moveq	#VSPlayer2_Tails,d1
+.validPlayer2:
+	tst.b	(Graphics_Flags).w	; MILES or TAILS, as in the player select names
+	bpl.s	.miles
+	addq.w	#VSPlayer2_Count,d1
+.miles:
+	lsl.w	#2,d1
+	lea	OptionScreen_Player2Text(pc),a1
+	movea.l	(a1,d1.w),a1
+	bra.w	MenuScreenTextToRAM
+	endif
 .return:
 	rts
 OptionScreen_CountdownText:
 	dc.l TextOptScr_Countdown60,TextOptScr_Countdown90,TextOptScr_CountdownOff
+	if FeatureKnuckles
+OptionScreen_Player2Text:	; VSPlayer2_*, with MILES, then with TAILS
+	dc.l TextOptScr_VSMiles,TextOptScr_VSSonic,TextOptScr_VSKnuckles
+	dc.l TextOptScr_VSTails,TextOptScr_VSSonic,TextOptScr_VSKnuckles
+	endif
 
 ; ===========================================================================
 ; word_917A:
@@ -12583,7 +12631,11 @@ OptionScreen_DrawSelected:
 	bsr.w	MenuScreenTextToRAM
 	lea	(Chunk_Table+$B6).l,a2
 	cmpi.b	#1,(Options_menu_box).w
+	if FeatureKnuckles
+	bhi.s	+			; PLAYER SELECT also has a second line (player 2 in VS)
+	else
 	bne.s	+
+	endif
 	lea	(Chunk_Table+22*3*2+3*2).l,a2	; leave a blank row between VS items and countdown
 +
 	moveq	#0,d1
@@ -12630,7 +12682,11 @@ OptionScreen_DrawUnselected:
 	bsr.w	MenuScreenTextToRAM
 	lea	(Chunk_Table+$216).l,a2
 	cmpi.b	#1,(Options_menu_box).w
+	if FeatureKnuckles
+	bhi.s	+			; PLAYER SELECT also has a second line (player 2 in VS)
+	else
 	bne.s	+
+	endif
 	lea	(Chunk_Table+$160+22*3*2+3*2).l,a2	; leave a blank row between VS items and countdown
 +
 	moveq	#0,d1
@@ -13510,6 +13566,12 @@ TextOptScr_NoItems:			menutxt	"NO ITEMS       "
 TextOptScr_Countdown60:		menutxt "A COUNTDOWN 60 SEC"
 TextOptScr_Countdown90:		menutxt "A COUNTDOWN 90 SEC"
 TextOptScr_CountdownOff:		menutxt "A COUNTDOWN OFF   "
+	if FeatureKnuckles
+TextOptScr_VSMiles:		menutxt "A 2P VS MILES     "
+TextOptScr_VSTails:		menutxt "A 2P VS TAILS     "
+TextOptScr_VSSonic:		menutxt "A 2P VS SONIC     "
+TextOptScr_VSKnuckles:		menutxt "A 2P VS KNUCKLES  "
+	endif
 TextOptScr_SoundTest:		menutxt	"*  SOUND TEST   *"	; byte_985E:
 TextLevSel_SonicTails:		menutxt "C PLAYER: SONIC TAILS"
 TextLevSel_Sonic:		menutxt "C PLAYER: SONIC      "
@@ -35664,6 +35726,7 @@ word_19194_End
 obj0D_spinframe		= objoff_30 ; $30(a0)
 obj0D_sparkleframe	= objoff_34 ; $34(a0)
 obj0D_finalanim		= objoff_36 ; $36(a0) ; 4 if Tails only, 3 otherwise (determines what character to show)
+obj0D_player2face	= objoff_37 ; $37(a0) ; 2P: bit 7 = player 2's Obj01 won, bit 0 = he is Knuckles (FeatureKnuckles)
 ; ----------------------------------------------------------------------------
 
 Obj0D:
@@ -35773,7 +35836,11 @@ loc_192BC:
 	bsr.w	VS_StartCountdown
 	move.w	#SndID_Signpost2P,d0	; play different spinning sound
 	jsr	(PlaySound).l
+	if FeatureKnuckles
+	bra.w	loc_19350
+	else
 	bra.s	loc_19350
+	endif
 ; ---------------------------------------------------------------------------
 
 loc_192D6:
@@ -35807,6 +35874,9 @@ loc_1932E:
 	tst.b	obj0D_finalanim(a0)
 	bne.s	loc_19350
 	move.b	#4,obj0D_finalanim(a0)
+	if FeatureKnuckles
+	jsr	(VS_SignpostPlayer2Face).l	; Sonic's or Knuckles' face for player 2
+	endif
 	tst.w	(Two_player_mode).w
 	beq.s	loc_19350
 	bsr.w	VS_StartCountdown
@@ -36033,7 +36103,7 @@ loc_19564:
 	lsl.l	#5,d1
 	addi.l	#ArtUnc_Signpost,d1
 	if FeatureKnuckles
-	tst.b	(Main_character).w	; Knuckles' face (2P VS)
+	jsr	(VS_SignpostKnucklesFace).l	; Knuckles' face (2P VS, either player)?
 	beq.s	+
 	addi.l	#ArtUnc_SignpostKnuckles-ArtUnc_Signpost,d1
 +
@@ -37252,6 +37322,12 @@ loc_19F4C:
 ; Sprite_19F50: Object_Sonic:
 Obj01:
 	; a0=character
+	if FeatureKnuckles
+	cmpa.w	#Sidekick,a0	; Sonic or Knuckles as player 2 in VS?
+	bne.s	.player1
+	jmp	(VS_Obj01Player2).l	; code/VSPlayers.asm
+.player1:
+	endif
 	tst.w	(Debug_placement_mode).w	; is debug mode being used?
 	beq.s	Obj01_Normal			; if not, branch
 	jmp	(DebugMode).l
@@ -37299,6 +37375,10 @@ Obj01_Init:
 	bne.s	Obj01_Init_Continued	; if so, branch
 	; only happens when not starting at a checkpoint:
 	move.w	#make_art_tile(ArtTile_ArtUnc_Sonic,0,0),art_tile(a0)	; load Sonic's art
+	if FeatureKnuckles
+	cmpa.w	#Sidekick,a0	; player 2 in VS: Tails' VRAM and star post
+	beq.s	Obj01_InitPlayer2
+	endif
 	bsr.w	Adjust2PArtPointer	; adjust Sonic's art pointer if in 2-player mode
 	move.b	#$C,top_solid_bit(a0)
 	move.b	#$D,lrb_solid_bit(a0)
@@ -37306,6 +37386,18 @@ Obj01_Init:
 	move.w	y_pos(a0),(Saved_y_pos).w
 	move.w	art_tile(a0),(Saved_art_tile).w
 	move.w	top_solid_bit(a0),(Saved_Solid_bits).w
+	if FeatureKnuckles
+	bra.s	Obj01_Init_Continued
+Obj01_InitPlayer2:
+	move.w	#make_art_tile(ArtTile_ArtUnc_Tails,0,0),art_tile(a0)	; Tails' body and tails slots
+	bsr.w	Adjust2PArtPointer
+	move.b	#$C,top_solid_bit(a0)
+	move.b	#$D,lrb_solid_bit(a0)
+	move.w	x_pos(a0),(Saved_x_pos_2P).w
+	move.w	y_pos(a0),(Saved_y_pos_2P).w
+	move.w	art_tile(a0),(Saved_art_tile_2P).w
+	move.w	top_solid_bit(a0),(Saved_Solid_bits_2P).w
+	endif
 
 Obj01_Init_Continued:
 	move.b	#0,flips_remaining(a0)	; reset flips
@@ -37314,7 +37406,17 @@ Obj01_Init_Continued:
 	move.b	#30,air_left(a0)		; reset air count
 	subi.w	#$20,x_pos(a0)
 	addi_.w	#4,y_pos(a0)
+	if FeatureKnuckles
+	cmpa.w	#Sidekick,a0
+	bne.s	.player1Record
+	move.w	#0,(Tails_Pos_Record_Index).w	; player 2's Obj01 records into Tails' buffer
+	bra.s	.recordIndex
+.player1Record:
+	endif
 	move.w	#0,(Sonic_Pos_Record_Index).w
+	if FeatureKnuckles
+.recordIndex:
+	endif
 
 	move.w	#$3F,d2
 -	bsr.w	Sonic_RecordPos
@@ -37342,6 +37444,12 @@ Obj01_Control:
 +	tst.b	(Control_Locked).w	; are controls locked?
 	bne.s	+			; if yes, branch
 	move.w	(Ctrl_1).w,(Ctrl_1_Logical).w	; copy new held buttons, to enable joypad control
+	if FeatureKnuckles
+	tst.b	(P2_context_active).w	; player 2's Obj01 (Ctrl_1_Logical is his now)?
+	beq.s	.pad
+	move.w	(Ctrl_2).w,(Ctrl_1_Logical).w
+.pad:
+	endif
 +
 	if FeatureLightDash
 	clr.b	(LightDash_hitframe).w	; attacks only on frames the dash moved
@@ -37489,6 +37597,10 @@ Obj01_ExitChk:
 
 ; loc_1A15C:
 Sonic_RecordPos:
+	if FeatureKnuckles
+	cmpa.w	#Sidekick,a0	; player 2's Obj01: player 2's camera reads Tails' record
+	beq.w	Tails_RecordPos
+	endif
 	move.w	(Sonic_Pos_Record_Index).w,d0	; get current index for the tracking array
 	lea	(Sonic_Pos_Record_Buf).w,a1			; load tracking array
 	lea	(a1,d0.w),a1						; set pointer to current index
@@ -39056,6 +39168,8 @@ Sonic_CheckGoSuper:
 	if FeatureKnuckles
 	tst.b	(Main_character).w
 	bne.w	return_1ABA4
+	tst.b	(P2_context_active).w	; player 2 never turns Super
+	bne.w	return_1ABA4
 	endif
 	tst.b	(Super_Sonic_flag).w	; is Sonic already Super?
 	if FeatureSuperToggle
@@ -39263,6 +39377,12 @@ Sonic_UpdateSpindash:
 	move.b	d0,(Horiz_scroll_delay_val).w
 	; Back up the position array index for later.
 	move.b	(Sonic_Pos_Record_Index+1).w,(Horiz_scroll_delay_val+1).w
+	if FeatureKnuckles
+	cmpa.w	#Sidekick,a0	; player 2's Obj01 (Horiz_scroll_delay_val is his now)
+	bne.s	.delayIndex
+	move.b	(Tails_Pos_Record_Index+1).w,(Horiz_scroll_delay_val+1).w
+.delayIndex:
+	endif
     else
 	add.w	d0,d0
 	andi.w	#$1F00,d0 ; This line is not necessary, as none of the removed bits are ever set in the first place
@@ -39785,7 +39905,10 @@ Sonic_ResetOnFloor_Part2:
 	_cmpi.b	#ObjID_Sonic,id(a0)	; is this object ID Sonic (obj01)?
 	bne.w	Tails_ResetOnFloor_Part2	; if not, branch to the Tails version of this code
 	if FeatureKnuckles
-	tst.b	(Main_character).w
+	movem.l	a1,-(sp)
+	movea.l	a0,a1
+	jsr	(Player_IsKnuckles).l	; (other objects call this for player 2 too)
+	movem.l	(sp)+,a1
 	beq.s	+
 	jmp	(Knuckles_ResetOnFloor_Part2).l	; code/KnucklesGlide.asm
 +
@@ -39959,6 +40082,12 @@ CheckGameOver:
 	bge.w	return_1B31A
 	move.b	#8,routine(a0)	; => Obj01_Gone
 	move.w	#60,restart_countdown(a0)
+	if FeatureKnuckles
+	cmpa.w	#Sidekick,a0	; player 2's Obj01 in VS?
+	bne.s	.player1
+	jmp	(VS_Obj01Player2GameOver).l
+.player1:
+	endif
 	addq.b	#1,(Update_HUD_lives).w	; update lives counter
 	if FeatureInfiniteLives
 	jsr	(InfiniteLives_Active).l	; no lives to give or lose in 1P games
@@ -40549,6 +40678,10 @@ LoadSonicDynPLC_Part2:
 	move.w	#tiles_to_bytes(ArtTile_ArtUnc_Sonic),d4	; starting VRAM tile
 	move.l	#ArtUnc_Sonic,d6		; base Sonic art pointer
 	if FeatureKnuckles
+	cmpa.w	#Sidekick,a0	; player 2 in VS: Tails' body and tails slots
+	bne.s	.vram
+	move.w	#tiles_to_bytes(ArtTile_ArtUnc_Tails),d4
+.vram:
 	tst.b	(Main_character).w
 	beq.s	+
 	jsr	(Knuckles_DPLC).l	; a2, d6 = Knuckles' (VS ones in 2P)
@@ -45022,7 +45155,11 @@ Obj7E_Init:
 	move.b	#1,priority(a0)
 	move.b	#$18,width_pixels(a0)
 	move.w	#make_art_tile(ArtTile_ArtNem_SuperSonic_stars,0,0),art_tile(a0)
+	if FeatureKnuckles
+	jsr	(Adjust2PArtPointer).l	; out of bsr range with player 2's Obj01 code
+	else
 	bsr.w	Adjust2PArtPointer
+	endif
 	btst	#high_priority_bit,(MainCharacter+art_tile).w
 	beq.s	Obj7E_Main
 	bset	#high_priority_bit,art_tile(a0)
@@ -91665,6 +91802,8 @@ PLCptr_ResultsTails:	offsetTableEntry.w PlrList_ResultsTails		; 66
 	if FeatureKnuckles
 PLCptr_KnucklesLife:	offsetTableEntry.w PlrList_KnucklesLife
 PLCptr_SignpostKnuckles: offsetTableEntry.w PlrList_SignpostKnuckles
+PLCptr_SonicLife2P:	offsetTableEntry.w PlrList_SonicLife2P
+PLCptr_KnucklesLife2P:	offsetTableEntry.w PlrList_KnucklesLife2P
 	endif
 	if FeatureHTZVS
 PLCptr_Htz1_2P:		offsetTableEntry.w PlrList_Htz1_2P
@@ -91770,6 +91909,19 @@ PlrList_TailsLife: plrlistheader
 	plreq ArtTile_ArtNem_life_counter, ArtNem_TailsLife
 PlrList_TailsLife_End
 	if FeatureKnuckles
+;---------------------------------------------------------------------------------------
+; PATTERN LOAD REQUEST LISTS
+; Sonic's or Knuckles' life icon for player 2 in 2P VS (code/VSPlayers.asm)
+;---------------------------------------------------------------------------------------
+; The face in player 2's HUD is the Tails 1-up monitor icon (tools/vs_faces.py)
+PlrList_SonicLife2P: plrlistheader
+	plreq ArtTile_ArtNem_2p_life_counter, ArtNem_Sonic_life_counter
+	plreq ArtTile_ArtNem_Powerups+$1C, ArtNem_VSFaceSonic
+PlrList_SonicLife2P_End
+PlrList_KnucklesLife2P: plrlistheader
+	plreq ArtTile_ArtNem_2p_life_counter, ArtNem_KnucklesLife
+	plreq ArtTile_ArtNem_Powerups+$1C, ArtNem_VSFaceKnuckles
+PlrList_KnucklesLife2P_End
 ;---------------------------------------------------------------------------------------
 ; PATTERN LOAD REQUEST LIST
 ; Knuckles (code/Knuckles.asm): his life icon, and the shield and invincibility
@@ -94288,6 +94440,7 @@ Sound70:	include "sound/sfx/F0 - Oil Slide.asm"
 	include "code/Knuckles.asm"
 	if FeatureKnuckles
 	include "code/KnucklesGlide.asm"
+	include "code/VSPlayers.asm"
 	endif
 	if FeatureSoundDriver=SoundDriver_S3K
 	include "sound/S3K Driver.asm"
