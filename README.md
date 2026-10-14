@@ -385,6 +385,20 @@ SEGA chant and its Start skip, pause, speed shoes, fade-out and the 1-up
 jingle were checked by audio capture in Genesis Plus GX, with both drum
 settings.
 
+## Optimizations
+
+These change speed only: the output and the game's behaviour stay the same,
+so they have no `Feature*` switch.
+
+- Kosinski and Enigma decompression use the faster decoders from
+  s1_improvements (vladikcomper's Kosinski decoder with MarkeyJester's and
+  Flamewing's improvements, and an Enigma decoder with ideas from Malachi's),
+  after [Improving compression formats](https://info.sonicretro.org/SCHG_How-to:Improving_compression_formats).
+  They live in `code/Decompression.asm`; `KosDec` and `EniDec` jump there.
+  All 86 Kosinski and Enigma assets in the ROM decompress to the same bytes,
+  with the same registers, as with the original routines, using about a
+  third fewer instructions.
+
 ## Branch range
 
 Sonic 2 has many `bsr.w`/`bra.w` branches within a few hundred bytes of the
