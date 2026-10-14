@@ -6185,10 +6185,11 @@ CheckLoadSignpostArt:
 	bne.s	+	; rts
 	moveq	#PLCID_Signpost,d0 ; <== PLC_1F
 	if FeatureKnuckles
+	; (a named label: a '+' here would steal the 'rts' branches above)
 	tst.b	(Main_character).w
-	beq.s	+
+	beq.s	.loadArt
 	moveq	#PLCID_SignpostKnuckles,d0	; Knuckles' face instead of Sonic's
-+
+.loadArt:
 	endif
 	bra.w	LoadPLC2		; load signpost art
 ; ---------------------------------------------------------------------------
