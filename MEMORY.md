@@ -17,7 +17,7 @@ check which object it is looking at (as `Touch_Enemy` does with
 | `$21` | `transform_combo_buttons` | `flying_timer` | The Knuckles tutorial puts `gliding_property` here |
 | `$23` | — | `carry_delay` | |
 | `$1F` | — | — | Free, but cleared by `loc_A53A` and `ObjB2_Landed_on_plane` |
-| `status` bit 4 | homing attack used this jump | — | Was the roll-jump lock bit, removed by the Roll-Jump Lock tutorial |
+| `status` bit 4 | homing attack used this jump (`homing_attack_flag`) | — | The roll-jump lock bit when `FeatureRollJumpSteering = 0`; the Homing Attack flag then uses `status_secondary` bit 4 (`homing_attack_byte`) |
 | `status_secondary` bit 3 | being carried by Tails (`status_secondary.carry`) | — | |
 
 Do not use the "Free up 2 universal SSTs" or S3K priority manager tutorials as

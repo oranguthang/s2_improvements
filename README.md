@@ -141,6 +141,34 @@ behavior, and new acts, demos, VS and Level Select do not reuse Special Stage st
   (Sonic 2 installation per the [official guide](https://github.com/vladikcomper/md-modules/blob/master/modules/errorhandler/docs/installation/Sonic_2_Github.md);
   see [the debugger guide](_debug/md-debugger/README.md))
 
+## Feature options
+
+The `Feature*` switches near the top of `s2.asm` turn this project's gameplay
+additions on (1, the default) or off (0). Off restores the original Sonic 2
+behaviour for that feature only. The code stays assembled but is never entered,
+so a feature can be switched off without moving data or touching other
+features. The default build is unchanged by these switches.
+
+| Option | When 0 |
+|---|---|
+| `FeatureAirRoll` | Pressing A/B/C in the air while not curled does nothing (Sonic and Tails). |
+| `FeatureHomingAttack` | No Homing Attack or Jump Dash. |
+| `FeatureExtendedCamera` | The camera keeps the original fixed focus. |
+| `FeatureMomentum` | Air control caps speed at the running limit again (Sonic and Tails). |
+| `FeatureRollJumpSteering` | A jump from a roll locks midair steering again. The Homing Attack flag then moves from `status` bit 4 to `status_secondary` bit 4. |
+| `FeatureSuperToggle` | Super Sonic starts at the peak of a jump (7 emeralds, 50 rings), and there is no button combo to turn back. |
+| `FeatureInstantTally` | The act bonus always counts down, and the act jingle starts as soon as the tally begins. |
+| `FeatureLamppostRings` | Restarting from a star post starts with no rings. |
+| `FeatureSpecialStageState` | Coming back from a Special Stage restarts the level from the star post (no rings, no shield, objects respawn). |
+| `FeatureSpringPoses` | Sonic uses the original single spring pose. |
+| `FeatureBurntDeath` | Fire hazards and lasers use the normal death animation. |
+| `FeatureTailsFlight` | Tails cannot fly or swim, Up + jump does not call the Tails AI, the AI respawns only while Sonic is on the ground and out of water, and the title screen plays only the four original demos. |
+| `FeatureActMusic` | Act 2 of EHZ, MCZ and CNZ plays the act 1 track. |
+
+With every switch at 0 the four original title demos play through without a
+death. Bug fixes from `fixBugs`, the Sonic Retro fix tutorials and the menu
+options (VS countdown, VS items) have no switch.
+
 ## Memory
 
 [MEMORY.md](MEMORY.md) lists the object fields and RAM the mod's features use

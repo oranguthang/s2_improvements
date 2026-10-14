@@ -13,6 +13,8 @@ The user writes in Russian; answer in Russian.
   run `sed -i 's/\r$//'` before scripted edits). Git's CRLF warning on commit is expected.
 - `jump distance too big` after adding code: replace that branch with `jsr`/`jmp (Label).l` (many branches are
   within a few hundred bytes of the 32 KB limit).
+- Gameplay additions have `Feature*` switches near the top of `s2.asm` (README "Feature options"). New features
+  get one too: default 1, 0 restores the original code path, and the default build must stay identical.
 - Comparing builds: code/data must match up to `EndOfRom` (from `s2.lst`); the debugger symbol table and header
   checksum after it change whenever labels are added.
 - Regression tests (unicorn 2.1.4 lives in the Codex work folder below):
