@@ -10504,6 +10504,12 @@ ContinueScreen:
 	bsr.w	NemDec
 	move.l	#vdpComm(tiles_to_bytes(ArtTile_ArtNem_MiniContinue),VRAM,WRITE),(VDP_control_port).l
 	lea	(ArtNem_MiniSonic).l,a0
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	+
+	lea	(ArtNem_MiniKnuckles).l,a0	; Knuckles in Sonic 2's continue icons
++
+	endif
 	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	bne.s	+
 	lea	(ArtNem_MiniTails).l,a0
@@ -10521,8 +10527,13 @@ ContinueScreen:
 	clr.l	(Camera_X_pos_copy).w
 	move.l	#$1000000,(Camera_Y_pos_copy).w
 	move.b	#ObjID_ContinueChars,(MainCharacter+id).w ; load ObjDB (Sonic on continue screen)
+	if FeatureKnuckles
+	jsr	(Knuckles_ContinueAlone).l	; Knuckles Alone: no Tails, as in Knuckles in Sonic 2
+	bne.s	+
+	endif
 	move.b	#ObjID_ContinueChars,(Sidekick+id).w ; load ObjDB (Tails on continue screen)
 	move.b	#6,(Sidekick+routine).w ; => ObjDB_Tails_Init
++
 	move.b	#ObjID_ContinueText,(ContinueText+id).w ; load ObjDA (continue screen text)
 	move.b	#ObjID_ContinueIcons,(ContinueIcons+id).w ; load ObjDA (continue icons)
 	move.b	#4,(ContinueIcons+routine).w ; => loc_7AD0
@@ -10548,7 +10559,15 @@ ContinueScreen:
 +
 	jsr	(RunObjects).l
 	jsr	(BuildSprites).l
+	if FeatureKnuckles
+	jsr	(Knuckles_ContinueAlone).l
+	beq.s	.withTails
+	cmpi.w	#$180,(MainCharacter+x_pos).w	; Knuckles runs off alone
+	bra.s	.ranOff
+.withTails:
+	endif
 	cmpi.w	#$180,(Sidekick+x_pos).w
+.ranOff:
 	bhs.s	+
 	cmpi.b	#4,(MainCharacter+routine).w
 	bhs.s	-
@@ -10765,6 +10784,13 @@ ObjDB_Sonic_Init:
 	move.b	#1<<render_flags.level_fg,render_flags(a0)
 	move.b	#2,priority(a0)
 	move.b	#AniIDSonAni_Lying,anim(a0)
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	+
+	move.l	#MapUnc_Knuckles,mappings(a0)	; Knuckles shadow-boxes (Knuckles in Sonic 2)
+	move.b	#AniIDKnuxAni_ShadowBox,anim(a0)
++
+	endif
 
 ; loc_7BD2:
 ObjDB_Sonic_Wait:
@@ -10777,6 +10803,12 @@ ObjDB_Sonic_Wait:
 ObjDB_Sonic_StartRunning:
 	addq.b	#2,routine(a0) ; => ObjDB_Sonic_Run
 	move.b	#AniIDSonAni_LieDown,anim(a0)
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	+
+	move.b	#AniIDSonAni_Walk,anim(a0)	; Knuckles just runs
++
+	endif
 	clr.w	inertia(a0)
 	move.b	#SndID_SpindashRev,d0 ; super peel-out sound
 	bsr.w	PlaySound

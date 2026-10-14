@@ -27,6 +27,7 @@ COPIES = [
     ('mappings/sprite/Knuckles.asm', 'mappings/sprite/Knuckles.asm'),
     ('mappings/spriteDPLC/Knuckles.asm', 'mappings/spriteDPLC/Knuckles.asm'),
     ('art/nemesis/Knuckles lives counter.nem', 'art/nemesis/Knuckles lives counter.nem'),
+    ('art/nemesis/Knuckles continue.nem', 'art/nemesis/Knuckles continue.nem'),
     ('art/nemesis/Signpost (Knuckles patch).nem', 'art/nemesis/Signpost Knuckles patch.nem'),
     ('art/nemesis/Monitor and contents (Knuckles patch).nem', 'art/nemesis/Monitor Knuckles patch.nem'),
     ('art/uncompressed/Title card font K.bin', 'art/uncompressed/Results letter K.bin'),

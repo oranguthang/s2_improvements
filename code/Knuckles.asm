@@ -131,6 +131,21 @@ Knuckles_SSHUDFrame:
 	rts
 
 ; ---------------------------------------------------------------------------
+; Continue screen: Z=0 in a Knuckles Alone game (no Tails, as in Knuckles in
+; Sonic 2); Knuckles and Tails keep Tails.
+; ---------------------------------------------------------------------------
+Knuckles_ContinueAlone:
+	tst.b	(Main_character).w
+	beq.s	.no
+	tst.w	(Player_mode).w
+	beq.s	.no
+	andi	#~4,ccr		; Z=0
+	rts
+.no:
+	ori	#4,ccr		; Z=1
+	rts
+
+; ---------------------------------------------------------------------------
 ; Balancing, as in Knuckles in Sonic 2: one balancing animation; facing away
 ; from the edge, Knuckles turns round and starts it further on.
 ; d1 = position on the object and d2 = its width - 2 (as in Obj01_NotRight)
@@ -532,6 +547,8 @@ ArtUnc_Knuckles_End:
 ; Knuckles' HUD, monitor, signpost and slot machine art (tools/import_kis2.py)
 ; ---------------------------------------------------------------------------
 ArtNem_KnucklesLife:		BINCLUDE	"art/nemesis/Knuckles lives counter.nem"
+	even
+ArtNem_MiniKnuckles:		BINCLUDE	"art/nemesis/Knuckles continue.nem"
 	even
 ArtNem_SpecialKnuckles:		BINCLUDE	"art/nemesis/Knuckles animation frames in special stage.nem"
 	even
