@@ -31,6 +31,14 @@ Other objects:
 | Tails' tails (Obj05) | `Obj05_parent_prev_anim` = `objoff_30` | Subanimation fix |
 | Shield (Obj38) | `objoff_30`, `objoff_32` | Last DPLC frame and VRAM destination (separate slots for both players) |
 
+## VRAM and SRAM
+
+- The sidekick's shield slot (`ArtTile_ArtUnc_Shield_P2`, 12 tiles) also holds
+  the debug coordinates overlay (11 tiles, `code/DebugHud.asm`) while the
+  sidekick has no shield. Levels have no other free VRAM.
+- SRAM: one settings record at the start of the odd-byte SRAM (see README
+  "Cheats and settings"). The rest of `$200001-$20FFFF` is free.
+
 ## RAM variables added by the mod
 
 | Address | Name | Feature |
@@ -44,6 +52,8 @@ Other objects:
 | `$FE2A-$FE2E` | `SS_keep_level_state`, `SS_saved_shield(_2P)`, `SS_saved_extra_life_flags(_2P)` | Level state after a Special Stage |
 | `$FEDA-$FEDF` | `SS_saved_rings(_2P)`, `SS_saved_zone` | Level state after a Special Stage |
 | `$FF44-$FF47` | `SS_saved_perfect_rings`, `SS_saved_perfect_flag` | Level state after a Special Stage |
+| `$FF60-$FF64` | `Cheat_all_emeralds`, `Cheat_super_rings`, `Cheat_ring_drain`, `Cheat_god_mode`, `Cheats_menu_row` | CHEATS page (saved in SRAM) |
+| `$FF66` | `Title_unlock_entries` (word) | Title unlock code progress |
 | `$FF76` | `VS_countdown_option` (word) | VS finish countdown option |
 | `$FF87` | `Level_select_page` | Level Select pages |
 
@@ -59,7 +69,7 @@ runs.
 | `$E740-$E7FF` | 192 | Before `Ring_Positions` |
 | `$FA82-$FAFF` | 126 | After the sprite table page bytes |
 | `$DF80-$DFFF` | 128 | Only if the sprite table can never overflow into it |
-| `$FEB0-$FEBF`, `$FEFA-$FF0F`, `$FF12-$FF1F`, `$FF60-$FF6F` | 16, 22, 14, 16 | Persistent area (not cleared on level start) |
+| `$FEB0-$FEBF`, `$FEFA-$FF0F`, `$FF12-$FF1F`, `$FF68-$FF6F` | 16, 22, 14, 8 | Persistent area (not cleared on level start) |
 | `$F79A-$F7A6`, `$F7B4-$F7BD`, `$F676-$F67F` | 13, 10, 10 | |
 
 Plus about 60 single bytes and small gaps marked "seems unused" in

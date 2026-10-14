@@ -169,6 +169,47 @@ With every switch at 0 the four original title demos play through without a
 death. Bug fixes from `fixBugs`, the Sonic Retro fix tutorials and the menu
 options (VS countdown, VS items) have no switch.
 
+## Cheats and settings
+
+**Unlocking.** Either the original sound test code 19, 65, 9, 17 (in Options)
+or the Sonic 1 code Up, Down, Down, Down, Left, Right on the title unlocks the
+Level Select (hold **A** and press Start on the title) with its CHEATS item.
+The other original codes still work (debug 1, 9, 9, 2, 1, 1, 2, 4 and the
+emeralds 4, 1, 2, 6 in the Level Select sound test, continues 1, 1, 2, 4).
+With the unlock, **A** while paused returns to the Level Select.
+
+**CHEATS** is the item below the player option in the Level Select. Up/Down
+select, Left/Right/A/B/C change, Start returns to the level list.
+
+| Setting | Values | Default | Effect |
+|---|---|---|---|
+| ALL EMERALDS | OFF / ON | OFF | Counts as seven emeralds for Super Sonic, the Super ending and the star post stars. The real emeralds are kept. Not in 2P games or demos. |
+| DEBUG | OFF / ON | OFF | Debug mode in every level (B enters object placement) without holding A. Same flag as the debug sound test code. |
+| SUPER RINGS | 0 / 10 / 50 | 50 | Rings needed to turn Super. 0 turns RING DRAIN off. |
+| RING DRAIN | OFF / ON | ON | OFF keeps Super Sonic until the act ends. Turning it on at 0 rings sets SUPER RINGS to 10. |
+| GOD MODE | OFF / ON | OFF | Nothing hurts or kills the players, the air never runs out, the clock stops at 9:59 and a pit bounces the player back up. Not in 2P VS games or demos. |
+
+As in s1_improvements, B does not enter object placement while it is part of
+an airborne A+B or B+C Super combo.
+
+**Debug coordinates.** While debug mode is available in a 1P game, the upper
+right corner shows the camera X/Y (top row) and the player X/Y (second row) in
+hex, then SPR and the number of sprites drawn; SCORE and TIME keep their
+meaning. The overlay borrows the sidekick's shield tiles and hides while the
+sidekick has a shield.
+
+**SRAM.** The header declares battery-backed odd-byte SRAM at
+`$200001-$20FFFF`. `code/Settings.asm` keeps one record there: logical byte N
+is at `$200001+2*N`; bytes 0-3 `S2DV`, 4 the format version (1), 5 the payload
+length (9), then the Level Select unlock, DEBUG, ALL EMERALDS, SUPER RINGS,
+RING DRAIN, GOD MODE, the player option, the VS items and the VS countdown,
+then a big-endian additive checksum of everything before it. A cold boot loads
+it (defaults for a missing or damaged record); leaving Options or the Level
+Select, any change on the CHEATS page and a successful unlock code save it.
+A write invalidates the signature first and commits it last. To add a setting,
+append its RAM byte to `Settings_Fields`, clamp it in `Settings_Normalize` and
+raise `settings_sram_version`. Emerald, lives and level progress are not saved.
+
 ## Memory
 
 [MEMORY.md](MEMORY.md) lists the object fields and RAM the mod's features use
@@ -219,7 +260,13 @@ the console is on. To add a page:
 
 In order tables, `LevSelEntry_NextPage` and `LevSelEntry_PrevPage` switch pages
 (with wrap-around) when Start is pressed, `LevSelEntry_SpecialStage` starts the
-Special Stage and `LevSelEntry_SoundTest` must be the last item of every page.
+Special Stage, `LevSelEntry_Cheats` opens the CHEATS page and
+`LevSelEntry_SoundTest` must be the last item of every page.
+
+The optional third `levselpage` argument lists item names written into the
+decompressed mappings before they are shown (`dc.w planeLoc(40,column,line)`,
+`dc.l text`, `dc.w length-1`, ending with `dc.w -1`). The CHEATS item is added
+to the stock page this way, so items can be added without new Enigma mappings.
 Two pages were verified with a temporary copy of the stock page: NEXT and PREV
 redraw instantly and items on either page start their own zone.
 
