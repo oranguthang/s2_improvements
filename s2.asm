@@ -61,6 +61,22 @@ useFullWaterTables = 1
 debugTesting = 0
 ;	| If 1, level select, slow motion and debug mode are unlocked on boot (for testing builds)
 
+; Gameplay features added by this project. Each is 1 by default; 0 restores
+; the original Sonic 2 behaviour. Disabled code stays assembled but is never
+; entered, so data layouts and other features do not change.
+FeatureAirRoll = 1
+;	| Press A/B/C in the air to curl into a ball (Sonic and Tails)
+FeatureHomingAttack = 1
+;	| Press A/B/C during a jump for Sonic's Homing Attack
+FeatureExtendedCamera = 1
+;	| Let the camera look ahead of Sonic at speed
+FeatureBurntDeath = 1
+;	| Sonic plays the burnt death animation when killed by fire or lasers
+
+	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureBurntDeath)&~1
+		error "Feature options must be 0 or 1"
+	endif
+
 ; >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ; AS-specific macros and assembler settings
 	CPU 68000
@@ -37327,6 +37343,9 @@ Obj01_MdJump:
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 
 AirRoll:
+	if FeatureAirRoll=0
+	rts				; Air Roll disabled
+	endif
 	moveq	#button_A_mask|button_B_mask|button_C_mask,d0
 	and.b	(Ctrl_1_Press_Logical).w,d0	; is A, B, or C pressed?
 	beq.s	.return			; if not, branch
@@ -37352,6 +37371,9 @@ AirRoll:
 ; ---------------------------------------------------------------------------
 
 Sonic_PanCamera:
+	if FeatureExtendedCamera=0
+	rts				; Extended camera disabled (Camera_pan stays centred)
+	endif
 	move.w	(Camera_pan).w,d1	; get current camera pan value
 
 	tst.b	spindash_flag(a0)	; is Sonic charging up a spin dash?
@@ -37422,6 +37444,9 @@ Sonic_PanCamera:
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 
 Sonic_HomingAttack:
+	if FeatureHomingAttack=0
+	rts				; Homing Attack disabled
+	endif
 	tst.w (Player_mode).w
 	bne.s .normal
 	tst.w (Two_player_mode).w
@@ -40872,6 +40897,9 @@ Obj02_MdJump:
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 
 Tails_AirRoll:
+	if FeatureAirRoll=0
+	rts				; Air Roll disabled
+	endif
 	moveq	#button_A_mask|button_B_mask|button_C_mask,d0
 	and.b	(Ctrl_2_Press_Logical).w,d0	; is A, B, or C pressed?
 	beq.s	.return			; if not, branch
@@ -86781,6 +86809,9 @@ KillCharacter:
 ; Tails (including Tails Alone) keeps his own normal death animation.
 ; Preserve d0 so spike deaths keep their original sound.
 KillCharacter_SetBurntAnimation:
+	if FeatureBurntDeath=0
+	rts				; burnt death disabled
+	endif
 	cmpi.b	#ObjID_Sonic,id(a0)
 	bne.s	.return
 	move.b	id(a2),d1

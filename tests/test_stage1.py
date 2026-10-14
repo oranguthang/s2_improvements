@@ -86,7 +86,8 @@ def burnt(repo):
             c.uc.hook_add(UC_HOOK_CODE,sound,begin=addr,end=addr)
             c.skip('PlaySound')
             c.call('KillCharacter',obj)
-            expected='AniIDSonAni_DeathBW' if character=='ObjID_Sonic' and hazard in fires else 'AniIDSonAni_Death'
+            burns=c.s.get('FeatureBurntDeath',1) and character=='ObjID_Sonic' and hazard in fires
+            expected='AniIDSonAni_DeathBW' if burns else 'AniIDSonAni_Death'
             assert c.read(obj+c.s['anim'])==c.s[expected],(character,hazard)
             assert c.read(obj+c.s['routine'])==6
             assert c.read(obj+c.s['y_vel'],2)==0xF900
@@ -99,7 +100,8 @@ def burnt(repo):
     c.uc.reg_write(UC_M68K_REG_A2,c.s['Sidekick'])
     before=bytes(c.uc.mem_read(obj,0x40));c.call('KillCharacter',obj)
     assert before==bytes(c.uc.mem_read(obj,0x40)),'Debug kill guard changed'
-    return {'death_cases':cases,'debug_guard_passed':True,'tails_uses_normal_death':True,'sounds_preserved':True}
+    return {'death_cases':cases,'debug_guard_passed':True,'tails_uses_normal_death':True,'sounds_preserved':True,
+            'burnt_animation':'on' if c.s.get('FeatureBurntDeath',1) else 'off'}
 
 def controllers(repo):
     cases=0
