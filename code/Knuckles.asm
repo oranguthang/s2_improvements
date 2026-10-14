@@ -466,4 +466,117 @@ ArtUnc_Knuckles_End:
 	if (ArtUnc_Knuckles_End-ArtUnc_Knuckles)>$20000
 		fatal "Knuckles' art must fit in one 128 KiB bank"
 	endif
+
+; ---------------------------------------------------------------------------
+; Object layouts for Knuckles (1P games): ObjectsManager_Init calls this with
+; a0 = the act's layout and d0 = its offset in Off_Objects. The acts KiS2
+; changed for Knuckles (invisible walls, path swappers, monitors and springs
+; for his lower jump and his climbing; tools/import_kis2.py) get KiS2's
+; layout; 0 keeps Sonic's.
+; ---------------------------------------------------------------------------
+Knuckles_ObjectLayout:
+	tst.b	(Main_character).w
+	beq.s	.return
+	tst.w	(Two_player_mode).w
+	bne.s	.return
+	move.w	d0,d1
+	add.w	d1,d1
+	move.l	Knuckles_ObjectLayouts(pc,d1.w),d1
+	beq.s	.return
+	movea.l	d1,a0
+.return:
+	rts
+
+Knuckles_ObjectLayouts: zoneOrderedTable 4,2
+	; EHZ
+	zoneTableEntry.l	Objects_Knuckles_EHZ_1	; Act 1
+	zoneTableEntry.l	Objects_Knuckles_EHZ_2	; Act 2
+	; Zone 1
+	zoneTableEntry.l	0	; Act 1
+	zoneTableEntry.l	0	; Act 2
+	; WZ
+	zoneTableEntry.l	0	; Act 1
+	zoneTableEntry.l	0	; Act 2
+	; Zone 3
+	zoneTableEntry.l	0	; Act 1
+	zoneTableEntry.l	0	; Act 2
+	; MTZ
+	zoneTableEntry.l	Objects_Knuckles_MTZ_1	; Act 1
+	zoneTableEntry.l	Objects_Knuckles_MTZ_2	; Act 2
+	; MTZ
+	zoneTableEntry.l	Objects_Knuckles_MTZ_3	; Act 1
+	zoneTableEntry.l	Objects_Knuckles_MTZ_3	; Act 2
+	; WFZ
+	zoneTableEntry.l	Objects_Knuckles_WFZ_1	; Act 1
+	zoneTableEntry.l	0	; Act 2
+	; HTZ
+	zoneTableEntry.l	Objects_Knuckles_HTZ_1	; Act 1
+	zoneTableEntry.l	Objects_Knuckles_HTZ_2	; Act 2
+	; HPZ
+	zoneTableEntry.l	0	; Act 1
+	zoneTableEntry.l	0	; Act 2
+	; Zone 9
+	zoneTableEntry.l	0	; Act 1
+	zoneTableEntry.l	0	; Act 2
+	; OOZ
+	zoneTableEntry.l	Objects_Knuckles_OOZ_1	; Act 1
+	zoneTableEntry.l	Objects_Knuckles_OOZ_2	; Act 2
+	; MCZ
+	zoneTableEntry.l	Objects_Knuckles_MCZ_1	; Act 1
+	zoneTableEntry.l	Objects_Knuckles_MCZ_2	; Act 2
+	; CNZ
+	zoneTableEntry.l	Objects_Knuckles_CNZ_1	; Act 1
+	zoneTableEntry.l	Objects_Knuckles_CNZ_2	; Act 2
+	; CPZ
+	zoneTableEntry.l	Objects_Knuckles_CPZ_1	; Act 1
+	zoneTableEntry.l	Objects_Knuckles_CPZ_2	; Act 2
+	; DEZ
+	zoneTableEntry.l	0	; Act 1
+	zoneTableEntry.l	0	; Act 2
+	; ARZ
+	zoneTableEntry.l	Objects_Knuckles_ARZ_1	; Act 1
+	zoneTableEntry.l	Objects_Knuckles_ARZ_2	; Act 2
+	; SCZ
+	zoneTableEntry.l	0	; Act 1
+	zoneTableEntry.l	0	; Act 2
+    zoneTableEnd
+
+	ObjectLayoutBoundary
+Objects_Knuckles_ARZ_1:	BINCLUDE	"level/objects/Knuckles/ARZ_1.bin"
+	ObjectLayoutBoundary
+Objects_Knuckles_ARZ_2:	BINCLUDE	"level/objects/Knuckles/ARZ_2.bin"
+	ObjectLayoutBoundary
+Objects_Knuckles_CNZ_1:	BINCLUDE	"level/objects/Knuckles/CNZ_1.bin"
+	ObjectLayoutBoundary
+Objects_Knuckles_CNZ_2:	BINCLUDE	"level/objects/Knuckles/CNZ_2.bin"
+	ObjectLayoutBoundary
+Objects_Knuckles_CPZ_1:	BINCLUDE	"level/objects/Knuckles/CPZ_1.bin"
+	ObjectLayoutBoundary
+Objects_Knuckles_CPZ_2:	BINCLUDE	"level/objects/Knuckles/CPZ_2.bin"
+	ObjectLayoutBoundary
+Objects_Knuckles_EHZ_1:	BINCLUDE	"level/objects/Knuckles/EHZ_1.bin"
+	ObjectLayoutBoundary
+Objects_Knuckles_EHZ_2:	BINCLUDE	"level/objects/Knuckles/EHZ_2.bin"
+	ObjectLayoutBoundary
+Objects_Knuckles_HTZ_1:	BINCLUDE	"level/objects/Knuckles/HTZ_1.bin"
+	ObjectLayoutBoundary
+Objects_Knuckles_HTZ_2:	BINCLUDE	"level/objects/Knuckles/HTZ_2.bin"
+	ObjectLayoutBoundary
+Objects_Knuckles_MCZ_1:	BINCLUDE	"level/objects/Knuckles/MCZ_1.bin"
+	ObjectLayoutBoundary
+Objects_Knuckles_MCZ_2:	BINCLUDE	"level/objects/Knuckles/MCZ_2.bin"
+	ObjectLayoutBoundary
+Objects_Knuckles_MTZ_1:	BINCLUDE	"level/objects/Knuckles/MTZ_1.bin"
+	ObjectLayoutBoundary
+Objects_Knuckles_MTZ_2:	BINCLUDE	"level/objects/Knuckles/MTZ_2.bin"
+	ObjectLayoutBoundary
+Objects_Knuckles_MTZ_3:	BINCLUDE	"level/objects/Knuckles/MTZ_3.bin"
+	ObjectLayoutBoundary
+Objects_Knuckles_OOZ_1:	BINCLUDE	"level/objects/Knuckles/OOZ_1.bin"
+	ObjectLayoutBoundary
+Objects_Knuckles_OOZ_2:	BINCLUDE	"level/objects/Knuckles/OOZ_2.bin"
+	ObjectLayoutBoundary
+Objects_Knuckles_WFZ_1:	BINCLUDE	"level/objects/Knuckles/WFZ_1.bin"
+	ObjectLayoutBoundary
+
 	endif	; FeatureKnuckles

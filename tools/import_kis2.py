@@ -10,7 +10,8 @@ palette indices there ("Pre-convert Knuckles' art"). Knuckles uses colours
 palettes are Sonic 2's with those four colours taken from KiS2; Tails' colours
 stay, which is what Knuckles and Tails games need.
 
-Writes the files listed in COPIES and PALETTES.
+Writes the files listed in COPIES, the palettes and the KNUCKLES_LAYOUTS
+(level/objects/Knuckles/).
 """
 import argparse, subprocess
 from pathlib import Path
@@ -28,6 +29,11 @@ COPIES = [
 ]
 
 KNUCKLES_COLOURS = range(2, 6)   # first palette line
+
+# Object layouts KiS2 changed for Knuckles (invisible walls, path swappers,
+# monitors and springs where his lower jump or his climbing needs them)
+KNUCKLES_LAYOUTS = ['ARZ_1', 'ARZ_2', 'CNZ_1', 'CNZ_2', 'CPZ_1', 'CPZ_2', 'EHZ_1', 'EHZ_2', 'HTZ_1',
+                    'HTZ_2', 'MCZ_1', 'MCZ_2', 'MTZ_1', 'MTZ_2', 'MTZ_3', 'OOZ_1', 'OOZ_2', 'WFZ_1']
 
 
 def kis2(path):
@@ -80,6 +86,8 @@ def generate():
             data = HEADER.encode() + data.replace(b'\r\n', b'\n')
         outputs[ROOT / dst] = data
     outputs.update(palettes())
+    for act in KNUCKLES_LAYOUTS:
+        outputs[ROOT / 'level' / 'objects' / 'Knuckles' / f'{act}.bin'] = kis2(f'level/objects/{act}.bin')
     return outputs
 
 
@@ -93,6 +101,7 @@ def main():
         print('up to date' if not stale else 'stale: ' + ', '.join(str(p.relative_to(ROOT)) for p in stale))
         raise SystemExit(1 if stale else 0)
     for p, data in outputs.items():
+        p.parent.mkdir(parents=True, exist_ok=True)
         p.write_bytes(data)
         print('wrote', p.relative_to(ROOT))
 

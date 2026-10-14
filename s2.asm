@@ -33601,6 +33601,9 @@ ObjectsManager_Init:
 	lea	(Off_Objects).l,a0	; Next, we load the first pointer in the object layout list pointer index,
 	movea.l	a0,a1			; then copy it for quicker use later.
 	adda.w	(a0,d0.w),a0		; (Point1 * 2) + $003E
+	if FeatureKnuckles
+	jsr	(Knuckles_ObjectLayout).l	; Knuckles in Sonic 2's layout for Knuckles
+	endif
 	tst.w	(Two_player_mode).w	; skip if not in 2-player vs mode
 	beq.s	+
 	cmpi.b	#casino_night_zone,(Current_Zone).w	; skip if not Casino Night Zone
