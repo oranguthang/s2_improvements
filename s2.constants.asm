@@ -661,6 +661,9 @@ PLCID_ResultsTails =	id(PLCptr_ResultsTails) ; 42
 PLCID_KnucklesLife =	id(PLCptr_KnucklesLife) ; 43
 PLCID_SignpostKnuckles = id(PLCptr_SignpostKnuckles) ; 44
 	endif
+	if FeatureHTZVS
+PLCID_Htz1_2P =		id(PLCptr_Htz1_2P)
+	endif
 
 ; Object IDs
 offset :=	Obj_Index
@@ -2602,6 +2605,11 @@ ArtTile_ArtNem_HtzValveBarrier        = $0426
 ArtTile_ArtUnc_HTZMountains           = $0500
 ArtTile_ArtUnc_HTZClouds              = ArtTile_ArtUnc_HTZMountains + $18
 ArtTile_ArtNem_Spiker                 = $0520
+; 2P VS (FeatureHTZVS): tiles $500-$57F hold player 2's plane A name table, so the far
+; mountains, clouds and Spiker use the bottom half of plane B (the 2P background only uses its top half)
+ArtTile_ArtUnc_HTZMountains_2P        = $0740
+ArtTile_ArtUnc_HTZClouds_2P           = ArtTile_ArtUnc_HTZMountains_2P + $18
+ArtTile_ArtNem_Spiker_2P              = $0760
 
 ; OOZ
 ArtTile_ArtUnc_OOZPulseBall           = $02B6

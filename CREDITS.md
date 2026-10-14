@@ -15,3 +15,7 @@ Flamedriver, the Sonic 3 & Knuckles sound driver disassembled by MarkeyJester, w
 ## Knuckles
 
 Knuckles' code, art, mappings, animations and palettes come from the [Knuckles in Sonic 2 disassembly](https://github.com/sonicretro/s2disasm/tree/knuckles-in-sonic-2) (s2disasm's `knuckles-in-sonic-2` branch); the original game is by Sega and Sonic Team. The [Port Knuckles into Sonic 2](https://info.sonicretro.org/SCHG_How-to:Port_Knuckles_into_Sonic_2) guide by MainMemory and Painto was used as a reference.
+
+## Hill Top Zone in 2P VS
+
+After the [Add Hill Top Zone to 2 Player VS Mode](https://info.sonicretro.org/SCHG_How-to:Add_Hill_Top_Zone_to_2_Player_VS_Mode) guide by E-122-Psi, with special thanks there to MoDule (the lift respawn fix) and D.A. Garden. The 2P object layouts, Spiker mappings and results screen map are made from Sonic 2's own data by `tools/htz_vs.py`; `tools/enigma.py` comes from s1_improvements.

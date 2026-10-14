@@ -89,6 +89,7 @@ Hidden Palace from the official 2013 remake is a later project, outside this bat
 - [Skip Score Tallies](https://info.sonicretro.org/SCHG_How-to:Skip_Score_Tallies)
 - [Add Extended Camera to Sonic 1](https://info.sonicretro.org/SCHG_How-to:Add_Extended_Camera_to_Sonic_1)
 - [Create a Homing Attack from scratch](https://info.sonicretro.org/SCHG_How-to:Create_a_Homing_Attack_from_scratch)
+- [Add Hill Top Zone to 2 Player VS Mode](https://info.sonicretro.org/SCHG_How-to:Add_Hill_Top_Zone_to_2_Player_VS_Mode) (see Hill Top Zone in 2P VS)
 
 - [Decouple Sega screen from Sonic sprite labels](https://info.sonicretro.org/SCHG_How-to:Decoupling_Sega_Screen_from_Sonic_Sprite_Labels_in_Sonic_2)
 
@@ -174,6 +175,7 @@ features. The default build is unchanged by these switches.
 | `FeatureSuperTails` | Tails cannot turn Super. |
 | `FeatureKnuckles` | The player select has no Knuckles entries. |
 | `FeatureSuperKnuckles` | Knuckles cannot turn Super. |
+| `FeatureHTZVS` | The VS menu's fourth entry is the Special Stage series again and Hill Top Zone is not playable in VS (only one of the two fits in the menu). |
 | `FeatureS3KDrums` | With Flamedriver, Sonic 2 songs play Sonic 2's own kick, snare and timpani samples. |
 | `FeatureImprovedMusic` | With Flamedriver, seven songs keep their original note data (see Sound driver). |
 
@@ -316,6 +318,44 @@ per mode. The order matters: some checks treat modes above
 Sonic and Tails. When adding a character, search for `PlayerMode_` and
 `tst.w (Player_mode)`; the Special Stage HUD name frames (`andi.w #3`) also
 need a frame per mode.
+
+## Hill Top Zone in 2P VS
+
+With `FeatureHTZVS` (the default) Hill Top Zone takes the VS menu's fourth
+entry, which was the Special Stage series, after E-122-Psi's
+[Add Hill Top Zone to 2 Player VS Mode](https://info.sonicretro.org/SCHG_How-to:Add_Hill_Top_Zone_to_2_Player_VS_Mode):
+two acts and the usual tiebreak Special Stage, with HILL TOP 1, 2 and S.S rows
+on the game results screen. Compared with one player:
+
+- No earthquake and no boss (`LevEvents_HTZ_2P`, `LevEvents_HTZ2_2P`): act 1
+  ends at its signpost and act 2's camera stops at $2D80, with a signpost
+  after it. Without the earthquake the rising-lava parts are platforming over
+  lava and pits, and act 2's top route cannot be reached.
+- The acts use their own object layouts, `level/objects/HTZ_1_2P.bin` and
+  `HTZ_2_2P.bin`, made from the 1P layouts by `tools/htz_vs.py`: no rising
+  lava (Obj30), the long-distance flag on the lifts and Rexons, and act 2's
+  signpost. The 2P objects manager loads each 256-pixel column into a block of
+  12 object slots and stops loading objects for the rest of the act when a
+  column does not fit, so the tool checks every column (long-distance objects
+  use the shared slots); act 2's two crowded columns lose a spike row and two
+  Spikers at the top edge of the level, and a path swapper moves 8 pixels.
+- Lifts (Obj16) unload and respawn once both players are away
+  (`MarkObjGone_P1`, MoDule's fix in the guide); the vines left on the rope
+  are an Obj16 routine that unloads the same way, not an Obj1C, which never
+  unloads in 2P outside an object block.
+- In split screen, tiles $500-$57F hold player 2's plane A name table. The far
+  mountains and clouds (`HTZ2P_MoveBGBlocks`, `Dynamic_HTZ_2P`, tiles
+  $740-$75F) and Spiker (`PlrList_Htz1_2P` and `obj93_2P.asm` from the tool,
+  tile $760) use the bottom half of plane B instead, which the 2P background
+  never shows since it does not scroll vertically. The mountains and clouds
+  stand still, as both screens share their tiles. The guide redraws HTZ's
+  2P 16x16 blocks by hand; here the code points the blocks to the new tiles.
+  A blank tile after Rexon's art completes the 8x16 cell of its fireball.
+- Sol fires at whichever player comes near.
+
+`python tools/htz_vs.py` regenerates the data (`--check` only verifies it).
+With `FeatureHTZVS = 0` none of this is assembled and the build matches the
+original code.
 
 ## Music and sound IDs
 

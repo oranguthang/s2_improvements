@@ -62,7 +62,13 @@ The user writes in Russian; answer in Russian.
   that way once); use `SndID__First`/`MusID__First` or the `MusID_`/`SndID_` constants.
 - See MEMORY.md before using SST bytes or RAM ($20/$21/$23 are per-character on players).
 - Player VRAM: Tails body frames may exceed 16 tiles only when the separate tails object (Obj05) is blank.
+- 2026-10-15 HTZ in VS (FeatureHTZVS): menu, both acts' signposts, results and the background were checked by
+  scripted runs and teleports, not a full play-through. The 2P objects manager stops loading for the rest of
+  an act when a 256 px column has more than 12 non-long-distance objects; `tools/htz_vs.py` asserts it.
+  In 2P, tiles $500-$57F are player 2's plane A name table (only the bottom half of plane B, tiles $740+, is free).
+- Never add an anonymous `+`/`-` label between a pre-existing branch and its target (765fe44 did, see 350141d);
+  use a named local label inside new `if Feature*` blocks.
 
 ## Possible next steps
 Play-test flight/carry/swimming; stage 3 (S3K rings/object managers with 2P support, only if needed);
-Knuckles with VS support; HTZ in VS; Hidden Palace (slot $08 exists).
+Knuckles as player 2 in VS (waiting for the user's decision); Hidden Palace (slot $08 exists).

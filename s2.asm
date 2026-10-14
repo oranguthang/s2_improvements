@@ -109,6 +109,9 @@ FeatureKnuckles = 1
 ;	| Knuckles from Knuckles in Sonic 2: KNUCKLES AND MILES and KNUCKLES ALONE in the player select
 FeatureSuperKnuckles = 1
 ;	| With FeatureKnuckles, Knuckles turns Super as in Knuckles in Sonic 2 (a jump button in the air)
+FeatureHTZVS = 1
+;	| 2P VS: the fourth level is Hill Top Zone (two acts and a tiebreak Special Stage);
+;	| 0 keeps Sonic 2's Special Stage entry. Only one of them fits in the menu.
 FeatureBurntDeath = 1
 ;	| Sonic plays the burnt death animation when killed by fire or lasers
 FeatureActMusic = 1
@@ -133,7 +136,7 @@ FeatureCDDrowning = 0
 ;	| If 1, the music keeps playing below 12 seconds of air and a warning sounds every
 ;	| second, as in Sonic CD; the countdown numbers still appear
 
-	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureCentiseconds|FeatureLightDash|FeaturePeelOut|FeatureVictoryPoses|FeatureSuperTails|FeatureKnuckles|FeatureSuperKnuckles|FeatureBurntDeath|FeatureActMusic|FeatureS3KDrums|FeatureImprovedMusic|FeatureInfiniteLives|FeatureCDDrowning)&~1
+	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureCentiseconds|FeatureLightDash|FeaturePeelOut|FeatureVictoryPoses|FeatureSuperTails|FeatureKnuckles|FeatureSuperKnuckles|FeatureHTZVS|FeatureBurntDeath|FeatureActMusic|FeatureS3KDrums|FeatureImprovedMusic|FeatureInfiniteLives|FeatureCDDrowning)&~1
 		error "Feature options must be 0 or 1"
 	endif
 
@@ -4710,6 +4713,15 @@ Level:
 	lea	(a2,d0.w),a2
 	moveq	#0,d0
 	move.b	(a2),d0	; PLC1 ID
+    if FeatureHTZVS
+	tst.w	(Two_player_mode).w
+	beq.s	.notHTZ2P
+	cmpi.b	#PLCID_Htz1,d0
+	bne.s	.notHTZ2P
+	moveq	#PLCID_Htz1_2P,d0	; Hill Top in 2P VS
+.notHTZ2P:
+	tst.w	d0
+    endif
 	beq.s	+
 	bsr.w	LoadPLC
 +
@@ -4886,6 +4898,9 @@ Level_TtlCard:
 	bsr.w	LoadZoneTiles
 	jsrto	JmpTo_loadZoneBlockMaps
 	jsr	(LoadAnimatedBlocks).l
+    if FeatureHTZVS
+	jsr	(HTZ2P_MoveBGBlocks).l
+    endif
 	jsrto	JmpTo_DrawInitialBG
 	jsr	(ConvertCollisionArray).l
 	bsr.w	LoadCollisionIndexes
@@ -11136,8 +11151,10 @@ TwoPlayerResultsDone_Game:
 TwoPlayerResultsDone_SpecialStage:
 	subq.w	#1,d0			; were we at the special stage results screen? (VsRSID_SS)
 	bne.w	TwoPlayerResultsDone_SpecialStages ; if not, branch
+	if FeatureHTZVS=0		; (with Hill Top in its place, every Special Stage is a tiebreak)
 	cmpi.b	#3,(Current_Zone_2P).w	; do we come from the special stage "zone"?
 	beq.s	+			; if yes, branch
+	endif
 	move.w	#VsRSID_Zone,(Results_Screen_2P).w ; show zone results after tiebreaker special stage
 	move.b	#GameModeID_2PResults,(Game_Mode).w ; => TwoPlayerResults
 	rts
@@ -11733,7 +11750,11 @@ sub_8672:
 	lea	(Text2P_CasinoNight).l,a1
 	subq.b	#1,d1
 	beq.s	loc_8698
+	if FeatureHTZVS
+	lea	(Text2P_HillTopZone).l,a1
+	else
 	lea	(Text2P_SpecialStage).l,a1
+	endif
 
 loc_8698:
 	lea	(Chunk_Table).l,a2
@@ -11853,6 +11874,10 @@ Text2P_MysticCave:	menutxt	" MYSTIC CAVE"	; byte_8757:
 Text2P_CasinoNight:	menutxt	"CASINO NIGHT"	; byte_8764:
 Text2P_SpecialStage:	menutxt	"SPECIAL STAGE"	; byte_8771:
 Text2P_Special:		menutxt	"   SPECIAL  "	; byte_877F:
+	if FeatureHTZVS
+Text2P_HillTop:		menutxt	"  HILL TOP  "
+Text2P_HillTopZone:	menutxt	"    HILL TOP"
+	endif
 Text2P_Zone:		menutxt	"ZONE "		; byte_878C:
 Text2P_Stage:		menutxt	"STAGE"		; byte_8792:
 Text2P_GameOver:	menutxt	"GAME OVER"	; byte_8798:
@@ -11900,7 +11925,11 @@ Map_2PZoneResults:	BINCLUDE "mappings/misc/2P Zone Results.eni"
 
 ; 2P game results screen (after all 4 zones) (enigma compressed)
 ; byte_8960:
+	if FeatureHTZVS
+Map_2PGameResults:	BINCLUDE "mappings/misc/2P Game Results HTZ.eni"	; Hill Top rows (tools/htz_vs.py)
+	else
 Map_2PGameResults:	BINCLUDE "mappings/misc/2P Game Results.eni"
+	endif
 
 ; 2P special stage act results screen (enigma compressed)
 ; byte_8AA4:
@@ -11925,7 +11954,11 @@ MenuScreen:
 	move.w	(VDP_Reg1_val).w,d0
 	andi.b	#$BF,d0
 	move.w	d0,(VDP_control_port).l
+    if FeatureHTZVS
+	jsr	(ClearScreen).l	; out of bsr range with the 2P Hill Top data
+    else
 	bsr.w	ClearScreen
+    endif
 	lea	(VDP_control_port).l,a6
 	move.w	#$8004,(a6)		; H-INT disabled
 	move.w	#$8200|(VRAM_Menu_Plane_A_Name_Table/$400),(a6)		; PNT A base: $C000
@@ -12088,7 +12121,11 @@ LevelSelect2P_LevelOrder:
 	dc.w	emerald_hill_zone_act_1
 	dc.w	mystic_cave_zone_act_1
 	dc.w	casino_night_zone_act_1
+	if FeatureHTZVS
+	dc.w	hill_top_zone_act_1	; instead of the Special Stages
+	else
 	dc.w	$FFFF
+	endif
 
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 
@@ -12235,7 +12272,11 @@ iconData macro txtlabel,txtlabel2,vramAddr,iconPal,iconAddr
 	iconData	Text2P_EmeraldHill,Text2P_Zone, VRAM_Plane_A_Name_Table+planeLoc(64,2,2),   0,Chunk_Table+$330
 	iconData	Text2P_MysticCave, Text2P_Zone, VRAM_Plane_A_Name_Table+planeLoc(64,22,2),  5,Chunk_Table+$3A8
 	iconData	Text2P_CasinoNight,Text2P_Zone, VRAM_Plane_A_Name_Table+planeLoc(64,2,15),  6,Chunk_Table+$3C0
+	if FeatureHTZVS
+	iconData	Text2P_HillTop,    Text2P_Zone, VRAM_Plane_A_Name_Table+planeLoc(64,22,15), 2,Chunk_Table+$360
+	else
 	iconData	Text2P_Special,    Text2P_Stage,VRAM_Plane_A_Name_Table+planeLoc(64,22,15),12,Chunk_Table+$450
+	endif
 
 ; ---------------------------------------------------------------------------
 ; Common menu screen subroutine for transferring text to RAM
@@ -12715,7 +12756,11 @@ MenuScreen_LevelSelect:
 	lea	(Chunk_Table+planeLoc(40,0,28)).l,a1
 	lea	(MapEng_LevSelIcon).l,a0
 	move.w	#make_art_tile(ArtTile_ArtNem_LevelSelectPics,0,0),d0
+    if FeatureHTZVS
+	jsr	(EniDec).l	; out of bsr range with the 2P Hill Top data
+    else
 	bsr.w	EniDec
+    endif
 
 	; Load and draw the current page (sans zone icon)
 	bsr.w	LevelSelect_DrawPage
@@ -21363,6 +21408,10 @@ LevEvents_HTZ_Index: offsetTable
 ; ===========================================================================
 ; loc_E9A2:
 LevEvents_HTZ_Routine1:
+    if FeatureHTZVS
+	tst.w	(Two_player_mode).w
+	bne.s	LevEvents_HTZ_2P	; no earthquake in 2P VS
+    endif
 	cmpi.w	#$400,(Camera_Y_pos).w
 	blo.s	LevEvents_HTZ_Routine1_Part2
 	cmpi.w	#$1800,(Camera_X_pos).w
@@ -21394,6 +21443,13 @@ LevEvents_HTZ_Routine1_Part2:
 	bne.s	-	; rts
 	move.b	#0,(Screen_Shaking_Flag_HTZ).w
 	rts
+    if FeatureHTZVS
+; ---------------------------------------------------------------------------
+LevEvents_HTZ_2P:
+	move.w	#$2800,(Camera_Max_X_pos).w
+	move.w	#$2800,(Tails_Max_X_pos).w
+	rts
+    endif
 ; ===========================================================================
 ; loc_EA0E:
 LevEvents_HTZ_Routine2:
@@ -21582,11 +21638,22 @@ ScrollBG:
 
 ; sub_EBEA:
 LevEvents_HTZ2:
+    if FeatureHTZVS
+	tst.w	(Two_player_mode).w
+	bne.s	LevEvents_HTZ2_2P	; no earthquake or boss in 2P VS; a signpost ends the act
+    endif
 	bsr.w	LevEvents_HTZ2_Prepare
 	moveq	#0,d0
 	move.b	(Dynamic_Resize_Routine).w,d0
 	move.w	LevEvents_HTZ2_Index(pc,d0.w),d0
 	jmp	LevEvents_HTZ2_Index(pc,d0.w)
+    if FeatureHTZVS
+; ---------------------------------------------------------------------------
+LevEvents_HTZ2_2P:
+	move.w	#$2D80,(Camera_Max_X_pos).w
+	move.w	#$2D80,(Tails_Max_X_pos).w
+	rts
+    endif
 ; ===========================================================================
 ; off_EBFC:
 LevEvents_HTZ2_Index: offsetTable
@@ -33914,6 +33981,17 @@ ObjectsManager_Init:
 	beq.s	+
 	lea	(Objects_CNZ2_2P).l,a0	; CNZ 2 2-player object layout
 +
+    if FeatureHTZVS
+	tst.w	(Two_player_mode).w
+	beq.s	+
+	cmpi.b	#hill_top_zone,(Current_Zone).w
+	bne.s	+
+	lea	(Objects_HTZ1_2P).l,a0	; HTZ 1 2-player object layout (tools/htz_vs.py)
+	tst.b	(Current_Act).w
+	beq.s	+
+	lea	(Objects_HTZ2_2P).l,a0	; HTZ 2 2-player object layout
++
+    endif
 	; initialize each object load address with the first object in the layout
 	move.l	a0,(Obj_load_addr_right).w
 	move.l	a0,(Obj_load_addr_left).w
@@ -49930,6 +50008,9 @@ Obj16:
 Obj16_Index:	offsetTable
 		offsetTableEntry.w Obj16_Init	; 0
 		offsetTableEntry.w Obj16_Main	; 2
+    if FeatureHTZVS
+		offsetTableEntry.w Obj16_Vines	; 4
+    endif
 ; ===========================================================================
 ; loc_21DBE:
 Obj16_Init:
@@ -49958,7 +50039,14 @@ Obj16_Main:
 	move.w	#-$28,d3
 	move.w	(sp)+,d4
 	jsrto	JmpTo3_PlatformObject
+    if FeatureHTZVS
+	; In 2P VS the lifts are long-distance objects (they keep moving when
+	; their block unloads), so they unload and respawn when both players are
+	; away (fix by MoDule)
+	jmp	(MarkObjGone_P1).l
+    else
 	jmpto	JmpTo5_MarkObjGone
+    endif
 ; ===========================================================================
 ; loc_21E2C:
 Obj16_RunSecondaryRoutine:
@@ -50005,11 +50093,26 @@ Obj16_Slide:
 	move.w	#0,y_vel(a0)
 	jsrto	JmpTo4_AllocateObjectAfterCurrent
 	bne.s	+	; rts
+    if FeatureHTZVS
+	; the vines that stay on the rope: an Obj16 that unloads like the lift
+	; (Obj1C never unloads in 2P VS once spawned outside an object block)
+	_move.b	#ObjID_HTZLift,id(a1) ; load obj16
+	move.w	x_pos(a0),x_pos(a1)
+	move.w	y_pos(a0),y_pos(a1)
+	move.b	render_flags(a0),render_flags(a1)
+	move.b	#4,routine(a1)	; => Obj16_Vines
+	move.l	mappings(a0),mappings(a1)
+	move.w	art_tile(a0),art_tile(a1)
+	move.b	#$20,width_pixels(a1)
+	move.b	#1,mapping_frame(a1)
+	move.b	#1,priority(a1)
+    else
 	_move.b	#ObjID_Scenery,id(a1) ; load obj1C
 	move.w	x_pos(a0),x_pos(a1)
 	move.w	y_pos(a0),y_pos(a1)
 	move.b	render_flags(a0),render_flags(a1)
 	move.b	#6,subtype(a1)
+    endif
 +	rts
 ; ===========================================================================
 ; loc_21EC2:
@@ -50036,6 +50139,11 @@ Obj16_Fall:
 	move.w	#$4000,x_pos(a0)
 +
 	rts
+    if FeatureHTZVS
+; ===========================================================================
+Obj16_Vines:
+	jmp	(MarkObjGone_P1).l
+    endif
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; sprite mappings
@@ -75776,6 +75884,9 @@ Obj92_Index:	offsetTable
 ; loc_36F24:
 Obj92_Init:
 	bsr.w	LoadSubObject
+    if FeatureHTZVS
+	bsr.w	Obj92_2PMappings
+    endif
 	move.b	#$40,objoff_2A(a0)
 	move.w	#$80,x_vel(a0)
 	bchg	#status.npc.x_flip,status(a0)
@@ -75862,6 +75973,9 @@ Obj93_Index:	offsetTable
 ; loc_36FF8:
 Obj93_Init:
 	bsr.w	LoadSubObject
+    if FeatureHTZVS
+	bsr.w	Obj92_2PMappings
+    endif
 	ori.b	#1<<render_flags.on_screen,render_flags(a0)
 	ori.b	#$80,collision_flags(a0)
 	movea.w	objoff_2C(a0),a1 ; a1=object
@@ -75925,6 +76039,16 @@ byte_3708E:	dc.b   9,  2,  3,$FF
 ; sprite mappings
 ; ---------------------------------------------------------------------------
 Obj92_Obj93_MapUnc_37092:	include "mappings/sprite/obj93.asm"
+    if FeatureHTZVS
+; In 2P VS the Spiker's art is at ArtTile_ArtNem_Spiker_2P (PlrList_Htz1_2P)
+Obj92_2PMappings:
+	tst.w	(Two_player_mode).w
+	beq.s	+
+	move.l	#Obj92_Obj93_MapUnc_2P,mappings(a0)
++
+	rts
+Obj92_Obj93_MapUnc_2P:	include "mappings/sprite/obj93_2P.asm"
+    endif
 ; ===========================================================================
 ; ----------------------------------------------------------------------------
 ; Object 95 - Sol (fireball-throwing orbit badnik) from HTZ
@@ -76012,6 +76136,38 @@ return_371DA:
 
 ; loc_371DC:
 Obj95_WaitForPlayer:
+    if FeatureHTZVS
+	lea	(MainCharacter).w,a1
+	bsr.s	Obj95_CheckPlayer
+	tst.w	(Two_player_mode).w	; in 2P VS, Sol also fires at player 2
+	beq.s	loc_3720C
+	lea	(Sidekick).w,a1
+	bsr.s	Obj95_CheckPlayer
+	bra.s	loc_3720C
+; ---------------------------------------------------------------------------
+; a1 = player
+Obj95_CheckPlayer:
+	move.w	x_pos(a1),d0
+	sub.w	x_pos(a0),d0
+	bcc.s	.xDistance
+	neg.w	d0
+.xDistance:
+	cmpi.w	#$A0,d0
+	bhs.s	.return
+	move.w	y_pos(a1),d0
+	sub.w	y_pos(a0),d0
+	bcc.s	.yDistance
+	neg.w	d0
+.yDistance:
+	cmpi.w	#$50,d0
+	bhs.s	.return
+	tst.w	(Debug_placement_mode).w
+	bne.s	.return
+	move.b	#1,anim(a0)
+.return:
+	rts
+; ---------------------------------------------------------------------------
+    else
 	move.w	(MainCharacter+x_pos).w,d0
 	sub.w	x_pos(a0),d0
 	bcc.s	loc_371E8
@@ -76031,6 +76187,7 @@ loc_371FA:
 	tst.w	(Debug_placement_mode).w
 	bne.s	loc_3720C
 	move.b	#1,anim(a0)
+    endif
 
 loc_3720C:
 	jsrto	JmpTo26_ObjectMove
@@ -88152,7 +88309,11 @@ Dynamic_Null:
 Dynamic_HTZ:
 	; More unused two-player code...
 	tst.w	(Two_player_mode).w
+    if FeatureHTZVS
+	bne.w	Dynamic_HTZ_2P
+    else
 	bne.w	Dynamic_Normal
+    endif
 
 ;.doMountainArt:
 	; Upload dynamic mountain art.
@@ -88289,6 +88450,81 @@ Dynamic_HTZ:
 	addq.w	#2,a3
 	bra.w	Dynamic_Normal.customCounters
 ; ===========================================================================
+    if FeatureHTZVS
+; 2P VS: the far mountains and clouds use tiles $740-$75F (HTZ2P_MoveBGBlocks)
+; in the bottom half of plane B (the background does not scroll vertically in 2P, so it never
+; shows that half), since their 1P tiles hold player 2's plane A. Both screens
+; share these tiles, so they stand still. Uploaded once per act (after
+; PatchHTZTiles has put the mountain art in the chunk table), together with
+; a blank tile after Rexon's art (its fireball's 8x16 cell in 2P).
+Dynamic_HTZ_2P:
+	lea	(Anim_Counters).w,a3
+	cmpi.b	#$7F,1(a3)	; LoadAnimatedBlocks sets the 1P mountain frame to -1
+	beq.w	.done
+	move.b	#$7F,1(a3)
+	lea	Dynamic_HTZ.offsets(pc),a4
+	moveq	#6-1,d5
+	move.w	#tiles_to_bytes(ArtTile_ArtUnc_HTZMountains_2P),d4
+.mountainLoop:
+	moveq	#-1,d1
+	move.w	(a4)+,d1
+	andi.l	#$FFFFFF,d1
+	move.w	d4,d2
+	moveq	#tiles_to_words(4),d3	; DMA transfer length (in words)
+	jsr	(QueueDMATransfer).l
+	addi.w	#$80,d4
+	dbf	d5,.mountainLoop
+	; the clouds without the 1P per-line shift
+	lea	(ArtUnc_HTZClouds).l,a0
+	lea	(Chunk_Table+$7C00).l,a1
+	moveq	#16-1,d1
+.cloudLoop:
+	move.l	(a0),(a1)
+	move.l	4(a0),$40(a1)
+	move.l	8(a0),$80(a1)
+	move.l	$C(a0),$C0(a1)
+	addq.w	#4,a1
+	adda.w	#$20,a0
+	dbf	d1,.cloudLoop
+	move.l	#(Chunk_Table+$7C00) & $FFFFFF,d1
+	move.w	#tiles_to_bytes(ArtTile_ArtUnc_HTZClouds_2P),d2
+	move.w	#tiles_to_words(8),d3	; DMA transfer length (in words)
+	jsr	(QueueDMATransfer).l
+	move.l	#Dynamic_HTZ_2P_BlankTile,d1
+	move.w	#tiles_to_bytes(ArtTile_ArtNem_Rexon+19),d2
+	moveq	#tiles_to_words(1),d3
+	jsr	(QueueDMATransfer).l
+.done:
+	addq.w	#2,a3
+	bra.w	Dynamic_Normal.customCounters
+
+; In 2P VS, the blocks of the far mountains and clouds (from LoadAnimatedBlocks)
+; point to tiles $740-$75F instead (block entries already halved for 2P)
+HTZ2P_MoveBGBlocks:
+	tst.w	(Two_player_mode).w
+	beq.s	.done
+	cmpi.b	#hill_top_zone,(Current_Zone).w
+	bne.s	.done
+	lea	(Block_Table).w,a1
+	move.w	#bytesToWcnt(Block_Table_End-Block_Table),d2
+.loop:
+	move.w	(a1)+,d0
+	andi.w	#$7FF,d0
+	subi.w	#ArtTile_ArtUnc_HTZMountains/2,d0
+	cmpi.w	#(ArtTile_ArtNem_Spiker-ArtTile_ArtUnc_HTZMountains)/2,d0
+	bhs.s	.next
+	addi.w	#(ArtTile_ArtUnc_HTZMountains_2P-ArtTile_ArtUnc_HTZMountains)/2,-2(a1)
+.next:
+	dbf	d2,.loop
+.done:
+	rts
+
+Dynamic_HTZ_2P_BlankTile:
+    rept tiles_to_bytes(1)/4
+	dc.l	0
+    endm
+; ===========================================================================
+    endif
 
 Dynamic_CNZ:
 	tst.b	(Current_Boss_ID).w
@@ -91430,6 +91666,9 @@ PLCptr_ResultsTails:	offsetTableEntry.w PlrList_ResultsTails		; 66
 PLCptr_KnucklesLife:	offsetTableEntry.w PlrList_KnucklesLife
 PLCptr_SignpostKnuckles: offsetTableEntry.w PlrList_SignpostKnuckles
 	endif
+	if FeatureHTZVS
+PLCptr_Htz1_2P:		offsetTableEntry.w PlrList_Htz1_2P
+	endif
 
 ; macro for a pattern load request list header
 ; must be on the same line as a label that has a corresponding _End label later
@@ -91633,6 +91872,24 @@ PlrList_Htz1: plrlistheader
 	plreq ArtTile_ArtNem_VrtclSprng, ArtNem_VrtclSprng
 	plreq ArtTile_ArtNem_HrzntlSprng, ArtNem_HrzntlSprng
 PlrList_Htz1_End
+	if FeatureHTZVS
+;---------------------------------------------------------------------------------------
+; PATTERN LOAD REQUEST LIST
+; Hill Top Zone primary in 2P VS: Spiker moves out of player 2's plane A
+;---------------------------------------------------------------------------------------
+PlrList_Htz1_2P: plrlistheader
+	plreq ArtTile_ArtNem_HtzFireball1, ArtNem_HtzFireball1
+	plreq ArtTile_ArtNem_HtzRock, ArtNem_HtzRock
+	plreq ArtTile_ArtNem_HtzSeeSaw, ArtNem_HtzSeeSaw
+	plreq ArtTile_ArtNem_Sol, ArtNem_Sol
+	plreq ArtTile_ArtNem_Rexon, ArtNem_Rexon
+	plreq ArtTile_ArtNem_Spiker_2P, ArtNem_Spiker
+	plreq ArtTile_ArtNem_Spikes, ArtNem_Spikes
+	plreq ArtTile_ArtNem_DignlSprng, ArtNem_DignlSprng
+	plreq ArtTile_ArtNem_VrtclSprng, ArtNem_VrtclSprng
+	plreq ArtTile_ArtNem_HrzntlSprng, ArtNem_HrzntlSprng
+PlrList_Htz1_2P_End
+	endif
 ;---------------------------------------------------------------------------------------
 ; PATTERN LOAD REQUEST LIST
 ; Hill Top Zone secondary
@@ -93433,6 +93690,13 @@ Objects_HTZ_1:	BINCLUDE	"level/objects/HTZ_1.bin"
 	ObjectLayoutBoundary
 Objects_HTZ_2:	BINCLUDE	"level/objects/HTZ_2.bin"
 	ObjectLayoutBoundary
+    if FeatureHTZVS
+; HTZ object layouts for 2-player mode, made by tools/htz_vs.py
+Objects_HTZ1_2P:	BINCLUDE	"level/objects/HTZ_1_2P.bin"
+	ObjectLayoutBoundary
+Objects_HTZ2_2P:	BINCLUDE	"level/objects/HTZ_2_2P.bin"
+	ObjectLayoutBoundary
+    endif
 Objects_HPZ_1:	BINCLUDE	"level/objects/HPZ_1.bin"
 	ObjectLayoutBoundary
 Objects_HPZ_2:	BINCLUDE	"level/objects/HPZ_2.bin"
