@@ -101,6 +101,8 @@ FeatureCentiseconds = 1
 ;	| The 1P clock also shows hundredths of a second (0:00:00), as in Sonic CD
 FeatureLightDash = 1
 ;	| In the air, A next to a chain of 3+ rings dashes along it (Sonic, Tails Alone)
+FeaturePeelOut = 1
+;	| Standing still, hold Up and press A/B/C to charge a Super Peel-Out (Sonic)
 FeatureBurntDeath = 1
 ;	| Sonic plays the burnt death animation when killed by fire or lasers
 FeatureActMusic = 1
@@ -114,7 +116,7 @@ FeatureCDDrowning = 0
 ;	| If 1, the music keeps playing below 12 seconds of air and a warning sounds every
 ;	| second, as in Sonic CD; the countdown numbers still appear
 
-	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureCentiseconds|FeatureLightDash|FeatureBurntDeath|FeatureActMusic|FeatureInfiniteLives|FeatureCDDrowning)&~1
+	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureCentiseconds|FeatureLightDash|FeaturePeelOut|FeatureBurntDeath|FeatureActMusic|FeatureInfiniteLives|FeatureCDDrowning)&~1
 		error "Feature options must be 0 or 1"
 	endif
 
@@ -37431,6 +37433,9 @@ Obj01_MdNormal_Checks:
 ; ---------------------------------------------------------------------------
 ; loc_1A2B8:
 Obj01_MdNormal:
+	if FeaturePeelOut
+	jsr	(Sonic_PeelOut).l	; Up + A/B/C charges a Super Peel-Out
+	endif
 	bsr.w	Sonic_CheckSpindash	; check for spindash
 	bsr.w	Sonic_Jump			; check for jumping
 	bsr.w	Sonic_SlopeResist	; handle resistance from running up slopes
@@ -39520,6 +39525,9 @@ Sonic_ResetOnFloor_Part2:
 	subq.w	#5,y_pos(a0)	; move Sonic up 5 pixels so the increased height doesn't push him into the ground
 ; loc_1B0DA:
 Sonic_ResetOnFloor_Part3:
+	if FeaturePeelOut
+	clr.b	peelout_flag(a0)
+	endif
 	if FeatureSuperToggle
 	clr.b	transform_combo_timer(a0)
 	clr.b	transform_combo_buttons(a0)
@@ -87124,7 +87132,7 @@ Touch_Hurt:
 
 ; loc_3F878: HurtSonic:
 HurtCharacter:
-	if FeatureLightDash
+	if FeatureLightDash|FeaturePeelOut
 	jsr	(LightDash_PlayerHit).l	; a hit ends the Light Dash
 	endif
 	jsr	(Cheat_GodModeActive).l	; GOD MODE: no damage
@@ -87200,7 +87208,7 @@ KillCharacter:
 	bne.w	++
 	jsr	(Cheat_GodModeKill).l	; GOD MODE: no death; pits bounce the player back up
 	bne.w	++
-	if FeatureLightDash
+	if FeatureLightDash|FeaturePeelOut
 	jsr	(LightDash_PlayerHit).l	; and so does a death
 	endif
 	clr.b	status_secondary(a0)
@@ -93583,6 +93591,7 @@ Sound70:	include "sound/sfx/F0 - Oil Slide.asm"
 	include "code/DebugHud.asm"
 	include "code/QoL.asm"
 	include "code/LightDash.asm"
+	include "code/PeelOut.asm"
 
 ; end of 'ROM'
     if MDDebugger

@@ -613,8 +613,11 @@ Player_CancelLightDash:
 ; Hooks for the rest of the game
 ; ---------------------------------------------------------------------------
 
-; HurtCharacter/KillCharacter: a hit or a death ends the dash.
+; HurtCharacter/KillCharacter: a hit or a death ends the dash (and a Peel-Out charge).
 LightDash_PlayerHit:
+	if FeaturePeelOut
+	jsr	(Sonic_CancelPeelOut).l		; and a Peel-Out charge
+	endif
 	cmpa.w	#MainCharacter,a0
 	bne.s	+
 	clr.b	(LightDash_active).w

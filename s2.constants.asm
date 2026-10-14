@@ -50,6 +50,7 @@ subtype =		$28
 ; and carrying, defined with the Tails flight constants); see MEMORY.md.
 transform_combo_timer =   $20 ; Countdown timer for Super Sonic A+B / B+C combo window (6 frames).
 transform_combo_buttons = $21 ; Bitmask of jump buttons pressed within window. Bit 7 = lock until release.
+peelout_flag =		$23 ; Sonic only: charging a Super Peel-Out (FeaturePeelOut); Tails uses $23 as carry_delay
 inertia =		$14 ; and $15 ; directionless representation of speed... not updated in the air
 flip_angle =		$27 ; angle about the x axis (360 degrees = 256) (twist/tumble)
 air_left =		$28
