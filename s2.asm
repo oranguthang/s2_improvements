@@ -74,10 +74,20 @@ FeatureMomentum = 1
 ;	| Keep air speed above the running cap that came from slopes, springs or dashes (Sonic and Tails)
 FeatureRollJumpSteering = 1
 ;	| Allow steering after jumping from a roll
+FeatureSuperToggle = 1
+;	| A+B or B+C in the air turns Super (7 emeralds, 50 rings) and back to normal;
+;	| 0 = turn Super at the peak of a jump, with no way back
+FeatureInstantTally = 1
+;	| Holding A/B/C finishes the act bonus count at once; the act jingle starts
+;	| when the result cards are in place; 0 = original count and music
+FeatureLamppostRings = 1
+;	| Star posts keep the ring count; 0 = restart from a star post with no rings
+FeatureSpecialStageState = 1
+;	| Coming back from a Special Stage keeps rings, shields and destroyed objects
 FeatureBurntDeath = 1
 ;	| Sonic plays the burnt death animation when killed by fire or lasers
 
-	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureBurntDeath)&~1
+	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureBurntDeath)&~1
 		error "Feature options must be 0 or 1"
 	endif
 
@@ -28576,13 +28586,17 @@ loc_1418E:
 
 loc_14194:
 	move.b	d0,mapping_frame(a0)
+	if FeatureInstantTally
 	move.w	x_pixel(a0),d0
 	cmp.w	titlecard_x_target(a0),d0
 	bne.w	Obj34_MoveTowardsTargetPosition
 	move.b	#4,routine(a0)
 	move.w	#MusID_EndLevel,d0
-	jsr	(PlayMusic).l
+	jsr	(PlayMusic).l		; start the jingle once the cards are in place
 	bra.w	DisplaySprite
+	else
+	bra.w	Obj34_MoveTowardsTargetPosition
+	endif
 ; ===========================================================================
 
 loc_1419C:
@@ -28597,6 +28611,7 @@ BranchTo18_DisplaySprite ; BranchTo
 loc_141AA:
 	bsr.w	DisplaySprite
 	move.b	#1,(Update_Bonus_score).w
+	if FeatureInstantTally
 	moveq	#button_A_mask|button_B_mask|button_C_mask,d0
 	and.b	(Ctrl_1_Held).w,d0		; is A, B, or C held? (use raw input; Ctrl_1_Held_Logical is frozen during locked control)
 	beq.s	+				; if not, proceed normally
@@ -28612,6 +28627,7 @@ loc_141AA:
 	moveq	#0,d0
 	bra.s	loc_141E6			; skip regular countdown logic
 +
+	endif
 	moveq	#0,d0
 	tst.w	(Bonus_Countdown_1).w
 	beq.s	loc_141C6
@@ -35634,8 +35650,13 @@ Load_EndOfAct:
 	bne.s	+
 	move.w	#5000,(Bonus_Countdown_3).w
 +
+	if FeatureInstantTally
 	move.b	#MusID_FadeOut,d0
 	jsr	(PlaySound).l	; fade out music before the results jingle starts
+	else
+	move.w	#MusID_EndLevel,d0
+	jsr	(PlayMusic).l
+	endif
 
 return_194D0:
 	rts
@@ -38493,7 +38514,13 @@ Sonic_JumpHeight:
 	move.w	d1,y_vel(a0)	; immediately reduce Sonic's upward speed to d1
 +
 	jsr	(Sonic_RequestTailsAssist).l
+	if FeatureSuperToggle
 	bra.s	Sonic_ToggleSuper		; keep the existing Super Sonic transformation combo
+	else
+	tst.b	y_vel(a0)		; is Sonic exactly at the height of his jump?
+	beq.w	Sonic_CheckGoSuper	; if yes, test for turning into Super Sonic
+	rts
+	endif
 ; ---------------------------------------------------------------------------
 ; loc_1AB22:
 Sonic_UpVelCap:
@@ -38576,7 +38603,11 @@ Sonic_ComboReturn:
 ; loc_1AB38: test_set_SS:
 Sonic_CheckGoSuper:
 	tst.b	(Super_Sonic_flag).w	; is Sonic already Super?
+	if FeatureSuperToggle
 	bne.w	Sonic_RevertToNormal	; if yes, revert to normal manually
+	else
+	bne.w	return_1ABA4		; if yes, branch
+	endif
 	cmpi.b	#7,(Emerald_count).w	; does Sonic have exactly 7 emeralds?
 	bne.w	return_1ABA4		; if not, branch
 	cmpi.w	#50,(Ring_count).w	; does Sonic have at least 50 rings?
@@ -38670,7 +38701,9 @@ Sonic_Super:
 	bne.s	return_1AC3C
 ; loc_1ABF2:
 Sonic_RevertToNormal:
+	if FeatureSuperToggle
 	move.b	#0,(MainCharacter+obj_control).w	; restore Sonic's movement
+	endif
 	move.b	#2,(Super_Sonic_palette).w	; Remove rotating palette
 	move.w	#$28,(Palette_frame).w
 	move.b	#0,(Super_Sonic_flag).w
@@ -39303,8 +39336,10 @@ Sonic_ResetOnFloor_Part2:
 	subq.w	#5,y_pos(a0)	; move Sonic up 5 pixels so the increased height doesn't push him into the ground
 ; loc_1B0DA:
 Sonic_ResetOnFloor_Part3:
+	if FeatureSuperToggle
 	clr.b	transform_combo_timer(a0)
 	clr.b	transform_combo_buttons(a0)
+	endif
 	bclr	#status.player.in_air,status(a0)
 	bclr	#status.player.pushing,status(a0)
 	if FeatureRollJumpSteering=0
@@ -46182,6 +46217,10 @@ Obj79_LoadData:
 	move.w	(Saved_y_pos).w,(MainCharacter+y_pos).w
 	move.w	(Saved_Ring_count).w,(Ring_count).w
 	move.b	(Saved_Extra_life_flags).w,(Extra_life_flags).w
+	if FeatureLamppostRings=0
+	clr.w	(Ring_count).w
+	clr.b	(Extra_life_flags).w
+	endif
 	move.l	(Saved_Timer).w,(Timer).w
 	move.b	#59,(Timer_frame).w
 	subq.b	#1,(Timer_second).w
@@ -46273,6 +46312,9 @@ Obj79_MakeSpecialStars:
 ; Preserve only the level state at a star's entrance. Checkpoint snapshots
 ; remain independent, so an ordinary death still uses the existing ring policy.
 SS_SaveLevelState:
+	if FeatureSpecialStageState=0
+	rts				; the level restarts from the star post as before
+	endif
 	movem.l	d0/d7/a1-a2,-(sp)
 	move.b	#1,(SS_keep_level_state).w
 	move.w	(Current_ZoneAndAct).w,(SS_saved_zone).w

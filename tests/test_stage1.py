@@ -522,7 +522,8 @@ def special_stage_state(repo):
             assert c.read(table+52)&1,'destroyed monitor lost its state'
             # Ordinary death: level clear consumes no stale shield/ring/object snapshot.
             until(c,'Level_ClrRam','Level_MainLoop')
-            assert c.read('Ring_count',2)==51,'ordinary checkpoint ring behavior changed'
+            expected_rings=51 if c.s.get('FeatureLamppostRings',1) else 0
+            assert c.read('Ring_count',2)==expected_rings,'ordinary checkpoint ring behavior changed'
             assert c.read('Sonic_Shield')==c.read('Tails_Shield')==0
             assert c.read(ring+6,2)==0,'normal death failed to reload rings'
             assert bytes(c.uc.mem_read(c.s['CNZ_saucer_data'],64))==b'\0'*64
@@ -611,7 +612,7 @@ def main():
         results['options_layout']=options_layout(args.repo)
     if 'Debug_PreparePlayer' in symbols(args.repo/'s2.lst'):
         results['debug']=debug(args.repo)
-    if 'SS_SaveLevelState' in symbols(args.repo/'s2.lst'):
+    if symbols(args.repo/'s2.lst').get('FeatureSpecialStageState',0):
         results['special_stage_state']=special_stage_state(args.repo)
     results['rom_sha256']=hashlib.sha256((args.repo/'s2built.bin').read_bytes()).hexdigest()
     if args.report:
