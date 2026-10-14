@@ -43905,7 +43905,7 @@ loc_1DA44:
 
 +	add.b	d0,obj35_table_offset(a0)
 	move.w	#object_display_list_size*1,d0
-	bra.w	DisplaySprite3
+	jmp	(DisplaySprite3).l
 ; ===========================================================================
 ; loc_1DA80:
 Obj35_OtherLayersUpdate:
@@ -43978,7 +43978,7 @@ loc_1DAE4:
 
 +	add.b	d0,obj35_table_offset(a0)
 	move.w	#object_display_list_size*1,d0
-	bra.w	DisplaySprite3
+	jmp	(DisplaySprite3).l
 ; ===========================================================================
 ; loc_1DB2C:
 Obj35_GetSpriteParams:
