@@ -86491,23 +86491,20 @@ TouchResponse:
 Touch_NoDuck:
 	move.w	#$10,d4
 	add.w	d5,d5
-	lea	(Dynamic_Object_RAM).w,a1
-	move.w	#(Dynamic_Object_RAM_End-Dynamic_Object_RAM)/object_size-1,d6
-; loc_3F5A0:
-Touch_Loop:
-	; Note that this uses a branch instead of a 'bsr'.
-	; This is because only one object can be collided with in a single frame.
-	; If 'Touch_CheckCollision' determines that the character isn't colliding with the
-	; object, then it manually branches back to 'Touch_NextObj' to try the next one.
-	move.b	collision_flags(a1),d0
-	bne.w	Touch_CheckCollision
+	; Faster object scan: Touch_ScanObjects (code/Touch.asm) tests every
+	; dynamic object slot in order and calls Touch_CheckCollision for the ones
+	; with collision_flags set, as the original loop did.
+	jmp	(Touch_ScanObjects).l
+; ===========================================================================
 ; loc_3F5A8:
 Touch_NextObj:
-	lea	next_object(a1),a1 ; load obj address ; goto next object
-	dbf	d6,Touch_Loop ; repeat 6F more times
-
-	moveq	#0,d0
-	rts
+	rts			; not touching: back to Touch_ScanObjects for the next object
+; ===========================================================================
+Touch_Hit:
+	; Only one object can be collided with in a single frame: drop
+	; Touch_ScanObjects' return address and handle this one.
+	addq.l	#4,sp
+	bra.w	Touch_ChkValue
 ; ===========================================================================
 ; loc_3F5B4: Touch_Height: Touch_Width:
 Touch_CheckCollision:
@@ -86516,7 +86513,8 @@ Touch_CheckCollision:
 	lea	Touch_Sizes(pc,d0.w),a2
 
 	; From here to the branch to 'Touch_ChkValue', this code is the same as 'Touch_Boss_CheckWidth',
-	; only it returns to 'Touch_NextObj' instead of 'Touch_Boss_NextObj'.
+	; only it returns to 'Touch_NextObj' instead of 'Touch_Boss_NextObj',
+	; and branches to 'Touch_Hit' instead of 'Touch_ChkValue'.
 	; This could have been avoided with some clever stack usage.
 ;Touch_CheckWidth:
 	moveq	#0,d1
@@ -86544,7 +86542,7 @@ Touch_CheckHeight:
 	bcc.s	loc_3F5F6
 	add.w	d1,d1
 	add.w	d1,d0
-	bcs.w	Touch_ChkValue
+	bcs.w	Touch_Hit
 	bra.w	Touch_NextObj
 ; ===========================================================================
 
@@ -86552,7 +86550,7 @@ loc_3F5F6:
 	cmp.w	d5,d0
 	bhi.w	Touch_NextObj
 	; Here ends the duplicate code.
-	bra.w	Touch_ChkValue
+	bra.w	Touch_Hit
 ; ===========================================================================
 ; collision sizes (width,height)
 ; byte_3F600:
@@ -93408,6 +93406,7 @@ Sound70:	include "sound/sfx/F0 - Oil Slide.asm"
 	include "code/Settings.asm"
 	include "code/Decompression.asm"
 	include "code/Math.asm"
+	include "code/Touch.asm"
 	include "code/Cheats.asm"
 	include "code/DebugHud.asm"
 	include "code/QoL.asm"

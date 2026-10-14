@@ -190,7 +190,7 @@ free tiles after the horizontal scroll table (`$7FC-$7FF`); BuildHUD queues
 them by DMA from a lookup table only when the hundredths change. The ARZ title
 demo runs right at the edge of the frame budget, so even this small cost makes
 it about 20 lag frames longer (1712 -> 1734 frames; the per-frame checks of the later features add a few more, 1742); a 300-cycle empty loop
-in the same place costs 14. With
+in the same place costs 14. The optimizations below bring it back to 1693. With
 `FeatureSpecialStageSelect`, Left/Right on SPECIAL STAGE choose the stage shown
 as 1-7 after the name, and an emerald that was already earned is not counted again.
 
@@ -416,6 +416,19 @@ so they have no `Feature*` switch.
   the flags afterwards, so the different values left there do not matter.
   Compared with the original on 18000 random list states: identical lists and
   registers. ARZ demo: 1736 -> 1731 frames.
+- `TouchResponse` scans the dynamic objects with an unrolled loop
+  (`Touch_ScanObjects`, `code/Touch.asm`): each slot is one absolute
+  `move.b` of its `collision_flags` and a short branch, 22 cycles instead of
+  42 for a slot without collision, and the original check code is called for
+  the others. Sonic 1's collision queue ([Optimizing Collision System in Sonic 1](https://info.sonicretro.org/SCHG_How-to:Optimizing_Collision_System_in_Sonic_1),
+  used by s1_improvements) is not used here: Sonic 2 objects often give
+  collision_flags to other objects (projectiles, boss parts, lost rings), which
+  a queue built while objects run would see a frame late. The scan checks
+  the same objects in the same order with the same registers (except the loop
+  counter `d6` and the final `a1`, which nothing reads); compared with the
+  original on 3000 random object layouts around the player, RAM and registers
+  were identical. ARZ demo: 1731 -> 1693 frames, now shorter than before
+  `FeatureCentiseconds` (1712); EHZ 2P: 1645 -> 1641.
 
 ## Branch range
 
