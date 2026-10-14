@@ -139,3 +139,18 @@ Hud_Centiseconds:
 -	move.l	(a3)+,(a6)
 	dbf	d1,-
 	rts
+
+; ---------------------------------------------------------------------------
+; FeatureInfiniteLives: Z=0 when lives are infinite (1P games only; 2P VS
+; games keep their lives). Only the flags change.
+; ---------------------------------------------------------------------------
+InfiniteLives_Active:
+	if FeatureInfiniteLives
+	tst.w	(Two_player_mode).w
+	bne.s	.off
+	andi	#~4,ccr				; Z=0
+	rts
+.off:
+	endif
+	ori	#4,ccr				; Z=1
+	rts

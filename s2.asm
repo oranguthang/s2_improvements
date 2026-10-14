@@ -104,7 +104,12 @@ FeatureBurntDeath = 1
 FeatureActMusic = 1
 ;	| Act 2 of EHZ, MCZ and CNZ plays the track from 2P mode; 0 = the same track in both acts
 
-	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureCentiseconds|FeatureBurntDeath|FeatureActMusic)&~1
+; Optional alternatives, off by default.
+FeatureInfiniteLives = 0
+;	| If 1, 1P games hide the lives counter and never end: no Game Over or extra lives,
+;	| and 1-up monitors give 10 rings. 2P VS games keep their lives.
+
+	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureCentiseconds|FeatureBurntDeath|FeatureActMusic|FeatureInfiniteLives)&~1
 		error "Feature options must be 0 or 1"
 	endif
 
@@ -25750,6 +25755,10 @@ CollectRing_1P:
 	bne.s	JmpTo_PlaySound2	; if it was set before, play the ring sound
 	endif
 +
+	if FeatureInfiniteLives
+	jsr	(InfiniteLives_Active).l	; no lives to give or lose in 1P games
+	bne.s	JmpTo_PlaySound2	; just the ring sound
+	endif
 	addq.b	#1,(Life_count).w	; add 1 to the life count
 	addq.b	#1,(Update_HUD_lives).w	; add 1 to the displayed life count
 	move.w	#MusID_ExtraLife,d0	; prepare to play the extra life jingle
@@ -26579,6 +26588,10 @@ robotnik_monitor:
 ; gives Sonic an extra life, or Tails in a 'Tails alone' game
 ; ---------------------------------------------------------------------------
 sonic_1up:
+	if FeatureInfiniteLives
+	jsr	(InfiniteLives_Active).l	; no lives to give or lose in 1P games
+	bne.w	super_ring		; 10 rings instead
+	endif
 	cmp.w	#2,(Two_player_items).w	; is it fixed items?
 	bne.s	+
 	cmpa.w	#MainCharacter,a1	; did Sonic break it?
@@ -26595,6 +26608,10 @@ sonic_1up:
 ; gives Tails an extra life in two player mode
 ; ---------------------------------------------------------------------------
 tails_1up:
+	if FeatureInfiniteLives
+	jsr	(InfiniteLives_Active).l	; no lives to give or lose in 1P games
+	bne.w	super_ring		; 10 rings instead
+	endif
 	cmp.w	#2,(Two_player_items).w	; is it fixed items?
 	bne.s	+
 	cmpa.w	#Sidekick,a1		; did Tails break it?
@@ -26664,11 +26681,16 @@ super_ring:
 	beq.s	ChkPlayer_1up	; branch, if not yet set
 	endif
 +
+SuperRing_RingSound:
 	move.w	#SndID_Ring,d0
 	jmp	(PlayMusic).l
 ; ---------------------------------------------------------------------------
 ;loc_129D4:
 ChkPlayer_1up:
+	if FeatureInfiniteLives
+	jsr	(InfiniteLives_Active).l	; no lives to give or lose in 1P games
+	bne.s	SuperRing_RingSound
+	endif
 	; give 1up to correct player
 	cmpa.w	#MainCharacter,a1
 	beq.w	sonic_1up
@@ -39619,6 +39641,10 @@ CheckGameOver:
 	move.b	#8,routine(a0)	; => Obj01_Gone
 	move.w	#60,restart_countdown(a0)
 	addq.b	#1,(Update_HUD_lives).w	; update lives counter
+	if FeatureInfiniteLives
+	jsr	(InfiniteLives_Active).l	; no lives to give or lose in 1P games
+	bne.s	Obj01_ResetLevel	; no Game Over: restart the act
+	endif
 	subq.b	#1,(Life_count).w	; subtract 1 from number of lives
 	bne.s	Obj01_ResetLevel	; if it's not a game over, branch
 	move.w	#0,restart_countdown(a0)
@@ -44133,11 +44159,11 @@ Obj35_Layer0Update:
 	; If Sonic is invincible and he turns Super, then the invincibility
 	; stars will not go away. S3K fixes this by doing this:
 	tst.b	(Super_Sonic_flag).w
-	bne.w	DeleteObject
+	bne.w	Obj35_Delete
     endif
 	movea.w	parent(a0),a1 ; a1=character
 	btst	#status_secondary.invincible,status_secondary(a1)
-	beq.w	DeleteObject
+	beq.w	Obj35_Delete
 	move.w	x_pos(a1),d0
 	move.w	d0,x_pos(a0)
 	move.w	y_pos(a1),d1
@@ -44183,17 +44209,20 @@ loc_1DA44:
 	jmp	(DisplaySprite3).l
 	endif
 ; ===========================================================================
+Obj35_Delete:	; within reach of every Obj35 routine
+	jmp	(DeleteObject).l
+; ===========================================================================
 ; loc_1DA80:
 Obj35_OtherLayersUpdate:
     if fixBugs
 	; If Sonic is invincible and he turns Super, then the invincibility
 	; stars will not go away. S3K fixes this by doing this:
 	tst.b	(Super_Sonic_flag).w
-	bne.w	DeleteObject
+	bne.w	Obj35_Delete
     endif
 	movea.w	parent(a0),a1 ; a1=character
 	btst	#status_secondary.invincible,status_secondary(a1)
-	beq.w	DeleteObject
+	beq.w	Obj35_Delete
 	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	beq.s	+
 	lea	(Sonic_Pos_Record_Index).w,a5
@@ -89285,6 +89314,10 @@ AddPoints:
 	move.l	d1,(a3)	; set score to #999999
 +
 	move.l	(a3),d0
+	if FeatureInfiniteLives
+	jsr	(InfiniteLives_Active).l	; no lives to give or lose in 1P games
+	bne.s	+	; rts
+	endif
 	cmp.l	(Next_Extra_life_score).w,d0
 	blo.s	+	; rts
 	addi.l	#5000,(Next_Extra_life_score).w

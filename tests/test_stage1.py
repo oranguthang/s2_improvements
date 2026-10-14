@@ -687,6 +687,9 @@ def extra_lives(repo):
         c.write('Ring_count',rings-1,2); c.write('Extra_life_flags',flags); c.write('Life_count',3)
         c.call('CollectRing_1P')
         return c.read('Life_count')-3,c.read('Extra_life_flags')
+    if symbols(repo/'s2.lst').get('FeatureInfiniteLives',0):
+        assert collect(100,0)[0]==0,'a ring life with infinite lives'
+        return {'every_hundred':'infinite lives','thresholds_checked':True}
     lives=[collect(n,f)[0] for n,f in ((99,0),(100,0),(200,1 if every else 2),(300,2 if every else 6),(400,3 if every else 6))]
     assert lives==([0,1,1,1,1] if every else [0,1,1,0,0]),lives
     if every:
@@ -729,6 +732,18 @@ def fast_sound_test(repo):
     want=0x15 if back else 0x35
     assert levsel(b)==want and options(b)==want,(levsel(b),options(b))
     return {'a_steps_ahead':True,'b_a_steps_back':'on' if back else 'off'}
+
+def infinite_lives(repo):
+    """FeatureInfiniteLives: 1-up monitors give 10 rings in 1P games; VS keeps its lives."""
+    def one_up(two_player):
+        c=CPU(repo); c.skip('PlayMusic'); c.skip('PlaySound2')
+        c.write('Two_player_mode',two_player,2); c.write('Ring_count',5,2); c.write('Life_count',3)
+        c.uc.reg_write(UC_M68K_REG_A1,c.s['MainCharacter']); c.uc.reg_write(UC_M68K_REG_A2,c.s['Monitors_Broken'])
+        c.call('sonic_1up')
+        return c.read('Life_count'),c.read('Ring_count',2)
+    assert one_up(0)==(3,15),one_up(0)
+    assert one_up(1)==(4,5),one_up(1)
+    return {'one_up_gives_rings':True,'vs_keeps_lives':True}
 
 def title_palette(repo):
     def setup():
@@ -789,6 +804,8 @@ def main():
     if 'InvStars_Display' in symbols(args.repo/'s2.lst'):
         results['invincibility_flash']=invincibility_flash(args.repo)
     results['fast_sound_test']=fast_sound_test(args.repo)
+    if symbols(args.repo/'s2.lst').get('FeatureInfiniteLives',0):
+        results['infinite_lives']=infinite_lives(args.repo)
     results['rom_sha256']=hashlib.sha256((args.repo/'s2built.bin').read_bytes()).hexdigest()
     if args.report:
         args.report.write_text(json.dumps(results,indent=2)+'\n',encoding='utf-8')
