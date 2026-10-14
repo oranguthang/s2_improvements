@@ -2766,6 +2766,8 @@ AniIDTailsAni_Swim = id(TailsAni_Swim_ptr) ; $26
 AniIDTailsAni_SwimUp = id(TailsAni_SwimUp_ptr) ; $27
 AniIDTailsAni_SwimCarry = id(TailsAni_SwimCarry_ptr) ; $28
 AniIDTailsAni_SwimTired = id(TailsAni_SwimTired_ptr) ; $29
+AniIDTailsAni_Victory = id(TailsAni_Victory_ptr) ; $2A (FeatureVictoryPoses)
+AniIDTailsAni_Transform = id(TailsAni_Transform_ptr) ; $2B (Super Tails)
 
 SndID_TailsGrab = (SndPtr_TailsGrab-SoundIndex)/2+SndID__First
 SndID_TailsFly = (SndPtr_TailsFly-SoundIndex)/2+SndID__First

@@ -155,6 +155,11 @@ DPLC_Tails:	mappingsTable
 	mappingsTableEntry.w	DPLC_Tails_Extra_99
 	mappingsTableEntry.w	DPLC_Tails_Extra_9A
 	mappingsTableEntry.w	DPLC_Tails_Extra_9B
+	mappingsTableEntry.w	DPLC_Tails_Victory0
+	mappingsTableEntry.w	DPLC_Tails_Victory1
+	mappingsTableEntry.w	DPLC_Tails_Transform0
+	mappingsTableEntry.w	DPLC_Tails_Transform1
+	mappingsTableEntry.w	DPLC_Tails_Transform2
 
 DPLC_Tails_0116:	dplcHeader
 DPLC_Tails_0116_End
@@ -865,3 +870,4 @@ DPLC_Tails_Extra_9B:	dplcHeader
 	dplcEntry	4, $6F6
 DPLC_Tails_Extra_9B_End
 	even
+	include "mappings/spriteDPLC/Tails poses.asm"

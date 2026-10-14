@@ -155,6 +155,11 @@ Map_Tails:	mappingsTable
 	mappingsTableEntry.w	Map_Tails_Extra_99
 	mappingsTableEntry.w	Map_Tails_Extra_9A
 	mappingsTableEntry.w	Map_Tails_Extra_9B
+	mappingsTableEntry.w	Map_Tails_Victory0	; $9C
+	mappingsTableEntry.w	Map_Tails_Victory1	; $9D
+	mappingsTableEntry.w	Map_Tails_Transform0	; $9E
+	mappingsTableEntry.w	Map_Tails_Transform1	; $9F
+	mappingsTableEntry.w	Map_Tails_Transform2	; $A0
 
 Map_Tails_0116:	spriteHeader
 Map_Tails_0116_End
@@ -916,3 +921,4 @@ Map_Tails_Extra_9B:	spriteHeader
 	spritePiece	15, -16, 1, 4, $10, 0, 0, 0, 0
 Map_Tails_Extra_9B_End
 	even
+	include "mappings/sprite/Tails poses.asm"

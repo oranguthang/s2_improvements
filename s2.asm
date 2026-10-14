@@ -41301,8 +41301,17 @@ Obj02_NotRight:
 	bne.w	Obj02_ResetScr	; if yes, branch
 	bclr	#status.player.pushing,status(a0)
 	move.b	#AniIDSonAni_Wait,anim(a0)	; use "standing" animation
+	if FeatureVictoryPoses
+	tst.b	(Victory_pose).w	; is the act over?
+	beq.s	+
+	cmpa.w	#MainCharacter,a0	; the player in a Tails Alone game
+	bne.s	+
+	move.b	#AniIDTailsAni_Victory,anim(a0)
+	bra.w	Obj02_ResetScr
++
+	endif
 	btst	#status.player.on_object,status(a0)
-	beq.s	Tails_Balance
+	beq.w	Tails_Balance
 	moveq	#0,d0
 	move.b	interact(a0),d0
     if object_size=$40
@@ -43247,6 +43256,8 @@ TailsAni_Swim_ptr:	offsetTableEntry.w TailsAni_Swim
 TailsAni_SwimUp_ptr:	offsetTableEntry.w TailsAni_SwimUp
 TailsAni_SwimCarry_ptr:	offsetTableEntry.w TailsAni_SwimCarry
 TailsAni_SwimTired_ptr:	offsetTableEntry.w TailsAni_SwimTired
+TailsAni_Victory_ptr:	offsetTableEntry.w TailsAni_Victory	; $2A
+TailsAni_Transform_ptr:	offsetTableEntry.w TailsAni_Transform	; $2B
 
 TailsAni_Walk:	dc.b $FF,$10,$11,$12,$13,$14,$15, $E, $F,$FF
 	rev02even
@@ -43334,6 +43345,11 @@ TailsAni_SwimUp:		dc.b 3,$92,$93,$94,$95,$96,$FF
 TailsAni_SwimCarry:	dc.b 4,$97,$98,$FF
 	rev02even
 TailsAni_SwimTired:	dc.b $B,$99,$9A,$9B,$9A,$FF
+	rev02even
+; From Sonic 3 & Knuckles (AniTails13 and AniTails29), frames by tools/import_tails_poses.py
+TailsAni_Victory:	dc.b $F,$9C,$9D,$FE,1	; thumbs-up, then kneel
+	rev02even
+TailsAni_Transform:	dc.b 2,$9E,$9E,$9F,$A0,$9F,$A0,$9F,$A0,$9F,$A0,$9F,$A0,$FD,0
 	even
 
 ; ===========================================================================
@@ -43503,6 +43519,7 @@ Obj05AniSelection:
 	dc.b	0,0	; TailsAni_Dummy4,5	->
 	dc.b	0	; TailsAni_HaulAss	->
 	dc.b	$B,$C,$B,$C,$B,$B,0,0,0,0	; flight, carry, fatigue and swimming
+	dc.b	0,0	; TailsAni_Victory,Transform -> Blank (their frames need the tails' tiles)
 	even
 
 ; ---------------------------------------------------------------------------
@@ -92157,6 +92174,7 @@ ArtUnc_Sonic:			BINCLUDE	"art/uncompressed/Sonic's art.bin"
 	BINCLUDE	"art/uncompressed/Sonic victory.bin"	; frames $DB-$DC (tools/import_victory_poses.py)
 	align tiles_to_bytes(1)
 ArtUnc_Tails:			BINCLUDE	"art/uncompressed/Tails's art.bin"
+	BINCLUDE	"art/uncompressed/Tails poses.bin"	; frames $9C-$A0 (tools/import_tails_poses.py)
 
 MapUnc_Sonic:			include		"mappings/sprite/Sonic.asm"
 
