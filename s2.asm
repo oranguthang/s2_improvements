@@ -6563,11 +6563,47 @@ Demo_CPZ_TailsAssist:
 	demoinput , $A
 ; ---------------------------------------------------------------------------
 Demo_CNZ_TailsAssist:
-	demoinput R, $40
-	demoinput RA, 1
-	demoinput R, $1C
-	demoinput URA, 1
-	demoinput UR, $24
+	; Call Tails on the flat ground at the start, so he can catch Sonic.
+	demoinput , $10
+	demoinput A, 1
+	demoinput , 8
+	demoinput UA, 1		; Up + a fresh jump while airborne calls Tails
+	demoinput , $14		; stand still while Tails catches Sonic
+	; Carried flight: Right steers, a fresh Up flaps.
+	demoinput R, $20
+	demoinput UR, 1
+	demoinput R, $F
+	demoinput UR, 1
+	demoinput R, $F
+	demoinput UR, 1
+	demoinput R, $F
+	demoinput UR, 1
+	demoinput R, $F
+	demoinput UR, 1
+	demoinput R, $F
+	demoinput UR, 1
+	demoinput R, $F
+	demoinput UR, 1
+	demoinput R, $F
+	demoinput UR, 1
+	demoinput R, $F
+	demoinput UR, 1
+	demoinput R, $F
+	demoinput UR, 1
+	demoinput R, $F
+	demoinput UR, 1
+	demoinput R, $F
+	demoinput UR, 1
+	demoinput R, $F
+	demoinput UR, 1
+	demoinput R, $F
+	demoinput UR, 1
+	demoinput R, $F
+	demoinput UR, 1
+	demoinput R, $F
+	demoinput UR, 1
+	demoinput R, $F
+	demoinput A, 1		; let go
 	demoinput R, $3A
 	demoinput RA, 1
 	demoinput R, $20
