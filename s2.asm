@@ -12915,6 +12915,8 @@ LevelSelect_PressStart:
 	beq.w	LevelSelect_NextPage
 	cmpi.w	#LevSelEntry_PrevPage,d0
 	beq.w	LevelSelect_PrevPage
+	cmpi.w	#LevSelEntry_Cheats,d0
+	beq.w	LevelSelect_OpenCheats
 	cmpi.w	#LevSelEntry_SpecialStage,d0
 	bne.w	LevelSelect_StartZone
 
@@ -12975,7 +12977,8 @@ LevelSelect_Order:
 	dc.w	wing_fortress_zone_act_1	; 18
 	dc.w	death_egg_zone_act_1	; 19
 	dc.w	LevSelEntry_SpecialStage	; 20
-	dc.w	LevSelEntry_SoundTest	; 21 - must be the last entry of every page
+	dc.w	LevSelEntry_Cheats	; 21
+	dc.w	LevSelEntry_SoundTest	; 22 - must be the last entry of every page
 LevelSelect_Order_End:
 
 ; -----------------------------------------------------------------------------
@@ -12991,6 +12994,7 @@ LevelSelect_Order_End:
 LevSelEntry_NextPage = $3000
 LevSelEntry_SpecialStage = $4000
 LevSelEntry_PrevPage = $5000
+LevSelEntry_Cheats = $6000	; opens the CHEATS page (code/Cheats.asm)
 LevSelEntry_SoundTest = $FFFF
 
 levselpage_mappings = 0
@@ -12999,14 +13003,23 @@ levselpage_switch = 8
 levselpage_icons = $C
 levselpage_marks = $10
 levselpage_last = $14	; index of the last item (the sound test)
-levselpage_len = $16
+levselpage_texts = $16	; extra item names drawn over the mappings, or 0
+levselpage_len = $1A
 
-; levselpage name, mappings
+; levselpage name, mappings[, texts]
 ; declares a page whose tables are name_Order, name_SwitchTable,
-; name_IconTable and name_MarkTable, each followed by a matching _End label
-levselpage macro name,mappings
+; name_IconTable and name_MarkTable, each followed by a matching _End label.
+; texts lists item names written into the decompressed mappings, so items can
+; be added without redrawing them: per entry dc.w planeLoc(40,column,line),
+; dc.l text, dc.w length-1 (menu font); the list ends with dc.w -1.
+levselpage macro name,mappings,texts
 	dc.l	mappings, name_Order, name_SwitchTable, name_IconTable, name_MarkTable
 	dc.w	(name_Order_End-name_Order)/2-1
+    if "texts"<>""
+	dc.l	texts
+    else
+	dc.l	0
+    endif
     endm
 
 ; levselpagecheck name
@@ -13018,9 +13031,15 @@ levselpagecheck macro name
     endm
 
 LevelSelect_Pages:
-	levselpage LevelSelect, MapEng_LevSel
+	levselpage LevelSelect, MapEng_LevSel, LevelSelect_Texts
 LevelSelect_Pages_End:
 LevelSelect_PageCount = (LevelSelect_Pages_End-LevelSelect_Pages)/levselpage_len
+
+LevelSelect_Texts:
+	dc.w	planeLoc(40,3,26)
+	dc.l	LevelSelect_CheatsItemText
+	dc.w	LevelSelect_CheatsItemText_End-LevelSelect_CheatsItemText-1
+	dc.w	-1
 
 ; Returns a2 = the current page in LevelSelect_Pages.
 LevelSelect_GetPage:
@@ -13053,6 +13072,7 @@ LevelSelect_DrawPage:
 	lea	(Chunk_Table).l,a1
 	move.w	#make_art_tile(ArtTile_VRAM_Start,0,0),d0
 	jsr	(EniDec).l
+	jsr	(LevelSelect_DrawTexts).l	; item names added to the page
 
 	lea	(Chunk_Table).l,a1
 	move.l	#vdpComm(VRAM_Plane_A_Name_Table,VRAM,WRITE),d0
@@ -13071,6 +13091,9 @@ LevelSelect_NextPage:
 	clr.b	(Level_select_page).w
 	bra.s	LevelSelect_ChangePage
 
+LevelSelect_OpenCheats:
+	jmp	(LevelSelect_Cheats).l
+
 LevelSelect_PrevPage:
 	subq.b	#1,(Level_select_page).w
 	bcc.s	LevelSelect_ChangePage
@@ -13078,6 +13101,7 @@ LevelSelect_PrevPage:
 
 LevelSelect_ChangePage:
 	clr.w	(Level_select_zone).w
+LevelSelect_RedrawPage:
 	move	#$2700,sr
 	bsr.w	LevelSelect_DrawPage
 	bsr.w	LevelSelect_DrawIcon
@@ -13222,8 +13246,8 @@ LevelSelect_SwitchTable:
 	dc.b $13	; 7
 	dc.b $14	; 8
 	dc.b $14	; 9
-	dc.b $15	; 10
-	dc.b $15	; 11
+	dc.b $16	; 10
+	dc.b $16	; 11
 	dc.b $C		; 12
 	dc.b $D		; 13
 	dc.b 0		; 14
@@ -13233,7 +13257,8 @@ LevelSelect_SwitchTable:
 	dc.b 4		; 18
 	dc.b 6		; 19
 	dc.b 8		; 20
-	dc.b $A		; 21
+	dc.b $C		; 21 CHEATS
+	dc.b $A		; 22
 LevelSelect_SwitchTable_End:
 	even
 ; ===========================================================================
@@ -13409,7 +13434,8 @@ LevelSelect_IconTable:
 	dc.b  $A	;$12	WFZ
 	dc.b  $B	;$13	DEZ
 	dc.b  $C	;$14	Special Stage
-	dc.b  $E	;$15	Sound Test
+	dc.b  $E	;$15	CHEATS
+	dc.b  $E	;$16	Sound Test
 LevelSelect_IconTable_End:
 	even
 ;byte_96EE:
@@ -13437,6 +13463,7 @@ LevelSelect_MarkTable:	; 4 bytes per level select entry
 	dc.b   9,$2C,  0,  0
 	dc.b  $C,$2C,  0,  0
 	dc.b  $F,$2C,  0,  0	;$14
+	dc.b $1A,  6,  0,  0	;$15 CHEATS, below the player option
 	dc.b $12,$2C,$12,$48
 LevelSelect_MarkTable_End:
 	levselpagecheck LevelSelect
