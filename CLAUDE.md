@@ -24,7 +24,8 @@ The user writes in Russian; answer in Russian.
   Every boolean in the report must be true.
 - Real emulator: `python tests/check_demo_cycle.py` plays the title demos in Genesis Plus GX via the
   libretro harness `work/retro.py` from the Codex folder. Healthy cycle (6 demos):
-  EHZ 2P, CPZ1, ARZ, CNZ1 (originals), CPZ1 assist (~53 carry frames), CNZ1 assist (flight, no carry); no deaths.
+  EHZ 2P, CPZ1, ARZ (1674 frames), CNZ1 (originals), CPZ1 assist (~53 carry frames), CNZ1 assist (flight,
+  ~291 carry frames since before 2026-10-15); no deaths. With every Feature* = 0: the four originals, no deaths.
   Frame counts may differ by 1-2 between builds (lag frames).
 - Harness tips: RetroPad ids B=0 (Genesis B), Y=1 (Genesis A), START=3, UP=4, DOWN=5, LEFT=6, RIGHT=7, A=8 (Genesis C).
   Level Select needs `debugTesting = 1` and Genesis A held while pressing Start on the title (game mode $28).
@@ -66,6 +67,10 @@ The user writes in Russian; answer in Russian.
   scripted runs and teleports, not a full play-through. The 2P objects manager stops loading for the rest of
   an act when a 256 px column has more than 12 non-long-distance objects; `tools/htz_vs.py` asserts it.
   In 2P, tiles $500-$57F are player 2's plane A name table (only the bottom half of plane B, tiles $740+, is free).
+- Open questions for the user (2026-10-15, decided alone while the user was away): HTZ VS drops a spike row and
+  two Spikers in act 2 and moves a path swapper 8 px (12-slot column limit); HTZ's far mountains and clouds
+  stand still in 2P; the ring spill fix 0c3a43d changes the user's older Speed Up Ring Loss code. Waiting for
+  the user: Knuckles as player 2 in VS and a KNUCKLES menu background pattern.
 - Never add an anonymous `+`/`-` label between a pre-existing branch and its target (765fe44 did, see 350141d);
   use a named local label inside new `if Feature*` blocks.
 

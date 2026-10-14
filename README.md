@@ -493,6 +493,12 @@ Checks cover all six features and the title-palette skip fix, including actual
 Special Stage/level RAM clears and manager initialization. VDP rendering and
 physical controller timing still need a play-through in an emulator or on hardware.
 
+`tests/check_demo_cycle.py` plays the title demos in Genesis Plus GX through a
+libretro harness. Last run (2026-10-15): the default build plays EHZ 2P, CPZ1,
+ARZ (1674 frames), CNZ1, the CPZ1 assist demo (53 frames carrying Sonic) and
+the CNZ1 assist demo (291) without a death; with every `Feature*` switch at 0
+the four original demos play through without a death.
+
 ## Custom fixes
 
 - Prevent Tails from losing rings in Special Stage during co-op
