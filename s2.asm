@@ -4504,6 +4504,7 @@ TitleScreen:
 	; Reset the cheat input state.
 	move.w	#0,(Correct_cheat_entries).w
 	move.w	#0,(Correct_cheat_entries_2).w
+	clr.w	(Title_unlock_entries).w
 
     if debugTesting
 	; Sonic 2 Beta 4 reveals that the original source code could produce
@@ -4573,6 +4574,7 @@ TitleScreen_Loop:
 
 	bsr.w	RunPLC_RAM
 	bsr.w	TailsNameCheat
+	jsr	(TitleUnlockCheat).l
 
 	; If the timer has run out, go play a demo.
 	tst.w	(Demo_Time_left).w
@@ -13450,6 +13452,7 @@ CheckCheats:	; This is called from 2 places: the options screen and the level se
 	tst.b	1(a0)				; Is the next entry 0?
 	bne.s	++				; If not, branch
 	move.w	#$101,(a1)			; Enable the cheat
+	jsr	(Settings_Save).l		; remember the unlock in SRAM
 	move.b	#SndID_Ring,d0			; Play the ring sound
 	jsrto	JmpTo_PlaySound
 +
@@ -93377,6 +93380,7 @@ Sound70:	include "sound/sfx/F0 - Oil Slide.asm"
 ; ---------------------------------------------------------------------------
 	even
 	include "code/Settings.asm"
+	include "code/Cheats.asm"
 
 ; end of 'ROM'
     if MDDebugger
