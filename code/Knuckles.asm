@@ -41,7 +41,7 @@ PlayerOption_Modes_End:
 
 	if FeatureKnuckles
 ; ---------------------------------------------------------------------------
-; Level palettes with Knuckles' colours (colours 2-5 of the first line):
+; Level and Special Stage palettes with Knuckles' colours:
 ; d0 = PalID_BGND or an underwater PalID -> d0 = the Knuckles version if
 ; Knuckles plays. Other registers are kept.
 ; ---------------------------------------------------------------------------
@@ -64,8 +64,13 @@ Knuckles_PalID:
 	rts
 +
 	cmpi.b	#PalID_ARZ_U,d0
-	bne.s	.return
+	bne.s	+
 	moveq	#PalID_ARZ_U_Knuckles,d0
+	rts
++
+	cmpi.b	#PalID_SS,d0
+	bne.s	.return
+	moveq	#PalID_SS_Knuckles,d0
 .return:
 	rts
 
@@ -98,6 +103,30 @@ Knuckles_ResultsLetterK:
 -	move.l	(a1)+,(VDP_data_port).l
 	dbf	d0,-
 	move	(sp)+,sr
+.return:
+	rts
+
+; ---------------------------------------------------------------------------
+; Special Stage. Knuckles' frames (Knuckles in Sonic 2) are $37 tiles longer
+; than Sonic's, so Sonic and Tails' frames are unpacked that much further on
+; and Knuckles' over Sonic's: Tails' frames follow Knuckles' (LoadSSTailsDynPLC).
+; ---------------------------------------------------------------------------
+Knuckles_SSDecompressArt:
+	lea	(ArtNem_SpecialSonicAndTails).l,a0
+	lea	((SSRAM_ArtNem_SpecialSonicAndTails+tiles_to_bytes(SS_KnucklesExtraTiles)) & $FFFFFF).l,a4
+	jsr	(NemDecToRAM).l
+	lea	(ArtNem_SpecialKnuckles).l,a0
+	lea	(SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF).l,a4
+	jmp	(NemDecToRAM).l
+
+; The Special Stage HUD (Obj5E): Knuckles in Sonic 2 drops the "SONIC" name.
+; a2 + d2 = the sub-sprite just set up.
+Knuckles_SSHUDFrame:
+	tst.b	(Main_character).w
+	beq.s	.return
+	tst.b	sub2_mapframe-sub2_x_pos(a2,d2.w)	; Sonic's name and rings?
+	bne.s	.return
+	move.b	#4,sub2_mapframe-sub2_x_pos(a2,d2.w)	; the rings alone
 .return:
 	rts
 
@@ -503,6 +532,8 @@ ArtUnc_Knuckles_End:
 ; Knuckles' HUD, monitor, signpost and slot machine art (tools/import_kis2.py)
 ; ---------------------------------------------------------------------------
 ArtNem_KnucklesLife:		BINCLUDE	"art/nemesis/Knuckles lives counter.nem"
+	even
+ArtNem_SpecialKnuckles:		BINCLUDE	"art/nemesis/Knuckles animation frames in special stage.nem"
 	even
 ArtNem_PowerupsKnucklesPatch:	BINCLUDE	"art/nemesis/Monitor Knuckles patch.nem"
 	even

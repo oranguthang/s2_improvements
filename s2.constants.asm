@@ -582,6 +582,7 @@ PalID_BGND_Knuckles =	id(PalPtr_BGND_Knuckles) ; 28
 PalID_HPZ_U_Knuckles =	id(PalPtr_HPZ_U_Knuckles) ; 29
 PalID_CPZ_U_Knuckles =	id(PalPtr_CPZ_U_Knuckles) ; 30
 PalID_ARZ_U_Knuckles =	id(PalPtr_ARZ_U_Knuckles) ; 31
+PalID_SS_Knuckles =	id(PalPtr_SS_Knuckles) ; 32
 	endif
 
 ; PLC IDs
@@ -2126,6 +2127,10 @@ IntroFallingStar:
 	phase	RAM_Start	; Move back to start of RAM
 SSRAM_ArtNem_SpecialSonicAndTails:
 				ds.b	tiles_to_bytes($353)	; $353 art blocks
+	if FeatureKnuckles
+SS_KnucklesExtraTiles = $1BA-$183	; Knuckles' frames ($1BA tiles) are longer than Sonic's ($183)
+				ds.b	tiles_to_bytes(SS_KnucklesExtraTiles)	; Knuckles and Tails (Knuckles_SSDecompressArt)
+	endif
 SSRAM_MiscKoz_SpecialPerspective:
 				ds.b	$1AFC
 SSRAM_MiscNem_SpecialLevelLayout:

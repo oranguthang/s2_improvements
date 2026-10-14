@@ -3719,6 +3719,7 @@ PalPtr_BGND_Knuckles:	palptr Pal_BGND_Knuckles, 0	; Knuckles' colours in the fir
 PalPtr_HPZ_U_Knuckles:	palptr Pal_HPZ_U_Knuckles, 0
 PalPtr_CPZ_U_Knuckles:	palptr Pal_CPZ_U_Knuckles, 0
 PalPtr_ARZ_U_Knuckles:	palptr Pal_ARZ_U_Knuckles, 0
+PalPtr_SS_Knuckles:	palptr Pal_SS_Knuckles, 0
 	endif
 
 ; ----------------------------------------------------------------------------
@@ -3772,6 +3773,7 @@ Pal_BGND_Knuckles:  palette Knuckles and Tails.bin,SonicAndTails2.bin
 Pal_HPZ_U_Knuckles: palette HPZ underwater Knuckles.bin
 Pal_CPZ_U_Knuckles: palette CPZ underwater Knuckles.bin
 Pal_ARZ_U_Knuckles: palette ARZ underwater Knuckles.bin
+Pal_SS_Knuckles:    palette Special Stage Main Knuckles.bin	; Knuckles in Sonic 2's
 	endif
 Pal_SS1_2p:palette Special Stage 1 2p.bin ; Special Stage 1 2p palette
 Pal_SS2_2p:palette Special Stage 2 2p.bin ; Special Stage 2 2p palette
@@ -6893,6 +6895,12 @@ SpecialStage:
 	bsr.w	LoadPLC2
 	move.l	#vdpComm(tiles_to_bytes(ArtTile_VRAM_Start+2),VRAM,WRITE),d0
 	lea	SpecialStage_ResultsLetters(pc),a0
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	+
+	lea	SpecialStage_ResultsLetters_Knuckles(pc),a0
++
+	endif
 	jsrto	JmpTo_LoadTitleCardSS
 	move.l	#vdpComm(tiles_to_bytes(ArtTile_ArtNem_SpecialStageResults),VRAM,WRITE),(VDP_control_port).l
 	lea	(ArtNem_SpecialStageResults).l,a0
@@ -9321,6 +9329,12 @@ SSPlaneB_Background:
 
 ;sub_6DD4
 SSDecompressPlayerArt:
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	+
+	jmp	(Knuckles_SSDecompressArt).l	; code/Knuckles.asm
++
+	endif
 	lea	(ArtNem_SpecialSonicAndTails).l,a0
 	lea	(SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF).l,a4
 	bra.w	NemDecToRAM
@@ -9678,6 +9692,9 @@ Obj5E:
 
 -	move.w	d0,(a2,d2.w)
 	move.b	(a1)+,sub2_mapframe-sub2_x_pos(a2,d2.w)	; sub2_mapframe
+	if FeatureKnuckles
+	jsr	(Knuckles_SSHUDFrame).l	; no "SONIC" for Knuckles
+	endif
 	addq.w	#next_subspr,d2
 	dbf	d3,-
 
@@ -10374,6 +10391,9 @@ SSInitPalAndData:
 	move.w	d0,(a2)+
 	move.w	d0,(a2)+
 	moveq	#PalID_SS,d0
+	if FeatureKnuckles
+	jsr	(Knuckles_PalID).l
+	endif
 	bsr.w	PalLoad_ForFade
 	lea_	SpecialStage_Palettes,a1
 	moveq	#0,d0
@@ -10430,6 +10450,10 @@ used := used|1<<strstr(llookup,"char")	; if not, mark it as used
 ;word_7822:
 SpecialStage_ResultsLetters:
 	titleLetters	"ACDGHILMPRSTUW."
+	if FeatureKnuckles
+SpecialStage_ResultsLetters_Knuckles:	; Knuckles in Sonic 2 adds K and N
+	titleLetters	"ACDGHILMPRSTUW.KN"
+	endif
 
  charset ; revert character set
 
@@ -23523,7 +23547,7 @@ Obj17_Init:
 	moveq	#0,d6
 ; loc_10372:
 Obj17_MakeHelix:
-	bsr.w	AllocateObjectAfterCurrent
+	jsr	(AllocateObjectAfterCurrent).l
 	bne.s	Obj17_Main
 	addq.b	#1,subtype(a0)
     if object_size<>$40
@@ -28851,6 +28875,9 @@ Obj6F_Index:	offsetTable
 		offsetTableEntry.w Obj6F_InitAndMoveSuperMsg	; $30
 		offsetTableEntry.w Obj6F_MoveTowardsSourcePosition	; $32
 		offsetTableEntry.w Obj6F_MoveAndDisplay	; $34
+	if FeatureKnuckles
+		offsetTableEntry.w Obj6F_Knuckles	; $36 (Knuckles in Sonic 2: the word "Knuckles")
+	endif
 ; ===========================================================================
 ;loc_14406
 Obj6F_Init:
@@ -28862,6 +28889,15 @@ Obj6F_Init:
 	movea.l	a0,a1
 	lea	Obj6F_SubObjectMetaData(pc),a2
 	moveq	#bytesToXcnt(Obj6F_SubObjectMetaData_End-Obj6F_SubObjectMetaData, results_screen_object_size),d1
+	move.l	#Obj6F_MapUnc_14ED0,d2
+	if FeatureKnuckles
+	tst.b	(Main_character).w	; Knuckles in Sonic 2's results for Knuckles
+	beq.s	+
+	lea	Obj6F_SubObjectMetaData_Knuckles(pc),a2
+	moveq	#bytesToXcnt(Obj6F_SubObjectMetaData_Knuckles_End-Obj6F_SubObjectMetaData_Knuckles, results_screen_object_size),d1
+	move.l	#Obj6F_MapUnc_Knuckles,d2
++
+	endif
 
 -	_move.b	id(a0),id(a1) ; load obj6F
 	move.w	(a2),x_pixel(a1)
@@ -28870,11 +28906,16 @@ Obj6F_Init:
 	move.w	(a2)+,y_pixel(a1)
 	move.b	(a2)+,routine(a1)
 	move.b	(a2)+,mapping_frame(a1)
-	move.l	#Obj6F_MapUnc_14ED0,mappings(a1)
+	move.l	d2,mappings(a1)
 	move.b	#$78,width_pixels(a1)
 	move.b	#0,render_flags(a1)
 	lea	next_object(a1),a1 ; go to next object ; a1=object
 	dbf	d1,- ; loop
+	if FeatureKnuckles
+	; Knuckles and Tails: Knuckles in Sonic 2 has no "Miles Rings" frame, so that
+	; line (the 12th object) keeps Sonic 2's mappings.
+	move.l	#Obj6F_MapUnc_14ED0,next_object*11+mappings(a0)
+	endif
 
 ;loc_14450
 Obj6F_InitEmeraldText:
@@ -29125,17 +29166,30 @@ Obj6F_InitAndMoveSuperMsg:
 	move.b	#$14,next_object+routine(a0)			; => BranchTo3_Obj34_MoveTowardsTargetPosition
 	subq.w	#8,next_object+y_pixel(a0)
 	move.b	#$1A,next_object+mapping_frame(a0)		; "Now Sonic can"
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	+
+	subq.w	#4,next_object+x_pixel(a0)			; positions from Knuckles in Sonic 2
+	move.w	#128+320/2,next_object+titlecard_x_target(a0)
++
+	endif
 	move.b	#$34,routine(a0)						; => Obj6F_MoveAndDisplay
 	subq.w	#8,y_pixel(a0)
 	move.b	#$1B,mapping_frame(a0)					; "Change into"
 	lea	(SpecialStageResults2).w,a1
 	_move.b	id(a0),id(a1) ; load obj6F; (uses screen-space)
 	clr.w	x_pixel(a1)
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	+
+	move.w	#-80,x_pixel(a1)
++
+	endif
 	move.w	#spriteScreenPositionXCentered(0),titlecard_x_target(a1)
 	move.w	#spriteScreenPositionYCentered(-60),y_pixel(a1)
 	move.b	#$14,routine(a1)						; => BranchTo3_Obj34_MoveTowardsTargetPosition
 	move.b	#$1C,mapping_frame(a1)					; "Super Sonic"
-	move.l	#Obj6F_MapUnc_14ED0,mappings(a1)
+	move.l	mappings(a0),mappings(a1)		; (Knuckles' set for Knuckles)
 	move.b	#$78,width_pixels(a1)
 	move.b	#0,render_flags(a1)
 	bra.w	DisplaySprite
@@ -29163,6 +29217,61 @@ Obj6F_MoveTowardsSourcePosition:
 	rts
 ; ===========================================================================
 ;loc_14736
+	if FeatureKnuckles
+; ===========================================================================
+; Knuckles in Sonic 2: the word "Knuckles" before "got a" or "has all the".
+Obj6F_Knuckles:
+	cmpi.b	#$30,(SpecialStageResults+routine).w ; Obj6F_InitAndMoveSuperMsg
+	blo.s	.not_super_message
+	; Scroll off-screen to the left and delete self when done.
+	subi.w	#32,x_pixel(a0)
+	cmpi.w	#32,x_pixel(a0)
+	bhi.w	DisplaySprite
+	bra.w	DeleteObject
+
+.not_super_message:
+	tst.b	objoff_2E(a0)
+	bne.s	.skip
+	tst.b	(Got_Emerald).w
+	beq.s	.delete
+	cmpi.b	#7,(Emerald_count).w
+	blo.s	.skip
+
+	; Offset the 'Knuckles' text.
+	moveq	#44,d0
+	sub.w	d0,x_pixel(a0)
+	sub.w	d0,titlecard_x_target(a0)
+	sub.w	d0,titlecard_x_source(a0)
+
+	; Offset the 'has all the' text.
+	moveq	#12,d0
+	sub.w	d0,-object_size*12+x_pixel(a0)
+	sub.w	d0,-object_size*12+titlecard_x_target(a0)
+	sub.w	d0,-object_size*12+titlecard_x_source(a0)
+.skip:
+	st.b	objoff_2E(a0) ; Prevent this initialisation code from running again.
+
+; Similar to `Obj34_MoveTowardsTargetPosition`.
+	moveq	#16,d0
+	move.w	x_pixel(a0),d1
+	cmp.w	titlecard_x_target(a0),d1
+	beq.s	.display
+	bgt.s	+
+	neg.w	d0
++
+	sub.w	d0,x_pixel(a0)
+	cmpi.w	#128+320+64,x_pixel(a0)
+	bgt.s	.return
+.display:
+	cmpi.w	#80,x_pixel(a0)
+	blt.s	.return
+	bra.w	DisplaySprite
+.return:
+	rts
+.delete:
+	bra.w	DeleteObject
+	endif
+; ===========================================================================
 Obj6F_MoveAndDisplay:
 	move.w	x_pixel(a0),d0
 	cmp.w	titlecard_x_target(a0),d0
@@ -29192,6 +29301,31 @@ Obj6F_SubObjectMetaData:
 	results_screen_object  spriteScreenPositionX(screen_width+400), spriteScreenPositionXCentered(0),      56,     $18,        $E		; Miles Rings
 	results_screen_object  spriteScreenPositionX(screen_width+416), spriteScreenPositionXCentered(0),      72,     $1A,       $10		; Gems Bonus
 Obj6F_SubObjectMetaData_End:
+
+	if FeatureKnuckles
+; Knuckles in Sonic 2's layout: "got a" on its own, after the word "Knuckles"
+Obj6F_SubObjectMetaData_Knuckles:
+	;                                start X,          target X, start Y, routine, map frame
+	results_screen_object  spriteScreenPositionX(screen_width+128), spriteScreenPositionXCentered(0),     -70,       2,         0		; "Special Stage"
+	results_screen_object               spriteScreenPositionX(-48), spriteScreenPositionXCentered(80),     -88,       4,         1		; "got a"
+	results_screen_object  spriteScreenPositionXCentered( -8),                                     0,     -44,       6,         5		; Emerald 0
+	results_screen_object  spriteScreenPositionXCentered( 16),                                     0,     -32,       8,         6		; Emerald 1
+	results_screen_object  spriteScreenPositionXCentered( 16),                                     0,      -8,      $A,         7		; Emerald 2
+	results_screen_object  spriteScreenPositionXCentered( -8),                                     0,       4,      $C,         8		; Emerald 3
+	results_screen_object  spriteScreenPositionXCentered(-32),                                     0,      -8,      $E,         9		; Emerald 4
+	results_screen_object  spriteScreenPositionXCentered(-32),                                     0,     -32,     $10,        $A		; Emerald 5
+	results_screen_object  spriteScreenPositionXCentered( -8),                                     0,     -20,     $12,        $B		; Emerald 6
+	results_screen_object  spriteScreenPositionX(screen_width+368), spriteScreenPositionXCentered(0),      24,     $14,        $C		; Score
+	results_screen_object  spriteScreenPositionX(screen_width+384), spriteScreenPositionXCentered(0),      40,     $16,        $D		; Knuckles Rings
+	results_screen_object  spriteScreenPositionX(screen_width+400), spriteScreenPositionXCentered(0),      56,     $18,        $E		; Miles Rings
+Obj6F_MilesRingsFrame_Knuckles = *-1	; (its mapping frame byte, checked in Obj6F_Init)
+	results_screen_object  spriteScreenPositionX(screen_width+416), spriteScreenPositionXCentered(0),      72,     $1A,       $10		; Gems Bonus
+	results_screen_object               spriteScreenPositionX(-120), spriteScreenPositionXCentered(8),     -88,     $36,       $1D		; "Knuckles"
+Obj6F_SubObjectMetaData_Knuckles_End:
+	if (Obj6F_SubObjectMetaData_Knuckles+results_screen_object_size*11+7)<>Obj6F_MilesRingsFrame_Knuckles
+		fatal "Obj6F_SubObjectMetaData_Knuckles: the 12th object must be the Miles Rings line (Obj6F_Init)"
+	endif
+	endif
 
 ; -------------------------------------------------------------------------------
 ; sprite mappings - zone title cards
@@ -29629,6 +29763,9 @@ EOL_Perfect_End
 ; sprite mappings
 ; -------------------------------------------------------------------------------
 Obj6F_MapUnc_14ED0:	include "mappings/sprite/obj6F.asm"
+	if FeatureKnuckles
+Obj6F_MapUnc_Knuckles:	include "mappings/sprite/obj6F Knuckles.asm"	; Knuckles in Sonic 2's
+	endif
 ; ===========================================================================
 
 ;loc_15584: ; level title card drawing function called from Vint
@@ -71119,6 +71256,12 @@ Obj09_Init:
 	move.b	#$E,y_radius(a0)
 	move.b	#7,x_radius(a0)
 	move.l	#Obj09_MapUnc_34212,mappings(a0)
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	+
+	move.l	#Obj09_MapUnc_Knuckles,mappings(a0)	; Knuckles in Sonic 2's Special Stage Knuckles
++
+	endif
 	move.w	#make_art_tile(ArtTile_ArtNem_SpecialSonic,1,0),art_tile(a0)
 	move.b	#1<<render_flags.level_fg,render_flags(a0)
 	move.b	#3,priority(a0)
@@ -71236,6 +71379,12 @@ LoadSSSonicDynPLC:
 	jsrto	JmpTo42_DisplaySprite
 	move.l	#$FF0000,d6
 	lea	(Obj09_MapRUnc).l,a2
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	+
+	lea	(Obj09_MapRUnc_Knuckles).l,a2
++
+	endif
 	lea	(Sonic_LastLoadedDPLC).w,a4
 	move.w	#tiles_to_bytes(ArtTile_ArtNem_SpecialSonic),d4
 
@@ -71941,6 +72090,9 @@ byte_34208:
 ; sprite mappings - uses ArtNem_SpecialSonicAndTails
 ; ----------------------------------------------------------------------------
 Obj09_MapUnc_34212:	include "mappings/sprite/obj09.asm"
+	if FeatureKnuckles
+Obj09_MapUnc_Knuckles:	include "mappings/sprite/obj09 Knuckles.asm"	; Knuckles in Sonic 2's
+	endif
 ; ----------------------------------------------------------------------------
 ; sprite mappings for special stage shadows
 ; ----------------------------------------------------------------------------
@@ -71951,6 +72103,9 @@ Obj63_MapUnc_34492:	include "mappings/sprite/obj63.asm"
 ; ----------------------------------------------------------------------------
 Obj09_MapRUnc:		include	"mappings/spriteDPLC/obj09_ss.asm"
 Obj10_MapRUnc:		include	"mappings/spriteDPLC/obj10_ss.asm"
+	if FeatureKnuckles
+Obj09_MapRUnc_Knuckles:	include	"mappings/spriteDPLC/obj09 Knuckles.asm"	; Knuckles in Sonic 2's
+	endif
 Obj88_MapRUnc:		include	"mappings/spriteDPLC/obj88_ss.asm"
 ; ===========================================================================
 
@@ -72122,6 +72277,12 @@ LoadSSTailsDynPLC:
 +
 	jsrto	JmpTo43_DisplaySprite
 	move.l	#$FF0000,d6
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	+
+	move.l	#$FF0000+tiles_to_bytes(SS_KnucklesExtraTiles),d6	; Tails' frames follow Knuckles' (Knuckles_SSDecompressArt)
++
+	endif
 	lea	(Obj10_MapRUnc).l,a2
 	lea	(Tails_LastLoadedDPLC).w,a4
 	move.w	#tiles_to_bytes(ArtTile_ArtNem_SpecialTails),d4
@@ -72273,6 +72434,12 @@ Obj61_Init:
 	move.w	#$58,y_pos(a0)
 	move.l	#Obj61_MapUnc_36508,mappings(a0)
 	move.w	#make_art_tile(ArtTile_ArtNem_SpecialBomb,1,0),art_tile(a0)
+	if FeatureKnuckles
+	tst.b	(Main_character).w	; line 1 has Knuckles' colours (Knuckles in Sonic 2)
+	beq.s	+
+	move.w	#make_art_tile(ArtTile_ArtNem_SpecialBomb,2,0),art_tile(a0)
++
+	endif
 	move.b	#1<<render_flags.level_fg,render_flags(a0)
 	move.b	#3,priority(a0)
 	move.b	#2,collision_flags(a0)

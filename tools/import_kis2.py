@@ -21,7 +21,7 @@ KIS2_COMMIT = 'c336fede00092017f48c9d7851e0d3728c4fae2b'
 HEADER = (f'; Imported from Knuckles in Sonic 2 (s2disasm knuckles-in-sonic-2, {KIS2_COMMIT[:7]})\n'
           '; by tools/import_kis2.py\n')
 
-# (KiS2 path, our path); .asm files get HEADER in front
+# (KiS2 path, our path[, (label, new label)]); .asm files get HEADER in front
 COPIES = [
     ("art/uncompressed/Knuckles' art.bin", "art/uncompressed/Knuckles' art.bin"),
     ('mappings/sprite/Knuckles.asm', 'mappings/sprite/Knuckles.asm'),
@@ -31,6 +31,11 @@ COPIES = [
     ('art/nemesis/Monitor and contents (Knuckles patch).nem', 'art/nemesis/Monitor Knuckles patch.nem'),
     ('art/uncompressed/Title card font K.bin', 'art/uncompressed/Results letter K.bin'),
     ('art/uncompressed/Slot pictures (Knuckles patch).bin', 'art/uncompressed/Slot picture Knuckles.bin'),
+    ('art/nemesis/Knuckles animation frames in special stage.nem', 'art/nemesis/Knuckles animation frames in special stage.nem'),
+    ('mappings/sprite/obj09.asm', 'mappings/sprite/obj09 Knuckles.asm', ('Map_obj09', 'Map_obj09K')),
+    ('mappings/spriteDPLC/obj09.asm', 'mappings/spriteDPLC/obj09 Knuckles.asm', ('DPLC_obj09', 'DPLC_obj09K')),
+    ('art/palettes/Special Stage Main.bin', 'art/palettes/Special Stage Main Knuckles.bin'),
+    ('mappings/sprite/obj6F.asm', 'mappings/sprite/obj6F Knuckles.asm', ('Map_obj6F', 'Map_obj6FK')),
 ]
 
 KNUCKLES_COLOURS = range(2, 6)   # first palette line
@@ -108,10 +113,12 @@ def greys():
 
 def generate():
     outputs = {}
-    for src, dst in COPIES:
+    for src, dst, *rename in COPIES:
         data = kis2(src)
         if dst.endswith('.asm'):
             data = HEADER.encode() + data.replace(b'\r\n', b'\n')
+            for old, new in rename:   # labels that would clash with Sonic 2's copy
+                data = data.replace(old.encode(), new.encode())
         outputs[ROOT / dst] = data
     outputs.update(palettes())
     outputs.update(greys())
