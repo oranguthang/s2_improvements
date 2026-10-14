@@ -4985,15 +4985,12 @@ Level_InitWater:
 	move.w	#$8004,(a6)		; H-INT disabled
 	move.w	#$8720,(a6)		; Background palette/color: 2/0
 	move.w	#$8C81,(a6)		; H res 40 cells, no interlace
+	jsr	(Cheat_SetDebugMode).l	; DEBUG cheat: debug mode in every level
 	tst.b	(Debug_options_flag).w
-	beq.s	++
+	beq.s	+
 	btst	#button_C,(Ctrl_1_Held).w
 	beq.s	+
 	move.w	#$8C89,(a6)	; H res 40 cells, no interlace, S/H enabled
-+
-	btst	#button_A,(Ctrl_1_Held).w
-	beq.s	+
-	move.b	#1,(Debug_mode_flag).w
 +
 	move.w	#$8ADF,(Hint_counter_reserve).w	; H-INT every 223rd scanline
 	tst.w	(Two_player_mode).w
@@ -13631,7 +13628,7 @@ EndingSequence:
 	move.w	#$8ADF,(Hint_counter_reserve).w	; H-INT every 224th scanline
 	move.w	(Hint_counter_reserve).w,(a6)
 	clr.b	(Super_Sonic_flag).w
-	cmpi.b	#7,(Emerald_count).w
+	jsr	(HasAllEmeralds).l	; the ending is Super with the ALL EMERALDS cheat too
 	bne.s	+
 	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	beq.s	+
@@ -37069,7 +37066,7 @@ Obj01_Control:
 	bsr.w	Sonic_PanCamera		; run extended camera panning calculations
 	tst.w	(Debug_mode_flag).w	; is debug cheat enabled?
 	beq.s	+			; if not, branch
-	btst	#button_B,(Ctrl_1_Press).w	; is button B pressed?
+	jsr	(Sonic_ChkDebugToggle).l	; is button B pressed, and not for a Super combo?
 	beq.s	+			; if not, branch
 	move.w	#1,(Debug_placement_mode).w	; change Sonic into a ring/item
 	clr.b	(Control_Locked).w		; unlock control
@@ -38700,10 +38697,12 @@ Sonic_CheckGoSuper:
 	else
 	bne.w	return_1ABA4		; if yes, branch
 	endif
-	cmpi.b	#7,(Emerald_count).w	; does Sonic have exactly 7 emeralds?
+	jsr	(HasAllEmeralds).l	; does Sonic have exactly 7 emeralds (or the ALL EMERALDS cheat)?
 	bne.w	return_1ABA4		; if not, branch
-	cmpi.w	#50,(Ring_count).w	; does Sonic have at least 50 rings?
-	blo.w	return_1ABA4		; if not, branch
+	moveq	#0,d0
+	move.b	(Cheat_super_rings).w,d0	; SUPER RINGS cheat, normally 50
+	cmp.w	(Ring_count).w,d0	; does Sonic have enough rings?
+	bhi.w	return_1ABA4		; if not, branch
     if gameRevision>=2
 	; fixes a bug where the player can get stuck if transforming at the end of a level
 	tst.b	(Update_HUD_timer).w	; has Sonic reached the end of the act?
@@ -38777,6 +38776,8 @@ Sonic_Super:
 	bpl.w	return_1AC3C
     endif
 	move.w	#60,(Super_Sonic_frame_count).w	; Reset frame counter to 60
+	tst.b	(Cheat_ring_drain).w	; RING DRAIN cheat off?
+	beq.w	return_1AC3C		; then Super lasts until the end of the act
 	tst.w	(Ring_count).w
 	beq.s	Sonic_RevertToNormal
 	ori.b	#1,(Update_HUD_rings).w
@@ -46233,7 +46234,7 @@ Obj79_CheckActivation:
 	move.w	a0,parent(a1)
 	tst.w	(Two_player_mode).w
 	bne.s	loc_1F206
-	cmpi.b	#7,(Emerald_count).w
+	jsr	(HasAllEmeralds).l	; no Special Stage stars once every emerald counts as collected
 	beq.s	loc_1F206
 	cmpi.w	#50,(Ring_count).w
 	blo.s	loc_1F206

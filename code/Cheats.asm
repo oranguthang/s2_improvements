@@ -332,3 +332,64 @@ LevelSelect_DrawTexts:
 .done:
 	movem.l	(sp)+,d0-d2/a0-a3
 	rts
+
+; ---------------------------------------------------------------------------
+; Cheat effects
+; ---------------------------------------------------------------------------
+
+; Z=1 when the player counts as having all seven emeralds: really, or through
+; ALL EMERALDS outside 2P games and title demos. The real count is never changed.
+HasAllEmeralds:
+	tst.b	(Cheat_all_emeralds).w
+	beq.s	.real
+	tst.w	(Two_player_mode).w
+	bne.s	.real
+	tst.w	(Demo_mode_flag).w
+	bne.s	.real
+	ori	#4,ccr				; Z=1
+	rts
+.real:
+	cmpi.b	#7,(Emerald_count).w
+	rts
+
+; Level start: the DEBUG cheat makes debug mode available (B in a level)
+; without holding A, as in s1_improvements; never in title demos.
+Cheat_SetDebugMode:
+	move.b	(Debug_options_flag).w,(Debug_mode_flag).w
+	tst.w	(Demo_mode_flag).w
+	beq.s	+
+	clr.b	(Debug_mode_flag).w
++
+	rts
+
+; Debug mode: B enters object placement, except when it is part of a Super
+; combo (A+B or B+C) while Sonic is airborne and rolling, as in s1_improvements.
+; Returns Z=0 to enter placement. a0 = Sonic.
+Sonic_ChkDebugToggle:
+	btst	#button_B,(Ctrl_1_Press).w
+	beq.s	.return				; Z=1: no B
+	if FeatureSuperToggle
+	tst.b	(Control_Locked).w
+	bne.s	.enterdebug
+	btst	#0,obj_control(a0)
+	bne.s	.enterdebug
+	move.b	status(a0),d0
+	andi.b	#1<<status.player.in_air|1<<status.player.rolling,d0	; Super input is read while airborne and rolling
+	cmpi.b	#1<<status.player.in_air|1<<status.player.rolling,d0
+	bne.s	.enterdebug
+	move.b	(Ctrl_1_Press).w,d0
+	andi.b	#button_A_mask|button_C_mask,d0	; A+B or B+C on the same frame
+	bne.s	.supercombo
+	cmpi.b	#1,transform_combo_timer(a0)	; one frame left expires in Sonic_ToggleSuper
+	bls.s	.enterdebug
+	move.b	transform_combo_buttons(a0),d0
+	andi.b	#button_A_mask|button_C_mask,d0	; A or C pressed earlier in the combo window
+	beq.s	.enterdebug
+.supercombo:
+	moveq	#0,d0				; Z=1
+	rts
+	endif
+.enterdebug:
+	moveq	#1,d0				; Z=0
+.return:
+	rts
