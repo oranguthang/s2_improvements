@@ -224,7 +224,11 @@ OOZ_PSG1:
 
 OOZ_Jump02:
 	smpsPSGAlterVol     $03
+    if ImprovedMusicData
+	dc.b	nRst, $60, nRst, $60
+    else
 	dc.b	nRst, $60, $60
+    endif
 	smpsPSGvoice        $00
 	smpsPSGAlterVol     $FD
 	smpsCall            OOZ_Call04

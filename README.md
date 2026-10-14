@@ -174,6 +174,7 @@ features. The default build is unchanged by these switches.
 | `FeatureVictoryPoses` | After the signpost the player runs off to the right before the results, as in the original game. |
 | `FeatureSuperTails` | Tails cannot turn Super. |
 | `FeatureS3KDrums` | With Flamedriver, Sonic 2 songs play Sonic 2's own kick, snare and timpani samples. |
+| `FeatureImprovedMusic` | With Flamedriver, seven songs keep their original note data (see Sound driver). |
 
 Two optional alternatives are off by default; 1 enables them:
 
@@ -370,6 +371,12 @@ release tail.
 `FeatureS3KDrums` maps the DAC notes Sonic 2 songs use for the kick, snare and
 timpani to the Sonic 3 & Knuckles samples (timpani rates $0B, $0E, $15, $16 and
 $14, as in s1_improvements); 0 plays Sonic 2's samples through the same driver.
+`FeatureImprovedMusic` applies the note fixes from Flamedriver's
+`s2/music-improved` set that the sources here lacked: in MCZ (both versions),
+OOZ, ARZ, CNZ 2P, Special Stage and Credits, a bare duration after a rest
+becomes an explicit `nRst` (`if ImprovedMusicData` blocks in the song sources).
+The rest of that set (PSG volume commands, voice and pitch fixes) is already in
+the sources under `FixMusicAndSFXDataBugs`.
 
 With `FeatureSoundDriver = 0` the build compresses Sonic 2's Z80 driver and
 songs as before and the ROM is identical (up to `EndOfRom`) to the build before

@@ -135,10 +135,19 @@ MCZ_2p_Jump03:
 	smpsAlterPitch      $F4
 	smpsSetvoice        $01
 	dc.b	nRst, $30, nRst, nRst, nRst, $24, nG4, $06, nF4, nG4, $0C, nG4
+    if ImprovedMusicData
+	dc.b	nF4, $06, nG4, $0C, $06, nRst, $24, nRst, $06, nF4, nG4, $0C
+    else
 	dc.b	nF4, $06, nG4, $0C, $06, nRst, $24, $06, nF4, nG4, $0C
+    endif
 	dc.b	nG4, nF4, $06, nG4, $0C, $06, nRst, $30, nRst, $30, nRst, nRst
+    if ImprovedMusicData
+	dc.b	nRst, $24, nRst, $06, nF4, nG4, $0C, nG4, nF4, $06, nG4, $0C
+	dc.b	$06, nRst, $24, nRst, $06, nF4, nG4, $0C, nG4, nF4, $06, nG4
+    else
 	dc.b	nRst, $24, $06, nF4, nG4, $0C, nG4, nF4, $06, nG4, $0C
 	dc.b	$06, nRst, $24, $06, nF4, nG4, $0C, nG4, nF4, $06, nG4
+    endif
 	dc.b	$0C, $06, nRst, $18
 	smpsAlterVol        $0E
 	smpsAlterPitch      $0C
@@ -176,10 +185,19 @@ MCZ_2p_Jump02:
 	smpsAlterPitch      $F4
 	smpsSetvoice        $01
 	dc.b	nRst, $30, nRst, $30, nRst, $30, nRst, $24, nD4, $06, nC4, nD4
+    if ImprovedMusicData
+	dc.b	$0C, nD4, nC4, $06, nD4, $0C, $06, nRst, $24, nRst, $06, nC4
+    else
 	dc.b	$0C, nD4, nC4, $06, nD4, $0C, $06, nRst, $24, $06, nC4
+    endif
 	dc.b	nD4, $0C, nD4, nC4, $06, nD4, $0C, $06, nRst, $30, nRst, $30
+    if ImprovedMusicData
+	dc.b	nRst, nRst, nRst, $24, nRst, $06, nC4, nD4, $0C, nD4, nC4, $06
+	dc.b	nD4, $0C, $06, nRst, $24, nRst, $06, nC4, nD4, $0C, nD4, nD4
+    else
 	dc.b	nRst, nRst, nRst, $24, $06, nC4, nD4, $0C, nD4, nC4, $06
 	dc.b	nD4, $0C, $06, nRst, $24, $06, nC4, nD4, $0C, nD4, nD4
+    endif
 	dc.b	$06, nC4, $0C, $06, nRst, $19
 	smpsAlterVol        $0E
 	smpsAlterPitch      $0C
@@ -200,7 +218,11 @@ MCZ_2p_Jump01:
 
 MCZ_2p_Loop00:
 	dc.b	nB4, $0C, nB4, nB4, $06, nRst, $12, nA4, $0C, nA4, nB4, $06
+    if ImprovedMusicData
+	dc.b	nRst, $12, nRst, $0C, nRst, $06, nB4, $0C, nB4, nB4, $06, nA4
+    else
 	dc.b	nRst, $12, $0C, $06, nB4, $0C, nB4, nB4, $06, nA4
+    endif
 	dc.b	$0C, nC5, nB4, $06, nRst, $12
 	smpsLoop            $00, $09, MCZ_2p_Loop00
 
@@ -208,7 +230,11 @@ MCZ_2p_Loop01:
 	dc.b	nA4, $0C, nA4, nA4, $06, nRst, $12, nG4, $0C, nG4, nA4, $06
 	dc.b	nRst, $12, nG4, $0C, $06, nG4, $0C, nG4, nG4, $06, nG4, $0C
 	dc.b	nE4, nG4, $06, nRst, $12, nB4, $0C, nB4, nB4, $06, nRst, $12
+    if ImprovedMusicData
+	dc.b	nA4, $0C, nA4, nB4, $06, nRst, $12, nRst, $0C, nRst, $06, nB4
+    else
 	dc.b	nA4, $0C, nA4, nB4, $06, nRst, $12, $0C, $06, nB4
+    endif
 	dc.b	$0C, nB4, nB4, $06, nA4, $0C, nC5, nB4, $06, nRst, $12
 	smpsLoop            $00, $02, MCZ_2p_Loop01
 	smpsJump            MCZ_2p_Jump01
@@ -224,7 +250,11 @@ MCZ_2p_Jump06:
 
 MCZ_2p_Loop02:
 	dc.b	nG4, $0C, nG4, nG4, $06, nRst, $12, nF4, $0C, nF4, nG4, $06
+    if ImprovedMusicData
+	dc.b	nRst, $12, nRst, $0C, nRst, $06, nG4, $0C, nG4, nG4, $06, nF4
+    else
 	dc.b	nRst, $12, $0C, $06, nG4, $0C, nG4, nG4, $06, nF4
+    endif
 	dc.b	$0C, nA4, nG4, $06, nRst, $12
 	smpsLoop            $00, $09, MCZ_2p_Loop02
 
@@ -232,7 +262,11 @@ MCZ_2p_Loop03:
 	dc.b	nF4, $0C, nF4, nF4, $06, nRst, $12, nE4, $0C, nE4, nF4, $06
 	dc.b	nRst, $12, nE4, $0C, $06, nE4, $0C, nE4, nE4, $06, nE4, $0C
 	dc.b	nC4, nE4, $06, nRst, $12, nG4, $0C, nG4, nG4, $06, nRst, $12
+    if ImprovedMusicData
+	dc.b	nF4, $0C, nF4, nG4, $06, nRst, $12, nRst, $0C, nRst, $06, nG4
+    else
 	dc.b	nF4, $0C, nF4, nG4, $06, nRst, $12, $0C, $06, nG4
+    endif
 	dc.b	$0C, nG4, nG4, $06, nF4, $0C, nA4, nG4, $06, nRst, $12
 	smpsLoop            $00, $02, MCZ_2p_Loop03
 	smpsJump            MCZ_2p_Jump06

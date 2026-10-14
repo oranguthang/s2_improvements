@@ -117,6 +117,9 @@ FeatureSoundDriver = 2
 FeatureS3KDrums = 1
 ;	| With FeatureSoundDriver = 2, Sonic 2 songs use the Sonic 3 & Knuckles kick, snare and timpani;
 ;	| 0 plays Sonic 2's own drum samples through the same driver
+FeatureImprovedMusic = 1
+;	| With FeatureSoundDriver = 2, seven songs get Flamedriver's "improved" note fixes
+;	| (explicit rests where a bare duration repeated a note); 0 keeps the original note data
 
 ; Optional alternatives, off by default.
 FeatureInfiniteLives = 0
@@ -126,7 +129,7 @@ FeatureCDDrowning = 0
 ;	| If 1, the music keeps playing below 12 seconds of air and a warning sounds every
 ;	| second, as in Sonic CD; the countdown numbers still appear
 
-	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureCentiseconds|FeatureLightDash|FeaturePeelOut|FeatureVictoryPoses|FeatureSuperTails|FeatureBurntDeath|FeatureActMusic|FeatureS3KDrums|FeatureInfiniteLives|FeatureCDDrowning)&~1
+	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureCentiseconds|FeatureLightDash|FeaturePeelOut|FeatureVictoryPoses|FeatureSuperTails|FeatureBurntDeath|FeatureActMusic|FeatureS3KDrums|FeatureImprovedMusic|FeatureInfiniteLives|FeatureCDDrowning)&~1
 		error "Feature options must be 0 or 1"
 	endif
 
@@ -152,6 +155,7 @@ SoundDriver_S3K = 2
 ; Flamedriver: its constants, the MusID_ IDs from its music table (sound/flamedriver/Tables.asm)
 ; and its SMPS2ASM, which converts the Sonic 2 song and sound sources while assembling.
 FixMusicAndSFXDataBugs = fixBugs
+ImprovedMusicData = FeatureImprovedMusic
 	include	"sound/flamedriver/Definitions.asm"
 	endif
 
@@ -163,6 +167,7 @@ FixMusicAndSFXDataBugs = fixBugs
 ; >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ; Expressing SMPS bytecode in a portable and human-readable form
 FixMusicAndSFXDataBugs = fixBugs
+ImprovedMusicData = 0
 SonicDriverVer = 2 ; Tell SMPS2ASM that we are targetting Sonic 2's sound driver
 	include "sound/_smps2asm_inc.asm"
 	endif

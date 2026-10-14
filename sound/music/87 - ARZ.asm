@@ -15,7 +15,11 @@ ARZ_Header:
 	smpsHeaderPSG       ARZ_PSG3,	$00, $01, $00, fTone_02
 
 ARZ_Call04:
+    if ImprovedMusicData
+	dc.b	nD5, $06, nC5, nD5, $12, nF5, nD5, $0C, nE5, nRst, $06, nRst
+    else
 	dc.b	nD5, $06, nC5, nD5, $12, nF5, nD5, $0C, nE5, nRst, $06
+    endif
 	dc.b	$12, nG5, $0C, nF5, $06, nRst, nC6, nA5, $30, smpsNoAttack, $0C
 	smpsReturn
 
@@ -83,7 +87,11 @@ ARZ_Jump03:
 	dc.b	nRst, $06, nA5, nRst, nBb5, $12, nA5, nG5, $06, nF5, nE5, $18
 	dc.b	nG5, nFs5, $30, smpsNoAttack, $18, nRst, $0C
 	smpsCall            ARZ_Call04
+    if ImprovedMusicData
+	dc.b	nRst, $06, nRst, $0C, nBb5, $12, nA5, nG5, $06, nF5, nE5, $18
+    else
 	dc.b	nRst, $06, $0C, nBb5, $12, nA5, nG5, $06, nF5, nE5, $18
+    endif
 	dc.b	nCs5, nD5, $30, smpsNoAttack, $18, nRst, $18
 	smpsSetvoice        $01
 	smpsAlterVol        $F8
@@ -113,7 +121,11 @@ ARZ_Jump02:
 	dc.b	nRst, $06, nA5, nRst, nBb5, $12, nA5, nG5, $06, nF5, nE5, $18
 	dc.b	nG5, nFs5, $30, smpsNoAttack, $18, nRst, $0C
 	smpsCall            ARZ_Call04
+    if ImprovedMusicData
+	dc.b	nRst, $06, nRst, $0C, nBb5, $12, nA5, nG5, $06, nF5, nE5, $18
+    else
 	dc.b	nRst, $06, $0C, nBb5, $12, nA5, nG5, $06, nF5, nE5, $18
+    endif
 	dc.b	nCs5, nD5, $30, smpsNoAttack, $18, nRst, $18
 	smpsSetvoice        $01
 	smpsAlterVol        $F8

@@ -403,8 +403,13 @@ Credits_Call06:
 	smpsReturn
 
 Credits_Call16:
+    if ImprovedMusicData
+	dc.b	nD5, $06, nC5, nD5, $12, nF5, nD5, $0C, nE5, nRst, $06, nRst
+	dc.b	$12, nG5, $0C, nF5, $06, nRst, nC6, nA5, $3C, nRst, $06, nRst
+    else
 	dc.b	nD5, $06, nC5, nD5, $12, nF5, nD5, $0C, nE5, nRst, $06
 	dc.b	$12, nG5, $0C, nF5, $06, nRst, nC6, nA5, $3C, nRst, $06
+    endif
 	dc.b	$0C, nBb5, $12, nA5, nG5, $06, nF5, nE5, $18
 	smpsReturn
 

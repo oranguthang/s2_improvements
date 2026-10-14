@@ -76,12 +76,20 @@ MCZ_Jump03:
 	dc.b	nAb4, $08, nG4, $04
 
 MCZ_Loop05:
+    if ImprovedMusicData
+	dc.b	nRst, $0C, nE5, $06, nRst, $12, nRst, $06, nRst, $12, nE5, $06
+    else
 	dc.b	nRst, $0C, nE5, $06, nRst, $12, $06, nRst, $12, nE5, $06
+    endif
 	dc.b	nRst, $0C
 	smpsSetvoice        $06
 	dc.b	nB2, $12, nC3, $06, nRst
 	smpsSetvoice        $01
+    if ImprovedMusicData
+	dc.b	nE5, $06, nRst, $12, nRst, $06, nRst, $12, nE5, $08, nEb5, $04
+    else
 	dc.b	nE5, $06, nRst, $12, $06, nRst, $12, nE5, $08, nEb5, $04
+    endif
 	dc.b	nE5, $08, nEb5, $04, nE5, $0C
 	smpsLoop            $00, $04, MCZ_Loop05
 	dc.b	nRst, $01
@@ -312,12 +320,20 @@ MCZ_Jump01:
 	dc.b	nF4, $08, nE4, $04
 
 MCZ_Loop00:
+    if ImprovedMusicData
+	dc.b	nRst, $0C, nC5, $06, nRst, $12, nRst, $06, nRst, $12, nC5, $06
+    else
 	dc.b	nRst, $0C, nC5, $06, nRst, $12, $06, nRst, $12, nC5, $06
+    endif
 	dc.b	nRst, $0C
 	smpsSetvoice        $06
 	dc.b	nAb2, $12, nA2, $06, nRst
 	smpsSetvoice        $01
+    if ImprovedMusicData
+	dc.b	nC5, $06, nRst, $12, nRst, $06, nRst, $12, nC5, $08, nB4, $04
+    else
 	dc.b	nC5, $06, nRst, $12, $06, nRst, $12, nC5, $08, nB4, $04
+    endif
 	dc.b	nC5, $08, nB4, $04, nC5, $0C
 	smpsLoop            $00, $04, MCZ_Loop00
 	smpsCall            MCZ_Call00
