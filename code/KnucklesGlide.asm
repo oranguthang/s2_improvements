@@ -29,11 +29,28 @@ Knuckles_JumpHeight:
 	andi.b	#button_A_mask|button_B_mask|button_C_mask,d0
 	beq.s	.return
 	tst.w	(Player_mode).w	; Knuckles and Tails?
-	bne.s	Knuckles_BeginGlide
+	bne.s	.notTails
 	tst.w	(Two_player_mode).w
-	bne.s	Knuckles_BeginGlide
+	bne.s	.notTails
 	btst	#button_up,(Ctrl_1_Held_Logical).w	; Up + jump calls Tails instead
+	bne.s	.return
+.notTails:
+	if SuperKnucklesOn
+	; As in Knuckles in Sonic 2, the same press turns him Super when he can.
+	tst.b	(Super_Sonic_flag).w
+	bne.s	Knuckles_BeginGlide
+	jsr	(HasAllEmeralds).l
+	bne.s	Knuckles_BeginGlide
+	moveq	#0,d0
+	move.b	(Cheat_super_rings).w,d0	; normally 50
+	cmp.w	(Ring_count).w,d0
+	bhi.s	Knuckles_BeginGlide
+	tst.b	(Update_HUD_timer).w	; the act is over
 	beq.s	Knuckles_BeginGlide
+	jmp	(Sonic_TurnSuper).l
+	else
+	bra.s	Knuckles_BeginGlide
+	endif
 .return:
 	rts
 

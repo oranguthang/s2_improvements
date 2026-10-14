@@ -145,6 +145,78 @@ Knuckles_ContinueAlone:
 	ori	#4,ccr		; Z=1
 	rts
 
+	if SuperKnucklesOn
+; ---------------------------------------------------------------------------
+; Super Knuckles' palette (PalCycle_SuperSonic jumps here when Knuckles
+; plays), as in Knuckles in Sonic 2: colours 2, 3 and 5 cycle through his
+; pinks, also under water; turning back restores his colours (KiS2 put the
+; dry ones under water too; here the zone's underwater ones come back).
+; Super_Sonic_palette: 1 = turning Super, -1 = cycling, 2 = turning back.
+; ---------------------------------------------------------------------------
+PalCycle_SuperKnuckles:
+	move.b	(Super_Sonic_palette).w,d0
+	beq.s	.return
+	bmi.s	.cycle
+	subq.b	#1,d0
+	bne.s	.revert
+	subq.b	#1,(Palette_timer).w	; the transformation pose plays meanwhile
+	bpl.s	.return
+	move.b	#-1,(Super_Sonic_palette).w
+	move.w	#0,(Palette_frame).w
+	move.b	#0,(MainCharacter+obj_control).w	; give Knuckles back his controls
+.return:
+	rts
+.revert:
+	moveq	#0,d0
+	move.w	d0,(Palette_frame).w
+	move.b	d0,(Super_Sonic_palette).w
+	lea	(CyclingPal_SKRevert).l,a0
+	lea	(Normal_palette+2*2).w,a1
+	move.l	(a0),(a1)+
+	move.w	4(a0),2(a1)
+	tst.b	(Water_flag).w
+	beq.s	.return
+	lea	(Pal_HPZ_U_Knuckles).l,a0
+	cmpi.b	#hidden_palace_zone,(Current_Zone).w
+	beq.s	+
+	lea	(Pal_CPZ_U_Knuckles).l,a0
+	cmpi.b	#chemical_plant_zone,(Current_Zone).w
+	beq.s	+
+	lea	(Pal_ARZ_U_Knuckles).l,a0
++
+	lea	(Underwater_palette+2*2).w,a1
+	move.l	2*2(a0),(a1)+
+	move.w	5*2(a0),2(a1)
+	rts
+.cycle:
+	subq.b	#1,(Palette_timer).w
+	bpl.s	.return
+	move.b	#2,(Palette_timer).w
+	lea	(CyclingPal_SKCycle).l,a0
+	move.w	(Palette_frame).w,d0
+	addq.w	#6,(Palette_frame).w
+	cmpi.w	#CyclingPal_SKCycle_End-CyclingPal_SKCycle,(Palette_frame).w
+	blo.s	+
+	move.w	#0,(Palette_frame).w
+	move.b	#14,(Palette_timer).w	; hold the last colours a little
++
+	lea	(Normal_palette+2*2).w,a1
+	move.l	(a0,d0.w),(a1)+
+	move.w	4(a0,d0.w),2(a1)
+	tst.b	(Water_flag).w
+	beq.w	.return
+	lea	(Underwater_palette+2*2).w,a1
+	move.l	(a0,d0.w),(a1)+
+	move.w	4(a0,d0.w),2(a1)
+	rts
+
+; colours 2, 3 and 5 per frame (Knuckles in Sonic 2)
+CyclingPal_SKCycle:	BINCLUDE	"art/palettes/Super Knuckles cycle.bin"
+CyclingPal_SKCycle_End:
+CyclingPal_SKRevert:	BINCLUDE	"art/palettes/Super Knuckles revert.bin"
+	even
+	endif
+
 ; ---------------------------------------------------------------------------
 ; Balancing, as in Knuckles in Sonic 2: one balancing animation; facing away
 ; from the edge, Knuckles turns round and starts it further on.

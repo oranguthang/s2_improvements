@@ -109,6 +109,8 @@ FeatureSuperTails = 1
 ;	| In Tails Alone games Tails turns Super like Sonic (S3K pose and yellow fur cycle)
 FeatureKnuckles = 1
 ;	| Knuckles from Knuckles in Sonic 2: KNUCKLES AND MILES and KNUCKLES ALONE in the player select
+FeatureSuperKnuckles = 1
+;	| With FeatureKnuckles, Knuckles turns Super as in Knuckles in Sonic 2 (a jump button in the air)
 FeatureBurntDeath = 1
 ;	| Sonic plays the burnt death animation when killed by fire or lasers
 FeatureActMusic = 1
@@ -131,9 +133,11 @@ FeatureCDDrowning = 0
 ;	| If 1, the music keeps playing below 12 seconds of air and a warning sounds every
 ;	| second, as in Sonic CD; the countdown numbers still appear
 
-	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureCentiseconds|FeatureLightDash|FeaturePeelOut|FeatureVictoryPoses|FeatureSuperTails|FeatureKnuckles|FeatureBurntDeath|FeatureActMusic|FeatureS3KDrums|FeatureImprovedMusic|FeatureInfiniteLives|FeatureCDDrowning)&~1
+	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureCentiseconds|FeatureLightDash|FeaturePeelOut|FeatureVictoryPoses|FeatureSuperTails|FeatureKnuckles|FeatureSuperKnuckles|FeatureBurntDeath|FeatureActMusic|FeatureS3KDrums|FeatureImprovedMusic|FeatureInfiniteLives|FeatureCDDrowning)&~1
 		error "Feature options must be 0 or 1"
 	endif
+
+SuperKnucklesOn = FeatureKnuckles&FeatureSuperKnuckles	; Super Knuckles needs Knuckles
 
 SoundDriver_Original = 0
 SoundDriver_S3K = 2
@@ -558,11 +562,15 @@ GameMode_Demo:		bra.w	Level			; Demo mode
 GameMode_Level:		bra.w	Level			; Zone play mode
 GameMode_SpecialStage:	bra.w	SpecialStage		; Special stage play mode
 GameMode_ContinueScreen:bra.w	ContinueScreen		; Continue mode
-GameMode_2PResults:	bra.w	TwoPlayerResults	; 2P results mode
+GameMode_2PResults:	bra.w	JmpTo_TwoPlayerResults	; 2P results mode
 GameMode_2PLevelSelect:	bra.w	LevelSelectMenu2P	; 2P level select mode
 GameMode_EndingSequence:bra.w	JmpTo_EndingSequence	; End sequence mode
 GameMode_OptionsMenu:	bra.w	OptionsMenu		; Options mode
 GameMode_LevelSelect:	bra.w	LevelSelectMenu		; Level select mode
+; ===========================================================================
+; TwoPlayerResults moved out of the bra.w's reach as the mod grew
+JmpTo_TwoPlayerResults:
+	jmp	(TwoPlayerResults).l
 ; ===========================================================================
     if skipChecksumCheck=0	; checksum error code
 ; loc_3CE:
@@ -2915,6 +2923,12 @@ CyclingPal_WFZ2:
 
 ; sub_213E:
 PalCycle_SuperSonic:
+	if SuperKnucklesOn
+	tst.b	(Main_character).w		; Super Knuckles?
+	beq.s	+
+	jmp	(PalCycle_SuperKnuckles).l
++
+	endif
 	if FeatureSuperTails
 	cmpi.b	#ObjID_Tails,(MainCharacter+id).w	; Super Tails in a Tails Alone game?
 	bne.s	+
@@ -13517,6 +13531,10 @@ EndingSequence:
 	bne.s	+
 	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	beq.s	+
+	if FeatureKnuckles&(SuperKnucklesOn=0)
+	tst.b	(Main_character).w	; Knuckles cannot turn Super
+	bne.s	+
+	endif
 	st.b	(Super_Sonic_flag).w
 	move.b	#-1,(Super_Sonic_palette).w
 	move.b	#$F,(Palette_timer).w
@@ -38967,6 +38985,7 @@ Sonic_CheckGoSuper:
 	beq.w	return_1ABA4		; if yes, branch
     endif
 
+Sonic_TurnSuper:	; Knuckles_JumpHeight comes here for Super Knuckles
     if fixBugs
 	; If Sonic was executing a roll-jump when he turned Super, then this
 	; will remove him from that state. The original code forgot to do
@@ -40485,8 +40504,16 @@ ApplySpeedSettings:
 	addi.b	#24,d0				; if so, +24
 	if FeatureSuperTails
 	cmpi.b	#ObjID_Tails,id(a0)		; Super Tails (Tails Alone)?
-	bne.s	+
+	bne.s	.notTails
 	addi.b	#24,d0				; S3K's values for him, +48
+.notTails:
+	endif
+	if SuperKnucklesOn
+	tst.b	(Main_character).w		; Super Knuckles: the same values (Knuckles in Sonic 2)
+	beq.s	+
+	cmpi.b	#ObjID_Sonic,id(a0)
+	bne.s	+
+	addi.b	#24,d0
 	endif
 +
 	lea	Speedsettings(pc,d0.w),a1
@@ -40510,8 +40537,8 @@ Speedsettings:
 	dc.w	$C00,	$30,	$100	; Super + Speed Shoes
 	dc.w	$500,	$18,	$80		; Super Underwater
 	dc.w	$A00,	$30,	$80		; Super Underwater + Speed Shoes
-	if FeatureSuperTails
-	dc.w	$800,	$18,	$C0		; Super Tails (S3K)
+	if FeatureSuperTails|SuperKnucklesOn
+	dc.w	$800,	$18,	$C0		; Super Tails (S3K), Super Knuckles (Knuckles in Sonic 2)
 	dc.w	$C00,	$30,	$C0		; Super Tails + Speed Shoes
 	dc.w	$400,	$C,		$60		; Super Tails Underwater
 	dc.w	$600,	$18,	$60		; Super Tails Underwater + Speed Shoes

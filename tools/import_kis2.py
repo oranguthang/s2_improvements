@@ -31,6 +31,8 @@ COPIES = [
     ('art/nemesis/Final image of Knuckles.nem', 'art/nemesis/Final image of Knuckles.nem'),
     ('mappings/sprite/objCF.asm', 'mappings/sprite/objCF Knuckles.asm', ('Map_objCF', 'Map_objCFK')),
     ('art/palettes/Ending Sonic.bin', 'art/palettes/Ending Knuckles.bin'),
+    ('art/palettes/Super Knuckles transformation.bin', 'art/palettes/Super Knuckles cycle.bin'),
+    ('art/palettes/Super Knuckles revert.bin', 'art/palettes/Super Knuckles revert.bin'),
     ('art/nemesis/Signpost (Knuckles patch).nem', 'art/nemesis/Signpost Knuckles patch.nem'),
     ('art/nemesis/Monitor and contents (Knuckles patch).nem', 'art/nemesis/Monitor Knuckles patch.nem'),
     ('art/uncompressed/Title card font K.bin', 'art/uncompressed/Results letter K.bin'),
