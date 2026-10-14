@@ -215,7 +215,7 @@ status.player.x_flip			= render_flags.x_flip ; Facing left.
 status.player.in_air			= 1 ; Airborne. 
 status.player.rolling			= 2 ; Spinning, i.e. jumping or rolling.
 status.player.on_object			= 3 ; Stood on an object rather than the level.
-; status.player.rolljumping		= 4 ; Jumping whilst rolling; locks the player's controls. (removed: roll-jump lock disabled)
+status.player.rolljumping		= 4 ; Jumping whilst rolling; locks the player's controls (only with FeatureRollJumpSteering = 0).
 status.player.pushing			= 5 ; Pressing against an object.
 status.player.underwater		= 6 ; Submersed.
 status.player.prevent_tails_respawn	= 7 ; Prevents AI Tails from respawning.
@@ -241,6 +241,16 @@ status_secondary.shield		= 0
 status_secondary.invincible	= 1
 status_secondary.speed_shoes	= 2
 status_secondary.sliding	= 7
+
+; Sonic's "Homing Attack used this jump" flag. It takes bit 4 of status, which
+; the roll-jump lock uses when FeatureRollJumpSteering = 0; then it moves to the
+; free bit 4 of status_secondary.
+homing_attack_flag = 4
+	if FeatureRollJumpSteering
+homing_attack_byte = status
+	else
+homing_attack_byte = status_secondary
+	endif
 
 ; Ugly old constants, kept for backwards-compatibility.
 

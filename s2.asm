@@ -70,10 +70,14 @@ FeatureHomingAttack = 1
 ;	| Press A/B/C during a jump for Sonic's Homing Attack
 FeatureExtendedCamera = 1
 ;	| Let the camera look ahead of Sonic at speed
+FeatureMomentum = 1
+;	| Keep air speed above the running cap that came from slopes, springs or dashes (Sonic and Tails)
+FeatureRollJumpSteering = 1
+;	| Allow steering after jumping from a roll
 FeatureBurntDeath = 1
 ;	| Sonic plays the burnt death animation when killed by fire or lasers
 
-	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureBurntDeath)&~1
+	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureBurntDeath)&~1
 		error "Feature options must be 0 or 1"
 	endif
 
@@ -33585,6 +33589,9 @@ loc_177F2:
 	bra.w	loc_177FA
 loc_177FA:
 	bset	#status.player.in_air,status(a0)
+	if FeatureRollJumpSteering=0
+	bclr	#status.player.rolljumping,status(a0)
+	endif
 	bclr	#status.player.pushing,status(a0)
 	clr.b	jumping(a0)
 	move.w	#SndID_LargeBumper,d0
@@ -37458,12 +37465,12 @@ Sonic_HomingAttack:
 .normal:
 	tst.b	(Control_Locked).w		; are Sonic's controls locked (cutscene)?
 	bne.s	.homeend			; if yes, branch
-	btst	#4,status(a0)			; was the homing attack already used this jump?
+	btst	#homing_attack_flag,homing_attack_byte(a0)			; was the homing attack already used this jump?
 	bne.s	.homeend			; if yes, branch
 	moveq	#button_A_mask|button_B_mask|button_C_mask,d0
 	and.b	(Ctrl_1_Press_Logical).w,d0	; is A, B, or C pressed?
 	beq.s	.homeend			; if not, branch
-	bset	#4,status(a0)			; set homing attack flag
+	bset	#homing_attack_flag,homing_attack_byte(a0)			; set homing attack flag
 	move.w	#SndID_SpindashRelease,d0
 	jsr	(PlaySound).l			; play spindash release sound
 
@@ -38195,6 +38202,10 @@ Sonic_ChgJumpDir:
 	move.w	(Sonic_top_speed).w,d6
 	move.w	(Sonic_acceleration).w,d5
 	asl.w	#1,d5
+	if FeatureRollJumpSteering=0
+	btst	#status.player.rolljumping,status(a0)	; did Sonic jump from rolling?
+	bne.s	Obj01_Jump_ResetScr			; if yes, branch to skip midair control
+	endif
 	move.w	x_vel(a0),d0
 	btst	#button_left,(Ctrl_1_Held_Logical).w
 	beq.s	+	; if not holding left, branch
@@ -38205,9 +38216,11 @@ Sonic_ChgJumpDir:
 	neg.w	d1
 	cmp.w	d1,d0	; compare new speed with top speed
 	bgt.s	+	; if new speed is less than the maximum, branch
+	if FeatureMomentum
 	add.w	d5,d0	; +++ remove this frame's acceleration change
 	cmp.w	d1,d0	; +++ compare speed with top speed
 	ble.s	+	; +++ if speed was already greater than the maximum, branch
+	endif
 	move.w	d1,d0	; limit speed in air going left, even if Sonic was already going faster (speed limit/cap)
 +
 	btst	#button_right,(Ctrl_1_Held_Logical).w
@@ -38217,14 +38230,17 @@ Sonic_ChgJumpDir:
 	add.w	d5,d0	; accelerate right in the air
 	cmp.w	d6,d0	; compare new speed with top speed
 	blt.s	+	; if new speed is less than the maximum, branch
+	if FeatureMomentum
 	sub.w	d5,d0	; +++ remove this frame's acceleration change
 	cmp.w	d6,d0	; +++ compare speed with top speed
 	bge.s	+	; +++ if speed was already greater than the maximum, branch
+	endif
 	move.w	d6,d0	; limit speed in air going right, even if Sonic was already going faster (speed limit/cap)
 ; Obj01_JumpMove:
 +	move.w	d0,x_vel(a0)
 
 ; loc_1A932: Obj01_ResetScr2:
+Obj01_Jump_ResetScr:
 	cmpi.w	#(screen_height/2)-16,(Camera_Y_pos_bias).w	; is screen in its default position?
 	beq.s	Sonic_JumpPeakDecelerate	; if yes, branch
 	bhs.s	+				; depending on the sign of the difference,
@@ -38429,7 +38445,11 @@ Sonic_Jump:
 	move.b	#9,x_radius(a0)
     endif
 	btst	#status.player.rolling,status(a0)
+	if FeatureRollJumpSteering
 	bne.s	return_1AAE6
+	else
+	bne.s	Sonic_RollJump
+	endif
 	move.b	#$E,y_radius(a0)
 	move.b	#7,x_radius(a0)
 	move.b	#AniIDSonAni_Roll,anim(a0)	; use "jumping" animation
@@ -38438,6 +38458,12 @@ Sonic_Jump:
 
 return_1AAE6:
 	rts
+	if FeatureRollJumpSteering=0
+; ---------------------------------------------------------------------------
+Sonic_RollJump:
+	bset	#status.player.rolljumping,status(a0)	; set the rolling+jumping flag
+	rts
+	endif
 ; End of function Sonic_Jump
 
 
@@ -38565,7 +38591,11 @@ Sonic_CheckGoSuper:
 	; If Sonic was executing a roll-jump when he turned Super, then this
 	; will remove him from that state. The original code forgot to do
 	; this.
+	if FeatureRollJumpSteering
 	bclr	#status.player.rolling,status(a0)	; Clear bit 2
+	else
+	andi.b	#~(1<<status.player.rolling|1<<status.player.rolljumping),status(a0)	; Clear bits 2 and 4
+	endif
 	move.b	#$13,y_radius(a0)
 	move.b	#9,x_radius(a0)
     endif
@@ -39277,7 +39307,10 @@ Sonic_ResetOnFloor_Part3:
 	clr.b	transform_combo_buttons(a0)
 	bclr	#status.player.in_air,status(a0)
 	bclr	#status.player.pushing,status(a0)
-	bclr	#4,status(a0)			; clear homing attack flag
+	if FeatureRollJumpSteering=0
+	bclr	#status.player.rolljumping,status(a0)
+	endif
+	bclr	#homing_attack_flag,homing_attack_byte(a0)	; clear homing attack flag
 	move.b	#0,jumping(a0)
 	move.w	#0,(Chain_Bonus_counter).w
 	move.b	#0,flip_angle(a0)
@@ -41440,6 +41473,10 @@ Tails_ChgJumpDir:
 	move.w	(Tails_top_speed).w,d6
 	move.w	(Tails_acceleration).w,d5
 	asl.w	#1,d5
+	if FeatureRollJumpSteering=0
+	btst	#status.player.rolljumping,status(a0)	; did Tails jump from rolling?
+	bne.s	Obj02_Jump_ResetScr			; if yes, branch to skip midair control
+	endif
 	move.w	x_vel(a0),d0
 	btst	#button_left,(Ctrl_2_Held_Logical).w
 	beq.s	+	; if not holding left, branch
@@ -41450,9 +41487,11 @@ Tails_ChgJumpDir:
 	neg.w	d1
 	cmp.w	d1,d0	; compare new speed with top speed
 	bgt.s	+	; if new speed is less than the maximum, branch
+	if FeatureMomentum
 	add.w	d5,d0	; +++ remove this frame's acceleration change
 	cmp.w	d1,d0	; +++ compare speed with top speed
 	ble.s	+	; +++ if speed was already greater than the maximum, branch
+	endif
 	move.w	d1,d0	; limit speed in air going left, even if Tails was already going faster (speed limit/cap)
 +
 	btst	#button_right,(Ctrl_2_Held_Logical).w
@@ -41462,14 +41501,17 @@ Tails_ChgJumpDir:
 	add.w	d5,d0	; accelerate right in the air
 	cmp.w	d6,d0	; compare new speed with top speed
 	blt.s	+	; if new speed is less than the maximum, branch
+	if FeatureMomentum
 	sub.w	d5,d0	; +++ remove this frame's acceleration change
 	cmp.w	d6,d0	; +++ compare speed with top speed
 	bge.s	+	; +++ if speed was already greater than the maximum, branch
+	endif
 	move.w	d6,d0	; limit speed in air going right, even if Tails was already going faster (speed limit/cap)
 ; Obj02_JumpMove:
 +	move.w	d0,x_vel(a0)
 
 ; loc_1C518: Obj02_ResetScr2:
+Obj02_Jump_ResetScr:
 	cmpi.w	#(screen_height/2)-16,(Camera_Y_pos_bias_P2).w	; is screen in its default position?
 	beq.s	Tails_JumpPeakDecelerate			; if yes, branch
 	bhs.s	+				; depending on the sign of the difference,
@@ -41662,7 +41704,11 @@ Tails_Jump:
 	move.w	#SndID_Jump,d0
 	jsr	(PlaySound).l	; play jumping sound
 	btst	#status.player.rolling,status(a0)
+	if FeatureRollJumpSteering
 	bne.s	return_1C6C2
+	else
+	bne.s	Tails_RollJump
+	endif
 	move.b	#$E,y_radius(a0)
 	move.b	#7,x_radius(a0)
 	move.b	#AniIDSonAni_Roll,anim(a0)	; use "jumping" animation
@@ -41671,6 +41717,12 @@ Tails_Jump:
 
 return_1C6C2:
 	rts
+	if FeatureRollJumpSteering=0
+; ---------------------------------------------------------------------------
+Tails_RollJump:
+	bset	#status.player.rolljumping,status(a0)	; set the rolling+jumping flag
+	rts
+	endif
 ; End of function Tails_Jump
 
 
@@ -42299,6 +42351,9 @@ Tails_ResetOnFloor_Part3:
 	move.w #6,(Tails_CPU_routine).w
 .keepai:
 	bclr	#status.player.in_air,status(a0)
+	if FeatureRollJumpSteering=0
+	bclr	#status.player.rolljumping,status(a0)
+	endif
 	bclr	#status.player.pushing,status(a0)
 	move.b	#0,jumping(a0)
     if fixBugs
@@ -46572,6 +46627,9 @@ Obj44_BumpCharacter:
 	asr.l	#8,d0
 	move.w	d0,y_vel(a1)
 	bset	#status.player.in_air,status(a1)
+	if FeatureRollJumpSteering=0
+	bclr	#status.player.rolljumping,status(a1)
+	endif
 	bclr	#status.player.pushing,status(a1)
 	clr.b	jumping(a1)
 	move.b	#1,anim(a0)
@@ -46885,6 +46943,9 @@ loc_1FB0C:
 	move.b	#AniIDSonAni_Bubble,anim(a1)
 	move.w	#$23,move_lock(a1)
 	move.b	#0,jumping(a1)
+	if FeatureRollJumpSteering=0
+	bclr	#status.player.rolljumping,status(a1)
+	endif
 	bclr	#status.player.pushing,status(a1)
 	btst	#status.player.rolling,status(a1)
 	beq.w	loc_1FBB8
@@ -54854,6 +54915,9 @@ loc_270DC:
 +
 	bclr	#p1_pushing_bit,status(a0)
 	bclr	#p2_pushing_bit,status(a0)
+	if FeatureRollJumpSteering=0
+	bclr	#status.player.rolljumping,status(a1)
+	endif
 	bclr	#status.player.pushing,status(a1)
 	move.w	#SndID_Spring,d0
 	jmp	(PlaySound).l
@@ -61502,6 +61566,9 @@ ObjD7_BounceUp:
 ; loc_2C55E:
 ObjD7_BounceEnd:
 	bset	#status.player.in_air,status(a1)
+	if FeatureRollJumpSteering=0
+	bclr	#status.player.rolljumping,status(a1)
+	endif
 	bclr	#status.player.pushing,status(a1)
 	clr.b	jumping(a1)
 	move.w	#SndID_Bumper,d0
@@ -61740,6 +61807,9 @@ loc_2C7EC:
 
 loc_2C806:
 	bset	#status.player.in_air,status(a1)
+	if FeatureRollJumpSteering=0
+	bclr	#status.player.rolljumping,status(a1)
+	endif
 	bclr	#status.player.pushing,status(a1)
 	clr.b	jumping(a1)
 	move.w	#SndID_BonusBumper,d0
@@ -83675,6 +83745,9 @@ loc_3D3A4:
 	asr.l	#8,d0
 	move.w	d0,y_vel(a1)
 	bset	#status.player.in_air,status(a1)
+	if FeatureRollJumpSteering=0
+	bclr	#status.player.rolljumping,status(a1)
+	endif
 	bclr	#status.player.pushing,status(a1)
 	clr.b	jumping(a1)
 	move.w	#SndID_Bumper,d0
@@ -86669,11 +86742,11 @@ Enemy_Points:	dc.w 10, 20, 50, 100
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 
 ResetHomingAttack:
-	btst	#4,status(a0)			; was the homing attack flag set?
+	btst	#homing_attack_flag,homing_attack_byte(a0)			; was the homing attack flag set?
 	beq.s	.nohoming			; if not, nothing to do
 	clr.w	x_vel(a0)			; clear Sonic's X-speed
 	move.w	#-$500,y_vel(a0)		; bounce Sonic upwards from the impact
-	bclr	#4,status(a0)			; reset homing attack flag
+	bclr	#homing_attack_flag,homing_attack_byte(a0)			; reset homing attack flag
 .nohoming:
 	rts
 ; End of function ResetHomingAttack
