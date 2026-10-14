@@ -15,7 +15,8 @@ check which object it is looking at (as `Touch_Enemy` does with
 |---|---|---|---|
 | `$20` | `transform_combo_timer` | `flying` | The Knuckles tutorial puts `gliding_mode` here |
 | `$21` | `transform_combo_buttons` | `flying_timer` | The Knuckles tutorial puts `gliding_property` here |
-| `$23` | `peelout_flag` (Super Peel-Out charge) | `carry_delay` | |
+| `$23` | `peelout_flag` (Super Peel-Out charge); Knuckles: `glide_mode` | `carry_delay` | |
+| `$1F` (Knuckles) | `glide_property` (glide angle, climb timer, ledge step) | — | Cleared by `loc_A53A` and `ObjB2_Landed_on_plane`, as in KiS2 |
 | `$1F` | — | — | Free, but cleared by `loc_A53A` and `ObjB2_Landed_on_plane` |
 | `status` bit 4 | homing attack used this jump (`homing_attack_flag`) | — | The roll-jump lock bit when `FeatureRollJumpSteering = 0`; the Homing Attack flag then uses `status_secondary` bit 4 (`homing_attack_byte`) |
 | `status_secondary` bit 3 | being carried by Tails (`status_secondary.carry`) | — | |
@@ -57,7 +58,7 @@ Other objects:
 | `$FF60-$FF64` | `Cheat_all_emeralds`, `Cheat_super_rings`, `Cheat_ring_drain`, `Cheat_god_mode`, `Cheats_menu_row` | CHEATS page (saved in SRAM) |
 | `$FF66` | `Title_unlock_entries` (word) | Title unlock code progress |
 | `$FF68` | `Main_character` | Character in the Sonic slot (`CharID_*`, FeatureKnuckles) |
-| `$D400-$D42B` | `LightDash_RAM`, `Victory_pose`, `SuperTails_combo_*` | Light Dash state, victory pose flag, Super Tails' combo (cleared at level start) |
+| `$D400-$D42D` | `LightDash_RAM`, `Victory_pose`, `SuperTails_combo_*`, `Gliding_collision_flags`, `Disable_wall_grab` | Light Dash state, victory pose flag, Super Tails' combo, Knuckles' glide (cleared at level start) |
 | `$FF76` | `VS_countdown_option` (word) | VS finish countdown option |
 | `$FF87` | `Level_select_page` | Level Select pages |
 
@@ -69,7 +70,7 @@ runs.
 
 | Address | Size | Notes |
 |---|---|---|
-| `$D42C-$D5FF` | 468 | Between the Light Dash state and the collision index |
+| `$D42E-$D5FF` | 466 | Between the Light Dash state and the collision index |
 | `$E740-$E7FF` | 192 | Before `Ring_Positions` |
 | `$FA82-$FAFF` | 126 | After the sprite table page bytes |
 | `$DF80-$DFFF` | 128 | Only if the sprite table can never overflow into it |

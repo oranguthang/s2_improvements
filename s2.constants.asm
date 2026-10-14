@@ -55,6 +55,8 @@ subtype =		$28
 transform_combo_timer =   $20 ; Countdown timer for Super Sonic A+B / B+C combo window (6 frames).
 transform_combo_buttons = $21 ; Bitmask of jump buttons pressed within window. Bit 7 = lock until release.
 peelout_flag =		$23 ; Sonic only: charging a Super Peel-Out (FeaturePeelOut); Tails uses $23 as carry_delay
+glide_mode =		$23 ; Knuckles only (FeatureKnuckles): 0 none, 1 gliding, 2 falling, 3 sliding, 4 climbing, 5 onto a ledge
+glide_property =	$1F ; Knuckles only: glide angle, climbing animation timer or ledge animation step
 inertia =		$14 ; and $15 ; directionless representation of speed... not updated in the air
 flip_angle =		$27 ; angle about the x axis (360 degrees = 256) (twist/tumble)
 air_left =		$28
@@ -1308,6 +1310,8 @@ Victory_pose:			ds.b	1	; the act results are up: Sonic poses (FeatureVictoryPose
 				ds.b	1
 SuperTails_combo_timer:		ds.b	1	; Super Tails' A+B / B+C window (FeatureSuperTails)
 SuperTails_combo_buttons:	ds.b	1	; jump buttons pressed in the window; bit 7 = wait for release
+Gliding_collision_flags:	ds.b	1	; Knuckles' glide collision: status.player.in_air and .pushing bits (FeatureKnuckles)
+Disable_wall_grab:		ds.b	1	; bit 7 set: Knuckles cannot grab walls (FeatureKnuckles)
 LightDash_RAM_End:
 				ds.b	$200-(LightDash_RAM_End-LightDash_RAM)	; unused
 

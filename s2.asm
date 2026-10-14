@@ -5449,6 +5449,9 @@ WindTunnel:
 	clr.b flying(a1)
 	clr.b jumping(a1)
 .notflying:
+	if FeatureKnuckles
+	jsr	(Knuckles_StopGlide).l	; the gimmick takes Knuckles out of a glide or climb
+	endif
 	btst	#button_up,(Ctrl_1_Held).w	; is Up being pressed?
 	beq.s	+				; if not, branch
 	subq.w	#1,y_pos(a1)	; move up
@@ -34735,6 +34738,9 @@ loc_18BAA:
 	bclr	#p1_pushing_bit,status(a0)
 	bclr	#p2_pushing_bit,status(a0)
 	bclr	#status.player.pushing,status(a1)
+	if FeatureKnuckles
+	jsr	(Knuckles_StopGlide).l	; the gimmick takes Knuckles out of a glide or climb
+	endif
 	move.w	#SndID_Spring,d0
 	jmp	(PlaySound).l
 ; ===========================================================================
@@ -36973,7 +36979,16 @@ Obj01_ReleaseCarry:
 	bclr #status_secondary.carry,status_secondary(a0)
 Obj01_FreeMovement:
 	btst	#0,obj_control(a0)	; is Sonic interacting with another object that holds him in place or controls his movement somehow?
+	if FeatureKnuckles
+	beq.s	.control
+	tst.b	(Main_character).w
+	beq.s	+
+	clr.b	glide_mode(a0)		; an object holding Knuckles ends a glide or climb
+	bra.s	+
+.control:
+	else
 	bne.s	+			; if yes, branch to skip Sonic's control
+	endif
 	moveq	#0,d0
 	move.b	status(a0),d0
 	andi.w	#1<<status.player.in_air|1<<status.player.rolling,d0	; %0000 %0110
@@ -37268,6 +37283,14 @@ Obj01_MdNormal_Skip:
 ; Called if Sonic is airborne, but not in a ball (thus, probably not jumping)
 ; loc_1A2E0: Obj01_MdJump
 Obj01_MdAir:
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	+
+	tst.b	glide_mode(a0)		; gliding, sliding or climbing?
+	beq.s	+
+	jmp	(Knuckles_MdAirGliding).l	; code/KnucklesGlide.asm
++
+	endif
 	if FeatureLightDash
 	jsr	(Player_LightDashStart).l	; A near a ring chain
 	endif
@@ -38546,6 +38569,12 @@ Sonic_JumpHeight:
 	bne.s	+		; if yes, branch
 	move.w	d1,y_vel(a0)	; immediately reduce Sonic's upward speed to d1
 +
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	+
+	jmp	(Knuckles_JumpHeight).l	; Knuckles glides (code/KnucklesGlide.asm)
++
+	endif
 	jsr	(Sonic_RequestTailsAssist).l
 	if FeatureSuperToggle
 	bra.s	Sonic_ToggleSuper		; keep the existing Super Sonic transformation combo
@@ -39369,6 +39398,12 @@ Sonic_ResetOnFloor_Part2:
 	; when they mean to call Tails_ResetOnFloor_Part2, so fix that here
 	_cmpi.b	#ObjID_Sonic,id(a0)	; is this object ID Sonic (obj01)?
 	bne.w	Tails_ResetOnFloor_Part2	; if not, branch to the Tails version of this code
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	+
+	jmp	(Knuckles_ResetOnFloor_Part2).l	; code/KnucklesGlide.asm
++
+	endif
 
 	btst	#status.player.rolling,status(a0)
 	beq.s	Sonic_ResetOnFloor_Part3
@@ -39398,8 +39433,16 @@ Sonic_ResetOnFloor_Part3:
 	move.b	#0,flip_turned(a0)
 	move.b	#0,flips_remaining(a0)
 	move.w	#0,(Sonic_Look_delay_counter).w
+	if FeatureKnuckles
+	if FeaturePeelOut=0
+	clr.b	glide_mode(a0)		; (cleared above as peelout_flag otherwise)
+	endif
+	cmpi.b	#AniIDKnuxAni_Glide,anim(a0)	; Knuckles landing from a glide or climb
+	bhs.s	+
+	endif
 	cmpi.b	#AniIDSonAni_Hang2,anim(a0)
 	bne.s	return_1B11E
++
 	move.b	#AniIDSonAni_Walk,anim(a0)
 
 return_1B11E:
@@ -44472,6 +44515,10 @@ Obj08_CheckSkid:
 	movea.w	parent(a0),a2 ; a2=character
 	cmpi.b	#AniIDSonAni_Stop,anim(a2)	; SonAni_Stop
 	beq.s	Obj08_SkidDust
+	if FeatureKnuckles
+	jsr	(Knuckles_SlidingA2).l	; Knuckles sliding after a glide raises dust too
+	bne.s	Obj08_SkidDust
+	endif
 	move.b	#2,routine(a0)
 	move.b	#0,obj08_dust_timer(a0)
 	rts
@@ -44479,7 +44526,7 @@ Obj08_CheckSkid:
 ; loc_1DE64:
 Obj08_SkidDust:
 	subq.b	#1,obj08_dust_timer(a0)
-	bpl.s	loc_1DEE0
+	bpl.w	loc_1DEE0
 	move.b	#3,obj08_dust_timer(a0)
 	bsr.w	AllocateObject
 	bne.s	loc_1DEE0
@@ -44487,6 +44534,12 @@ Obj08_SkidDust:
 	move.w	x_pos(a2),x_pos(a1)
 	move.w	y_pos(a2),y_pos(a1)
 	addi.w	#$10,y_pos(a1)
+	if FeatureKnuckles
+	jsr	(Knuckles_SlidingA2).l
+	beq.s	+
+	subi.w	#$10-6,y_pos(a1)	; at his feet while sliding (Knuckles in Sonic 2)
++
+	endif
 	tst.b	obj08_belongs_to_tails(a0)
 	beq.s	+
 	subi_.w	#4,y_pos(a1)	; Tails is shorter than Sonic
@@ -45791,6 +45844,7 @@ ChkFloorEdge_Part2:
 	move.b	y_radius(a0),d0
 	ext.w	d0
 	add.w	d0,d2
+ChkFloorEdge_Part3:	; d2 = Y, d3 = X (Knuckles' wall grab, code/KnucklesGlide.asm)
 	move.l	#Primary_Collision,(Collision_addr).w
 	cmpi.b	#$C,top_solid_bit(a0)
 	beq.s	+
@@ -55166,6 +55220,9 @@ loc_270DC:
 	bclr	#status.player.rolljumping,status(a1)
 	endif
 	bclr	#status.player.pushing,status(a1)
+	if FeatureKnuckles
+	jsr	(Knuckles_StopGlide).l	; the gimmick takes Knuckles out of a glide or climb
+	endif
 	move.w	#SndID_Spring,d0
 	jmp	(PlaySound).l
 ; ===========================================================================
@@ -59737,6 +59794,9 @@ loc_2A990:
 	clr.b flying(a1)
 	clr.b jumping(a1)
 .keepflight:
+	if FeatureKnuckles
+	jsr	(Knuckles_StopGlide).l	; the gimmick takes Knuckles out of a glide or climb
+	endif
 
 return_2AA10:
 	rts
@@ -80467,6 +80527,10 @@ ObjB2_Main_WFZ_states:	offsetTable
 ; loc_3A982:
 ObjB2_Wait_Leader_position:
 	lea	(MainCharacter).w,a1 ; a1=character
+	if FeatureKnuckles
+	jsr	(Knuckles_WFZWaitLeader).l	; Z=1: Knuckles is still falling in
+	beq.s	+	; rts
+	endif
 	cmpi.w	#$5EC,y_pos(a1)
 	blo.s	+	; rts
 	clr.w	(Ctrl_1_Logical).w
@@ -80537,7 +80601,16 @@ ObjB2_Wait_for_plane:
 ObjB2_Prepare_to_jump:
 	bsr.w	ObjB2_Waiting_animation
 	addq.w	#1,objoff_2A(a0)
+	if FeatureKnuckles
+	moveq	#$30,d0
+	tst.b	(Main_character).w
+	beq.s	.time
+	moveq	#$20,d0			; re-timed for Knuckles' jump (Knuckles in Sonic 2)
+.time:
+	cmp.w	objoff_2A(a0),d0
+	else
 	cmpi.w	#$30,objoff_2A(a0)
+	endif
 	bne.s	+
 	addq.b	#2,routine_secondary(a0)
 	move.w	#(button_A_mask<<8)|button_A_mask,(Ctrl_1_Logical).w
@@ -80612,7 +80685,11 @@ ObjB2_Approaching_ship:
 ObjB2_Jump_to_ship:
 	cmpi.w	#$447,objoff_2A(a0)
 	bhs.s	loc_3AB8A
+	if FeatureKnuckles
+	jsr	(Knuckles_WFZJumpButtons).l	; Knuckles must not start a glide
+	else
 	move.w	#(button_A_mask<<8)|button_A_mask,(Ctrl_1_Logical).w
+	endif
 
 loc_3AB8A:
 	cmpi.w	#$460,objoff_2A(a0)
@@ -80703,7 +80780,11 @@ ObjB2_Waiting_animation:
 	lea	(MainCharacter).w,a1 ; a1=character
 	move.l	#(1<<24)|(0<<16)|(AniIDSonAni_Wait<<8)|(AniIDSonAni_Wait<<0),mapping_frame(a1)
 	move.w	#$100,anim_frame_duration(a1)
+	if FeatureKnuckles
+	jmp	(Knuckles_WFZWaitPose).l	; Knuckles' frame 1 is no standing frame
+	else
 	rts
+	endif
 ; ===========================================================================
 ; loc_3AC6A:
 ObjB2_Invisible_grabber:
@@ -81323,6 +81404,9 @@ ObjB5_CheckPlayer:
 	clr.b flying(a1)
 	clr.b jumping(a1)
 .keepflight:
+	if FeatureKnuckles
+	jsr	(Knuckles_StopGlide).l	; the gimmick takes Knuckles out of a glide or climb
+	endif
 +
 	rts
 ; ===========================================================================
@@ -86865,7 +86949,14 @@ Touch_Monitor:
 	beq.s	return_3F78A
 +
 	cmpi.b	#AniIDSonAni_Roll,anim(a0)
+	if FeatureKnuckles
+	beq.s	+
+	jsr	(Knuckles_GlideAttacking).l	; Knuckles' glide breaks monitors too
+	beq.s	return_3F78A
++
+	else
 	bne.s	return_3F78A
+	endif
     if fixBugs
 	tst.w	y_vel(a0)		; is Sonic moving upwards?
 	blt.s	+			; if so, keep going up (don't negate)
@@ -86885,6 +86976,10 @@ Touch_Enemy:
 	bne.s	+			; if yes, branch
 	if FeatureLightDash
 	jsr	(LightDash_Attacking).l	; dashing along a ring chain?
+	bne.s	+
+	endif
+	if FeatureKnuckles
+	jsr	(Knuckles_GlideAttacking).l	; gliding or sliding?
 	bne.s	+
 	endif
 	cmpi.b	#AniIDSonAni_Spindash,anim(a0)
@@ -86932,8 +87027,15 @@ Touch_Enemy_Part2:
 +
 	move.b	#0,collision_flags(a1)
 	subq.b	#1,collision_property(a1)
+	if FeatureKnuckles
+	bne.s	+
+	bset	#status.npc.no_balancing,status(a1)
++
+	jmp	(Knuckles_GlideBounce).l	; a hit ends Knuckles' glide
+	else
 	bne.s	return_3F7E8
 	bset	#status.npc.no_balancing,status(a1)
+	endif
 
 return_3F7E8:
 	rts
@@ -93528,6 +93630,9 @@ Sound70:	include "sound/sfx/F0 - Oil Slide.asm"
 	include "code/VictoryPoses.asm"
 	include "code/SuperTails.asm"
 	include "code/Knuckles.asm"
+	if FeatureKnuckles
+	include "code/KnucklesGlide.asm"
+	endif
 	if FeatureSoundDriver=SoundDriver_S3K
 	include "sound/S3K Driver.asm"
 	endif

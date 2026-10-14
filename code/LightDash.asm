@@ -545,6 +545,13 @@ Player_LightDashPose:
 	and.b	anim_frame(a0),d1		; the floating pose's two-frame cadence
 	add.w	d1,d0
 	lea	.normalFrames(pc),a1
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	.sonic
+	lea	.knucklesFrames(pc),a1	; Knuckles has no Super frames
+	bra.s	+
+.sonic:
+	endif
 	tst.b	(Super_Sonic_flag).w
 	beq.s	+
 	lea	.superFrames(pc),a1
@@ -561,6 +568,13 @@ Player_LightDashPose:
 .superFrames:
 	dc.b	$B5,$B9, $B8,$BC, $B7,$BB, $B6,$BA
 	dc.b	$B5,$B9, $B8,$BC, $B7,$BB, $B6,$BA
+	if FeatureKnuckles
+; Knuckles: his glide pose level, then his running frames turned by 135, 90
+; and 45 degrees ($2D, $29, $25)
+.knucklesFrames:
+	dc.b	$C0,$C0, $2D,$2E, $29,$2A, $25,$26
+	dc.b	$C0,$C0, $2D,$2E, $29,$2A, $25,$26
+	endif
 	even
 
 ; ---------------------------------------------------------------------------
