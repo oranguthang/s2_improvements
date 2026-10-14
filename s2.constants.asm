@@ -1871,7 +1871,7 @@ Cheat_super_rings:		ds.b	1	; rings needed to turn Super: 0, 10 or 50
 Cheat_ring_drain:		ds.b	1	; 1 = Super Sonic loses a ring every second
 Cheat_god_mode:			ds.b	1	; 1 = no damage, drowning or time over; pits bounce
 Cheats_menu_row:		ds.b	1	; selected CHEATS row
-				ds.b	1	; $FFFFFF65 ; unused
+Hud_centiseconds_frame:		ds.b	1	; Timer_frame whose hundredths are shown (FeatureCentiseconds)
 Title_unlock_entries:		ds.w	1	; progress of the title code Up, Down, Down, Down, Left, Right
 				ds.b	8	; $FFFFFF68-$FFFFFF6F ; seems unused
 

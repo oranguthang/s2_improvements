@@ -112,33 +112,50 @@ LevelSelect_SpecialStageNumber:
 
 ; ---------------------------------------------------------------------------
 ; FeatureCentiseconds: hundredths of a second after the 1P clock, after Selbi's
-; "Add Centiseconds HUD" guide (as in s1_improvements). Called by HudUpdate
-; every frame with a6 = VDP data port; the two digits use the four free tiles
-; after the horizontal scroll table (ArtTile_HUD_Centiseconds).
+; "Add Centiseconds HUD" guide (as in s1_improvements). BuildHUD calls this
+; every frame from the main loop; the two digits are DMA-queued from Art_Hud to
+; the four free tiles after the horizontal scroll table (ArtTile_HUD_Centiseconds),
+; which costs V-Int far less than writing them there (ARZ's demo lagged).
 ; ---------------------------------------------------------------------------
 Hud_Centiseconds:
-	movem.l	d0-d1/a1/a3,-(sp)
 	moveq	#0,d0
 	move.b	(Timer_frame).w,d0
-	mulu.w	#100,d0
-	divu.w	#60,d0				; frames of this second -> hundredths
-	andi.l	#$FFFF,d0
-	divu.w	#10,d0				; tens in the low word, ones in the high word
-	move.l	#vdpComm(tiles_to_bytes(ArtTile_HUD_Centiseconds),VRAM,WRITE),VDP_control_port-VDP_data_port(a6)
-	lea	(Art_Hud).l,a1
+	beq.s	.update				; always at 0, e.g. right after a restart
+	cmp.b	(Hud_centiseconds_frame).w,d0
+	beq.s	.return				; unchanged (paused or stopped)
+.update:
+	move.b	d0,(Hud_centiseconds_frame).w
+	movem.l	d1-d4/a1,-(sp)
+	add.w	d0,d0
+	move.w	Hud_CentisecondsDigits(pc,d0.w),d4	; tens in the high byte, ones in the low byte
+	moveq	#0,d1
+	move.b	d4,d1				; ones digit art offset / 64
+	lsr.w	#8,d4				; tens digit
+	move.w	d1,-(sp)
+	move.w	#tiles_to_bytes(ArtTile_HUD_Centiseconds),d2
 	bsr.s	.digit
-	swap	d0
+	move.w	(sp)+,d4
+	move.w	#tiles_to_bytes(ArtTile_HUD_Centiseconds+2),d2
 	bsr.s	.digit
-	movem.l	(sp)+,d0-d1/a1/a3
+	movem.l	(sp)+,d1-d4/a1
+.return:
 	rts
 .digit:
-	move.w	d0,d1
+	moveq	#0,d1
+	move.w	d4,d1
 	lsl.w	#6,d1				; two tiles per digit
-	lea	(a1,d1.w),a3
-	moveq	#tiles_to_longwords(2)-1,d1
--	move.l	(a3)+,(a6)
-	dbf	d1,-
-	rts
+	addi.l	#Art_Hud,d1
+	move.w	#tiles_to_bytes(2)/2,d3		; length in words
+	jmp	(QueueDMATransfer).l
+
+; Tens and ones of the hundredths for each frame of a second (no division at run time)
+Hud_CentisecondsDigits:
+.frame := 0
+	rept 60
+.c := .frame*100/60
+	dc.b	.c/10, .c-.c/10*10
+.frame := .frame+1
+	endm
 
 ; ---------------------------------------------------------------------------
 ; FeatureInfiniteLives: Z=0 when lives are infinite (1P games only; 2P VS

@@ -89047,6 +89047,9 @@ BuildHUD:
 	bmi.s	+
 	jsrto	JmpTo_DrawSprite_Loop	; draw frame
 +
+	if FeatureCentiseconds
+	jsr	(Hud_Centiseconds).l	; queue the hundredths digits
+	endif
 	jmp	(HudDebug_DrawSprite).l	; and the debug coordinates
 ; End of function BuildHUD
 
@@ -89448,9 +89451,6 @@ Hud_ChkTime:
 	bsr.w	Hud_Secs
 ; loc_40E38:
 Hud_ChkLives:
-	if FeatureCentiseconds
-	jsr	(Hud_Centiseconds).l	; hundredths after the seconds
-	endif
 	tst.b	(Update_HUD_lives).w	; does the lives counter need updating?
 	beq.s	Hud_ChkBonus	; if not, branch
 	clr.b	(Update_HUD_lives).w
