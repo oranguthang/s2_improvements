@@ -1204,7 +1204,33 @@ Tails_InvincibilityStars:
 				ds.b	object_size
 LevelOnly_Object_RAM_End:
 
-				ds.b	$200	; unused
+; Light Dash state (code/LightDash.asm); cleared when a level starts
+LightDash_RAM:
+LightDash_active:		ds.b	1	; nonzero while the main character dashes
+LightDash_hitframe:		ds.b	1	; the dash moved the player this frame (attacks badniks)
+LightDash_initial_search:	ds.b	1
+LightDash_near_ground:		ds.b	1
+LightDash_have_last_ring:	ds.b	1
+LightDash_stall:		ds.b	1
+LightDash_timer:		ds.w	1
+LightDash_act:			ds.w	1
+LightDash_target:		ds.w	1	; Ring_Positions entry being chased (0 = none)
+LightDash_exclude_first:	ds.w	1
+LightDash_exclude_second:	ds.w	1
+LightDash_probe_x:		ds.w	1
+LightDash_probe_y:		ds.w	1
+LightDash_full_x:		ds.w	1
+LightDash_full_y:		ds.w	1
+LightDash_step_x:		ds.w	1
+LightDash_step_y:		ds.w	1
+LightDash_last_x:		ds.w	1
+LightDash_last_y:		ds.w	1
+LightDash_last_ring_x:		ds.w	1
+LightDash_last_ring_y:		ds.w	1
+LightDash_exit_x:		ds.w	1
+LightDash_exit_y:		ds.w	1
+LightDash_RAM_End:
+				ds.b	$200-(LightDash_RAM_End-LightDash_RAM)	; unused
 
 Primary_Collision:		ds.b	$300
 Secondary_Collision:		ds.b	$300

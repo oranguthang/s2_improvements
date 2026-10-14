@@ -169,6 +169,7 @@ features. The default build is unchanged by these switches.
 | `FeatureFastSoundTest` | B+A no longer steps the sound tests back by $10 (A still steps ahead by $10). |
 | `FeatureSpecialStageSelect` | SPECIAL STAGE in the Level Select starts the next stage in order, without a number; replaying a stage can count its emerald twice. |
 | `FeatureCentiseconds` | The 1P clock shows minutes and seconds only. |
+| `FeatureLightDash` | A in the air never starts a Light Dash; it does the normal air move. |
 
 Two optional alternatives are off by default; 1 enables them:
 
@@ -361,6 +362,7 @@ You assume any and all responsibility for using this content responsibly. Sonic 
 
 | Change | Status | Notes |
 | --- | --- | --- |
+| Light Dash | Implemented | In the air, A next to a chain of at least three uncollected rings (64 pixels to the first, up to 72 between rings) dashes along it at 12 pixels per frame (6 under water), as in s1_improvements; without a chain A does the normal air move, and B/C never dash. Sonic and Tails Alone; the dash attacks badniks, follows curved chains and the ground, and leaves with the last link's direction. The targets are the rings manager's `Ring_Positions`, so no ring objects are involved. |
 | Homing Attack and Jump Dash | Implemented | A, B or C in the air (once per jump; hitting a target allows another). Left/Right held at the press choose the direction. The Homing Attack takes the nearest badnik or intact monitor ahead within 150 pixels and aims at the upper third of its hitbox, as in s1_improvements; with no target Sonic dashes straight. Up + jump calls the Tails AI instead in Sonic and Tails games. |
 | Tails flight and underwater swimming poses | Implemented | Jump again in the air. Press a jump button repeatedly to flap upwards; the timer gives eight seconds of powered flight. Water uses separate swimming poses. |
 | Carry Sonic and fly assist | Implemented | The Tails AI can catch Sonic during a flight. While held, Left/Right steer, a fresh Up flaps, and a fresh jump lets Sonic go. |

@@ -99,6 +99,8 @@ FeatureSpecialStageSelect = 1
 ;	| Left/Right on SPECIAL STAGE in the Level Select choose the stage (1-7)
 FeatureCentiseconds = 1
 ;	| The 1P clock also shows hundredths of a second (0:00:00), as in Sonic CD
+FeatureLightDash = 1
+;	| In the air, A next to a chain of 3+ rings dashes along it (Sonic, Tails Alone)
 FeatureBurntDeath = 1
 ;	| Sonic plays the burnt death animation when killed by fire or lasers
 FeatureActMusic = 1
@@ -112,7 +114,7 @@ FeatureCDDrowning = 0
 ;	| If 1, the music keeps playing below 12 seconds of air and a warning sounds every
 ;	| second, as in Sonic CD; the countdown numbers still appear
 
-	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureCentiseconds|FeatureBurntDeath|FeatureActMusic|FeatureInfiniteLives|FeatureCDDrowning)&~1
+	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureCentiseconds|FeatureLightDash|FeatureBurntDeath|FeatureActMusic|FeatureInfiniteLives|FeatureCDDrowning)&~1
 		error "Feature options must be 0 or 1"
 	endif
 
@@ -4971,6 +4973,7 @@ Level_ClrRam:
 	clearRAM Object_Display_Lists,Object_Display_Lists_End
 	clearRAM Object_RAM,LevelOnly_Object_RAM_End ; clear object RAM and level-only object RAM
 	clearRAM MiscLevelVariables,MiscLevelVariables_End
+	clr.w	(LightDash_active).w	; and LightDash_hitframe
 	clearRAM Misc_Variables,Misc_Variables_End
 	clearRAM Oscillating_Data,Oscillating_variables_End
 	tst.b	(SS_keep_level_state).w
@@ -37144,6 +37147,15 @@ Obj01_Control:
 	bne.s	+			; if yes, branch
 	move.w	(Ctrl_1).w,(Ctrl_1_Logical).w	; copy new held buttons, to enable joypad control
 +
+	if FeatureLightDash
+	clr.b	(LightDash_hitframe).w	; attacks only on frames the dash moved
+	tst.b	(LightDash_active).w
+	beq.s	+
+	jsr	(Player_LightDashUpdate).l
+	tst.b	d0
+	bne.w	Obj01_AfterMovement	; the dash moved Sonic this frame
++
+	endif
 	btst #status_secondary.carry,status_secondary(a0)
 	beq.s Obj01_FreeMovement
 	cmpi.b #ObjID_Tails,(Sidekick+id).w
@@ -37181,6 +37193,9 @@ Obj01_AfterMovement:
 	move.b	prev_anim(a0),anim(a0)	;  make sure Sonic is in the correct animation while in a wind tunnel
 +
 	bsr.w	Sonic_Animate	; run Sonic's animation scripts
+	if FeatureLightDash
+	jsr	(Player_LightDashPose).l	; face the dash direction
+	endif
 	tst.b	obj_control(a0)	; is object interactions ignore flag set?
 	bmi.s	+				; if yes, branch
 	jsr	(TouchResponse).l	; handle object interactions with Sonic
@@ -37441,6 +37456,9 @@ Obj01_MdNormal_Skip:
 ; Called if Sonic is airborne, but not in a ball (thus, probably not jumping)
 ; loc_1A2E0: Obj01_MdJump
 Obj01_MdAir:
+	if FeatureLightDash
+	jsr	(Player_LightDashStart).l	; A near a ring chain
+	endif
 	bsr.w	AirRoll
 	bsr.w	Sonic_JumpHeight	; handle Sonic's jump height based on whether the jump button is still held
 	bsr.w	Sonic_ChgJumpDir	; handle midair direction adjustments while jumping
@@ -37478,6 +37496,9 @@ Obj01_MdRoll:
 ;        Why they gave it a separate copy of the code, I don't know.
 ; loc_1A330: Obj01_MdJump2:
 Obj01_MdJump:
+	if FeatureLightDash
+	jsr	(Player_LightDashStart).l	; A near a ring chain
+	endif
 	bsr.w	Sonic_HomingAttack
 	bsr.w	AirRoll
 	bsr.w	Sonic_JumpHeight	; handle Sonic's jump height based on whether the jump button is still held
@@ -40400,6 +40421,17 @@ Obj02_Control_Joypad2:
 	bsr.w	TailsCPU_Control
 ; loc_1B9EA:
 Obj02_Control_Part2:
+	if FeatureLightDash
+	cmpa.w	#MainCharacter,a0	; Tails Alone
+	bne.s	+
+	clr.b	(LightDash_hitframe).w
+	tst.b	(LightDash_active).w
+	beq.s	+
+	jsr	(Player_LightDashUpdate).l
+	tst.b	d0
+	bne.w	Obj02_AfterMovement
++
+	endif
 	btst #0,obj_control(a0)
 	beq.s Obj02_FreeMovement
 	clr.b flying(a0)
@@ -41104,6 +41136,9 @@ Obj02_MdNormal:
 ; Called if Tails is airborne, but not in a ball (thus, probably not jumping)
 ; loc_1C032: Obj02_MdJump
 Obj02_MdAir:
+	if FeatureLightDash
+	jsr	(Player_LightDashStart).l	; A near a ring chain
+	endif
 	tst.b flying(a0)
 	bne.w Obj02_MdFly
 	bsr.w	Tails_AirRoll
@@ -41152,6 +41187,9 @@ Obj02_MdRoll:
 ;        Why they gave it a separate copy of the code, I don't know.
 ; loc_1C082: Obj02_MdJump2:
 Obj02_MdJump:
+	if FeatureLightDash
+	jsr	(Player_LightDashStart).l	; A near a ring chain
+	endif
 	bsr.w	Tails_AirRoll
 	bsr.w	Tails_JumpHeight
 	bsr.w	Tails_ChgJumpDir
@@ -86919,6 +86957,10 @@ return_3F78A:
 Touch_Enemy:
 	btst	#status_secondary.invincible,status_secondary(a0)	; is Sonic invincible?
 	bne.s	+			; if yes, branch
+	if FeatureLightDash
+	jsr	(LightDash_Attacking).l	; dashing along a ring chain?
+	bne.s	+
+	endif
 	cmpi.b	#AniIDSonAni_Spindash,anim(a0)
 	beq.s	+
 	cmpi.b #AniIDSonAni_Roll,anim(a0)
@@ -87082,6 +87124,9 @@ Touch_Hurt:
 
 ; loc_3F878: HurtSonic:
 HurtCharacter:
+	if FeatureLightDash
+	jsr	(LightDash_PlayerHit).l	; a hit ends the Light Dash
+	endif
 	jsr	(Cheat_GodModeActive).l	; GOD MODE: no damage
 	bne.w	Touch_NoHurt
 	move.w	(Ring_count).w,d0
@@ -87155,6 +87200,9 @@ KillCharacter:
 	bne.w	++
 	jsr	(Cheat_GodModeKill).l	; GOD MODE: no death; pits bounce the player back up
 	bne.w	++
+	if FeatureLightDash
+	jsr	(LightDash_PlayerHit).l	; and so does a death
+	endif
 	clr.b	status_secondary(a0)
 	move.b	#6,routine(a0)
 	jsrto	JmpTo_Sonic_ResetOnFloor_Part2
@@ -93534,6 +93582,7 @@ Sound70:	include "sound/sfx/F0 - Oil Slide.asm"
 	include "code/Cheats.asm"
 	include "code/DebugHud.asm"
 	include "code/QoL.asm"
+	include "code/LightDash.asm"
 
 ; end of 'ROM'
     if MDDebugger
