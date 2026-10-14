@@ -393,3 +393,48 @@ Sonic_ChkDebugToggle:
 	moveq	#1,d0				; Z=0
 .return:
 	rts
+
+; Z=0 while GOD MODE protects the players: the cheat is on, outside 2P VS
+; games and title demos. Only the flags change.
+Cheat_GodModeActive:
+	tst.w	(Two_player_mode).w
+	bne.s	.off
+	tst.w	(Demo_mode_flag).w
+	bne.s	.off
+	tst.b	(Cheat_god_mode).w
+	rts
+.off:
+	ori	#4,ccr				; Z=1
+	rts
+
+; Called by KillCharacter (a0 = player). Returns Z=1 to let the player die.
+; With GOD MODE nothing kills; a player below the bottom boundary (a pit)
+; is put back on it and bounced up as an airborne, non-jumping player, so
+; Left/Right can steer back to solid ground (as in s1_improvements).
+Cheat_GodModeKill:
+	bsr.s	Cheat_GodModeActive
+	beq.s	.return
+	move.l	d1,-(sp)
+	move.w	(Camera_Max_Y_pos).w,d0
+	move.w	(Camera_Max_Y_pos_target).w,d1	; the boundary may still be moving down
+	cmp.w	d0,d1
+	blo.s	+
+	move.w	d1,d0
++
+	addi.w	#screen_height,d0
+	cmp.w	y_pos(a0),d0
+	bge.s	.saved				; not in a pit: just survive
+	move.w	d0,y_pos(a0)
+	move.w	#-$A00,y_vel(a0)		; bounce roughly one screen high
+	btst	#status.player.underwater,status(a0)
+	beq.s	+
+	move.w	#-$500,y_vel(a0)		; less is needed under water
++
+	bset	#status.player.in_air,status(a0)
+	clr.b	jumping(a0)			; letting go of jump must not cut the bounce short
+	move.b	#2,routine(a0)			; back to normal control if he fell while hurt
+.saved:
+	move.l	(sp)+,d1
+	moveq	#1,d0				; Z=0
+.return:
+	rts

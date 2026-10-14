@@ -646,6 +646,34 @@ def settings_sram(repo):
     assert c.read('Cheat_ring_drain')==0,'drain left on with zero rings'
     return {'cold_defaults':True,'round_trip':True,'checksum_rejects_damage':True,'values_clamped':True}
 
+def god_mode(repo):
+    """GOD MODE: no damage, no death, pits bounce; not in 2P VS games."""
+    def cpu(god=1,two_player=0):
+        c=CPU(repo); obj=c.s['MainCharacter']
+        c.write(obj+c.s['id'],c.s['ObjID_Sonic']); c.write(obj+c.s['routine'],2)
+        c.write(obj+c.s['x_pos'],0x200,2); c.write(obj+c.s['y_pos'],0x100,2)
+        c.write('Cheat_god_mode',god); c.write('Two_player_mode',two_player,2)
+        c.write('Ring_count',5,2); c.write('Camera_Max_Y_pos',0x300,2); c.write('Camera_Max_Y_pos_target',0x300,2)
+        hazard=c.s['Sidekick']+0x80
+        c.write(hazard+c.s['x_pos'],0x210,2); c.uc.reg_write(UC_M68K_REG_A2,hazard)
+        for name in ('PlaySound','PlayMusic'):
+            c.skip(name)
+        return c,obj
+    sw=lambda v:v-0x10000 if v&0x8000 else v
+    c,obj=cpu(); c.call('HurtCharacter',obj)
+    assert c.read(obj+c.s['routine'])==2 and c.read('Ring_count',2)==5,'hurt despite GOD MODE'
+    c,obj=cpu(god=0); c.call('HurtCharacter',obj)
+    assert c.read(obj+c.s['routine'])==4,'normal hurt changed'
+    c,obj=cpu(); c.call('KillCharacter',obj)
+    assert c.read(obj+c.s['routine'])==2 and c.read(obj+c.s['y_pos'],2)==0x100,'killed despite GOD MODE'
+    c,obj=cpu(); c.write(obj+c.s['y_pos'],0x300+224+20,2); c.write(obj+c.s['routine'],4)
+    c.call('KillCharacter',obj)
+    assert c.read(obj+c.s['y_pos'],2)==0x300+224 and sw(c.read(obj+c.s['y_vel'],2))==-0xA00,'no pit bounce'
+    assert c.read(obj+c.s['routine'])==2 and c.read(obj+c.s['status'])&2,'pit bounce must leave the player airborne in control'
+    c,obj=cpu(two_player=1); c.call('KillCharacter',obj)
+    assert c.read(obj+c.s['routine'])==6,'GOD MODE must not apply to 2P VS'
+    return {'no_damage':True,'no_death':True,'pit_bounce':True,'not_in_vs':True}
+
 def title_palette(repo):
     def setup():
         c=CPU(repo)
@@ -699,6 +727,8 @@ def main():
         results['special_stage_state']=special_stage_state(args.repo)
     if 'Settings_Load' in symbols(args.repo/'s2.lst'):
         results['settings_sram']=settings_sram(args.repo)
+    if 'Cheat_GodModeActive' in symbols(args.repo/'s2.lst'):
+        results['god_mode']=god_mode(args.repo)
     results['rom_sha256']=hashlib.sha256((args.repo/'s2built.bin').read_bytes()).hexdigest()
     if args.report:
         args.report.write_text(json.dumps(results,indent=2)+'\n',encoding='utf-8')

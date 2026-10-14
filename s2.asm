@@ -43674,6 +43674,11 @@ Obj0A_Countdown:
 	andi.w	#1,d0
 	move.b	d0,obj0a_total_bubbles_to_spawn(a0)
 
+	jsr	(Cheat_GodModeActive).l	; GOD MODE: the air never runs out
+	beq.s	+
+	move.b	#30,air_left(a2)
+	bra.w	Obj0A_MakeBubbleMaybe
++
 	moveq	#0,d0
 	move.b	air_left(a2),d0	; check air remaining
 	cmpi.w	#25,d0
@@ -86971,6 +86976,8 @@ Touch_Hurt:
 
 ; loc_3F878: HurtSonic:
 HurtCharacter:
+	jsr	(Cheat_GodModeActive).l	; GOD MODE: no damage
+	bne.w	Touch_NoHurt
 	move.w	(Ring_count).w,d0
 	cmpa.w	#MainCharacter,a0
 	beq.s	loc_3F88C
@@ -87039,6 +87046,8 @@ Hurt_Sound:
 ; loc_3F926: KillSonic:
 KillCharacter:
 	tst.w	(Debug_placement_mode).w
+	bne.w	++
+	jsr	(Cheat_GodModeKill).l	; GOD MODE: no death; pits bounce the player back up
 	bne.w	++
 	clr.b	status_secondary(a0)
 	move.b	#6,routine(a0)
@@ -89358,6 +89367,8 @@ Hud_End:
 ; ===========================================================================
 
 loc_40E84:
+	jsr	(Cheat_GodModeActive).l	; GOD MODE: the clock stops at 9:59 instead
+	bne.w	Hud_ChkLives
 	clr.b	(Update_HUD_timer).w
 	lea	(MainCharacter).w,a0 ; a0=character
 	movea.l	a0,a2
