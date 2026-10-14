@@ -679,6 +679,21 @@ def god_mode(repo):
     assert c.read(obj+c.s['routine'])==6,'GOD MODE must not apply to 2P VS'
     return {'no_damage':True,'no_death':True,'pit_bounce':True,'not_in_vs':True}
 
+def extra_lives(repo):
+    """Rings award a life at every 100 (FeatureExtraLives) or only at 100 and 200 (original)."""
+    every=bool(symbols(repo/'s2.lst').get('FeatureExtraLives',0))
+    def collect(rings,flags):
+        c=CPU(repo); c.skip('PlaySound2')
+        c.write('Ring_count',rings-1,2); c.write('Extra_life_flags',flags); c.write('Life_count',3)
+        c.call('CollectRing_1P')
+        return c.read('Life_count')-3,c.read('Extra_life_flags')
+    lives=[collect(n,f)[0] for n,f in ((99,0),(100,0),(200,1 if every else 2),(300,2 if every else 6),(400,3 if every else 6))]
+    assert lives==([0,1,1,1,1] if every else [0,1,1,0,0]),lives
+    if every:
+        assert collect(300,3)==(0,3),'a hundred rewarded twice'
+        assert collect(100,0)==(1,1),'no life after losing the rings'
+    return {'every_hundred':'on' if every else 'off','thresholds_checked':True}
+
 def title_palette(repo):
     def setup():
         c=CPU(repo)
@@ -734,6 +749,7 @@ def main():
         results['settings_sram']=settings_sram(args.repo)
     if 'Cheat_GodModeActive' in symbols(args.repo/'s2.lst'):
         results['god_mode']=god_mode(args.repo)
+    results['extra_lives']=extra_lives(args.repo)
     results['rom_sha256']=hashlib.sha256((args.repo/'s2built.bin').read_bytes()).hexdigest()
     if args.report:
         args.report.write_text(json.dumps(results,indent=2)+'\n',encoding='utf-8')

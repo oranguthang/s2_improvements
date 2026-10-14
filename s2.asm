@@ -89,12 +89,14 @@ FeatureSpringPoses = 1
 FeatureTailsFlight = 1
 ;	| Tails flies and swims (jump again in the air); in Sonic and Tails games Up + jump
 ;	| in the air calls the Tails AI to carry Sonic. Two extra title demos show it.
+FeatureExtraLives = 1
+;	| An extra life for every 100 rings; 0 = only at 100 and 200 rings
 FeatureBurntDeath = 1
 ;	| Sonic plays the burnt death animation when killed by fire or lasers
 FeatureActMusic = 1
 ;	| Act 2 of EHZ, MCZ and CNZ plays the track from 2P mode; 0 = the same track in both acts
 
-	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureBurntDeath|FeatureActMusic)&~1
+	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureBurntDeath|FeatureActMusic)&~1
 		error "Feature options must be 0 or 1"
 	endif
 
@@ -25710,6 +25712,10 @@ CollectRing_1P:
 	ori.b	#1,(Update_HUD_rings).w	; set flag to update the ring counter in the HUD
     endif
 
+	if FeatureExtraLives
+	jsr	(ExtraLives_Check1P).l	; a life for every 100 rings?
+	beq.s	JmpTo_PlaySound2	; if not, play the ring sound
+	else
 	cmpi.w	#100,(Ring_count).w	; does the player 1 have less than 100 rings?
 	blo.s	JmpTo_PlaySound2	; if yes, play the ring sound
 	bset	#1,(Extra_life_flags).w	; test and set the flag for the first extra life
@@ -25718,6 +25724,7 @@ CollectRing_1P:
 	blo.s	JmpTo_PlaySound2	; if yes, play the ring sound
 	bset	#2,(Extra_life_flags).w	; test and set the flag for the second extra life
 	bne.s	JmpTo_PlaySound2	; if it was set before, play the ring sound
+	endif
 +
 	addq.b	#1,(Life_count).w	; add 1 to the life count
 	addq.b	#1,(Update_HUD_lives).w	; add 1 to the displayed life count
@@ -25744,6 +25751,10 @@ CollectRing_Tails:
 ; CollectRing_2P:
 	ori.b	#1,(Update_HUD_rings_2P).w	; set flag to update the ring counter in the second player's HUD
 	move.w	#SndID_Ring,d0			; prepare to play the ring sound
+	if FeatureExtraLives
+	jsr	(ExtraLives_Check2P).l		; a life for every 100 rings?
+	beq.s	JmpTo2_PlaySound2		; if not, play the ring sound
+	else
 	cmpi.w	#100,(Ring_count_2P).w		; does the player 2 have less than 100 rings?
 	blo.s	JmpTo2_PlaySound2		; if yes, play the ring sound
 	bset	#1,(Extra_life_flags_2P).w	; test and set the flag for the first extra life
@@ -25752,6 +25763,7 @@ CollectRing_Tails:
 	blo.s	JmpTo2_PlaySound2		; if yes, play the ring sound
 	bset	#2,(Extra_life_flags_2P).w	; test and set the flag for the second extra life
 	bne.s	JmpTo2_PlaySound2		; if it was set before, play the ring sound
+	endif
 +
 	addq.b	#1,(Life_count_2P).w		; add 1 to the life count
 	addq.b	#1,(Update_HUD_lives_2P).w	; add 1 to the displayed life count
@@ -26614,6 +26626,10 @@ super_ring:
 
 +
 	ori.b	#1,(a3)
+	if FeatureExtraLives
+	jsr	(ExtraLives_Check).l	; a2 = rings, a4 = lives awarded: a life for every 100 rings?
+	bne.s	ChkPlayer_1up
+	else
 	cmpi.w	#100,(a2)
 	blo.s	+		; branch, if player has less than 100 rings
 	bset	#1,(a4)		; set flag for first 1up
@@ -26622,6 +26638,7 @@ super_ring:
 	blo.s	+		; branch, if player has less than 200 rings
 	bset	#2,(a4)		; set flag for second 1up
 	beq.s	ChkPlayer_1up	; branch, if not yet set
+	endif
 +
 	move.w	#SndID_Ring,d0
 	jmp	(PlayMusic).l
@@ -93420,6 +93437,7 @@ Sound70:	include "sound/sfx/F0 - Oil Slide.asm"
 	include "code/Settings.asm"
 	include "code/Cheats.asm"
 	include "code/DebugHud.asm"
+	include "code/QoL.asm"
 
 ; end of 'ROM'
     if MDDebugger
