@@ -13,7 +13,7 @@ stay, which is what Knuckles and Tails games need.
 Writes the files listed in COPIES, the palettes and the KNUCKLES_LAYOUTS
 (level/objects/Knuckles/).
 """
-import argparse, subprocess
+import argparse, subprocess, sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,6 +26,11 @@ COPIES = [
     ("art/uncompressed/Knuckles' art.bin", "art/uncompressed/Knuckles' art.bin"),
     ('mappings/sprite/Knuckles.asm', 'mappings/sprite/Knuckles.asm'),
     ('mappings/spriteDPLC/Knuckles.asm', 'mappings/spriteDPLC/Knuckles.asm'),
+    ('art/nemesis/Knuckles lives counter.nem', 'art/nemesis/Knuckles lives counter.nem'),
+    ('art/nemesis/Signpost (Knuckles patch).nem', 'art/nemesis/Signpost Knuckles patch.nem'),
+    ('art/nemesis/Monitor and contents (Knuckles patch).nem', 'art/nemesis/Monitor Knuckles patch.nem'),
+    ('art/uncompressed/Title card font K.bin', 'art/uncompressed/Results letter K.bin'),
+    ('art/uncompressed/Slot pictures (Knuckles patch).bin', 'art/uncompressed/Slot picture Knuckles.bin'),
 ]
 
 KNUCKLES_COLOURS = range(2, 6)   # first palette line
@@ -78,6 +83,29 @@ def palettes():
     return {ROOT / 'art' / 'palettes' / name: data for name, data in out.items()}
 
 
+# KiS2 recoloured the shield and the invincibility stars grey, since Sonic's
+# blue (colours 2-5) is Knuckles' red and green there. Its colour changes,
+# found by comparing its art with Sonic 2's, are applied to this project's art.
+SHIELD_GREY = {2: 8, 3: 8, 4: 8, 5: 7}
+STARS_GREY = {3: 8, 4: 7, 5: 7}
+
+
+def recolour(raw, mapping):
+    return bytes((mapping.get(b >> 4, b >> 4) << 4) | mapping.get(b & 15, b & 15) for b in raw)
+
+
+def greys():
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import nemesis
+    shield = (ROOT / 'art/uncompressed/Shield.bin').read_bytes()
+    stars_nem = (ROOT / 'art/nemesis/Invincibility stars.nem').read_bytes()
+    stars = recolour(nemesis.decode(stars_nem), STARS_GREY)
+    packed = nemesis.encode_with_table(stars_nem, stars)
+    assert nemesis.decode(packed) == stars
+    return {ROOT / 'art/uncompressed/Shield Knuckles.bin': recolour(shield, SHIELD_GREY),
+            ROOT / 'art/nemesis/Invincibility stars Knuckles.nem': packed}
+
+
 def generate():
     outputs = {}
     for src, dst in COPIES:
@@ -86,6 +114,7 @@ def generate():
             data = HEADER.encode() + data.replace(b'\r\n', b'\n')
         outputs[ROOT / dst] = data
     outputs.update(palettes())
+    outputs.update(greys())
     for act in KNUCKLES_LAYOUTS:
         outputs[ROOT / 'level' / 'objects' / 'Knuckles' / f'{act}.bin'] = kis2(f'level/objects/{act}.bin')
     return outputs

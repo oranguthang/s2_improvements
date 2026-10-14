@@ -70,6 +70,38 @@ Knuckles_PalID:
 	rts
 
 ; ---------------------------------------------------------------------------
+; Level start (Level_ClrRam): Knuckles' life icon, and grey shield and
+; invincibility monitors and stars, since Sonic's blue is his red and green.
+; ---------------------------------------------------------------------------
+Knuckles_LevelPLC:
+	tst.b	(Main_character).w
+	beq.s	.return
+	tst.w	(Two_player_mode).w
+	bne.s	.return
+	moveq	#PLCID_KnucklesLife,d0
+	jmp	(LoadPLC).l
+.return:
+	rts
+
+; ---------------------------------------------------------------------------
+; Act results (Obj3A): KNUCKLES GOT THROUGH needs a K. It goes over the M,
+; which only MILES uses (as in Knuckles in Sonic 2).
+; ---------------------------------------------------------------------------
+Knuckles_ResultsLetterK:
+	tst.b	(Main_character).w
+	beq.s	.return
+	move	sr,-(sp)
+	move	#$2700,sr
+	move.l	#vdpComm(tiles_to_bytes(ArtTile_ArtNem_ResultsText+$16),VRAM,WRITE),(VDP_control_port).l
+	lea	(ArtUnc_ResultsLetterK).l,a1
+	moveq	#bytesToLcnt(ArtUnc_ResultsLetterK_End-ArtUnc_ResultsLetterK),d0
+-	move.l	(a1)+,(VDP_data_port).l
+	dbf	d0,-
+	move	(sp)+,sr
+.return:
+	rts
+
+; ---------------------------------------------------------------------------
 ; Balancing, as in Knuckles in Sonic 2: one balancing animation; facing away
 ; from the edge, Knuckles turns round and starts it further on.
 ; d1 = position on the object and d2 = its width - 2 (as in Obj01_NotRight)
@@ -466,6 +498,21 @@ ArtUnc_Knuckles_End:
 	if (ArtUnc_Knuckles_End-ArtUnc_Knuckles)>$20000
 		fatal "Knuckles' art must fit in one 128 KiB bank"
 	endif
+
+; ---------------------------------------------------------------------------
+; Knuckles' HUD, monitor, signpost and slot machine art (tools/import_kis2.py)
+; ---------------------------------------------------------------------------
+ArtNem_KnucklesLife:		BINCLUDE	"art/nemesis/Knuckles lives counter.nem"
+	even
+ArtNem_PowerupsKnucklesPatch:	BINCLUDE	"art/nemesis/Monitor Knuckles patch.nem"
+	even
+ArtNem_Invincible_stars_Knuckles:	BINCLUDE	"art/nemesis/Invincibility stars Knuckles.nem"
+	even
+ArtNem_SignpostKnucklesPatch:	BINCLUDE	"art/nemesis/Signpost Knuckles patch.nem"
+	even
+ArtUnc_CNZSlotPicKnuckles:	BINCLUDE	"art/uncompressed/Slot picture Knuckles.bin"	; replaces Sonic's picture
+ArtUnc_ResultsLetterK:		BINCLUDE	"art/uncompressed/Results letter K.bin"	; replaces the results' M
+ArtUnc_ResultsLetterK_End:
 
 ; ---------------------------------------------------------------------------
 ; Object layouts for Knuckles (1P games): ObjectsManager_Init calls this with

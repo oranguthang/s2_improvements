@@ -4714,6 +4714,9 @@ Level:
 	bsr.w	LoadPLC
 ; loc_3F48:
 Level_ClrRam:
+	if FeatureKnuckles
+	jsr	(Knuckles_LevelPLC).l	; his life icon and grey monitors and stars
+	endif
     if fixBugs
 	clr.b	(Super_Sonic_flag).w
     endif
@@ -6157,6 +6160,12 @@ CheckLoadSignpostArt:
 	tst.w	(Two_player_mode).w
 	bne.s	+	; rts
 	moveq	#PLCID_Signpost,d0 ; <== PLC_1F
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	+
+	moveq	#PLCID_SignpostKnuckles,d0	; Knuckles' face instead of Sonic's
++
+	endif
 	bra.w	LoadPLC2		; load signpost art
 ; ---------------------------------------------------------------------------
 ; loc_4C80:
@@ -28404,6 +28413,9 @@ loc_140AC:
 	rts
 ; ---------------------------------------------------------------------------
 +
+	if FeatureKnuckles
+	jsr	(Knuckles_ResultsLetterK).l
+	endif
 	movea.l	a0,a1
 	lea	Obj3A_SubObjectMetadata(pc),a2
 	moveq	#bytesToXcnt(Obj3A_SubObjectMetadata_End-Obj3A_SubObjectMetadata, results_screen_object_size),d1
@@ -28433,6 +28445,13 @@ loc_140CE:
 
 loc_14102:
 	moveq	#0,d0
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	+
+	moveq	#EOL_KnucklesFrame,d0
+	bra.s	loc_14118
++
+	endif
 	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	bne.s	loc_14118
 	addq.w	#1,d0
@@ -29471,6 +29490,9 @@ MapUnc_EOLTitleCards:	mappingsTable
 	mappingsTableEntry.w	EOL_SonFrame1	; Mini Sonic, frame 1
 	mappingsTableEntry.w	EOL_SonFrame2	; Mini Sonic, frame 2
 	mappingsTableEntry.w	EOL_Perfect	; Perfect text
+	if FeatureKnuckles
+	mappingsTableEntry.w	EOL_Knuckles	; "KNUCKLES GOT" text (the last entry)
+	endif
 
 ; word_14CDA:
 EOL_Sonic:	spriteHeader	; SONIC GOT
@@ -29484,6 +29506,25 @@ EOL_Sonic:	spriteHeader	; SONIC GOT
 	spritePiece	$20, 0, 2, 2, $588, 0, 0, 0, 1	; O
 	spritePiece	$2F, 0, 2, 2, $5D4, 0, 0, 0, 1	; T
 EOL_Sonic_End
+
+	if FeatureKnuckles
+; From Knuckles in Sonic 2. Its K replaces the M of MILES (Knuckles_ResultsLetterK).
+EOL_KnucklesFrame = (EOL_Sonic-MapUnc_EOLTitleCards)/2-1	; the table's last entry
+EOL_Knuckles:	spriteHeader	; KNUCKLES GOT
+	spritePiece	-$78, 0, 2, 2, $5C6, 0, 0, 0, 1	; K
+	spritePiece	-$68, 0, 2, 2, $584, 0, 0, 0, 1	; N
+	spritePiece	-$58, 0, 2, 2, $5D8, 0, 0, 0, 1	; U
+	spritePiece	-$48, 0, 2, 2, $5B4, 0, 0, 0, 1	; C
+	spritePiece	-$38, 0, 2, 2, $5C6, 0, 0, 0, 1	; K
+	spritePiece	-$28, 0, 2, 2, $5C2, 0, 0, 0, 1	; L
+	spritePiece	-$18, 0, 2, 2, $580, 0, 0, 0, 1	; E
+	spritePiece	-8, 0, 2, 2, $5D0, 0, 0, 0, 1	; S
+
+	spritePiece	$10, 0, 2, 2, $5B8, 0, 0, 0, 1	; G
+	spritePiece	$20, 0, 2, 2, $588, 0, 0, 0, 1	; O
+	spritePiece	$2F, 0, 2, 2, $5D4, 0, 0, 0, 1	; T
+EOL_Knuckles_End
+	endif
 
 ; word_14D1C:
 EOL_Miles:	spriteHeader	; MILES GOT
@@ -44107,6 +44148,12 @@ Obj38_LoadArt:
 	lea (MapR_Shield).l,a2
 	move.w objoff_32(a0),d4
 	move.l #ArtUnc_Shield,d6
+	if FeatureKnuckles
+	tst.b	(Main_character).w	; Sonic's blue is Knuckles' red and green
+	beq.s	+
+	move.l	#ArtUnc_ShieldKnuckles,d6
++
+	endif
 	jmp (LoadDynPLC).l
 .return:
 	rts
@@ -61616,6 +61663,18 @@ SlotMachine_GetPixelRow:
 	andi.w	#7,d0				; Limit each sequence to 8 pictures
 	move.b	(a3,d0.w),d0			; Get slot pic id
 	andi.w	#7,d0				; Get only lower 3 bits; leaves space for 2 more images
+	if FeatureKnuckles
+	bne.s	.notSonic
+	tst.b	(Main_character).w		; Knuckles' face instead of Sonic's (Knuckles in Sonic 2)
+	beq.s	.notSonic
+	lea	(ArtUnc_CNZSlotPicKnuckles).l,a2
+	move.w	d3,d0
+	andi.w	#$F8,d0
+	lsr.w	#1,d0
+	adda.w	d0,a2
+	rts
+.notSonic:
+	endif
 	ror.w	#7,d0				; Equal to shifting left 9 places, or multiplying by 4*4 tiles, in bytes
 	lea	(ArtUnc_CNZSlotPics).l,a2	; Load slot pictures
 	adda.w	d0,a2				; a2 = pointer to first tile of slot picture
@@ -91064,6 +91123,10 @@ PLCptr_Tornado:		offsetTableEntry.w PlrList_Tornado		; 63
 PLCptr_Capsule:		offsetTableEntry.w PlrList_Capsule		; 64
 PLCptr_Explosion:	offsetTableEntry.w PlrList_Explosion		; 65
 PLCptr_ResultsTails:	offsetTableEntry.w PlrList_ResultsTails		; 66
+	if FeatureKnuckles
+PLCptr_KnucklesLife:	offsetTableEntry.w PlrList_KnucklesLife
+PLCptr_SignpostKnuckles: offsetTableEntry.w PlrList_SignpostKnuckles
+	endif
 
 ; macro for a pattern load request list header
 ; must be on the same line as a label that has a corresponding _End label later
@@ -91164,6 +91227,26 @@ PlrList_TailsLife2P_End
 PlrList_TailsLife: plrlistheader
 	plreq ArtTile_ArtNem_life_counter, ArtNem_TailsLife
 PlrList_TailsLife_End
+	if FeatureKnuckles
+;---------------------------------------------------------------------------------------
+; PATTERN LOAD REQUEST LIST
+; Knuckles (code/Knuckles.asm): his life icon, and the shield and invincibility
+; monitors and stars in grey (Knuckles in Sonic 2)
+;---------------------------------------------------------------------------------------
+PlrList_KnucklesLife: plrlistheader
+	plreq ArtTile_ArtNem_life_counter, ArtNem_KnucklesLife
+	plreq ArtTile_ArtNem_Powerups+44, ArtNem_PowerupsKnucklesPatch
+	plreq ArtTile_ArtNem_Invincible_stars, ArtNem_Invincible_stars_Knuckles
+PlrList_KnucklesLife_End
+;---------------------------------------------------------------------------------------
+; PATTERN LOAD REQUEST LIST
+; End of level signpost with Knuckles' face
+;---------------------------------------------------------------------------------------
+PlrList_SignpostKnuckles: plrlistheader
+	plreq ArtTile_ArtNem_Signpost, ArtNem_Signpost
+	plreq ArtTile_ArtNem_Signpost+34, ArtNem_SignpostKnucklesPatch
+PlrList_SignpostKnuckles_End
+	endif
 ;---------------------------------------------------------------------------------------
 ; PATTERN LOAD REQUEST LIST
 ; Metropolis Zone primary
@@ -92158,6 +92241,9 @@ MapRUnc_Sonic:			include		"mappings/spriteDPLC/Sonic.asm"
 
 	even
 ArtUnc_Shield:			BINCLUDE	"art/uncompressed/Shield.bin"
+	if FeatureKnuckles
+ArtUnc_ShieldKnuckles:		BINCLUDE	"art/uncompressed/Shield Knuckles.bin"	; grey, as in Knuckles in Sonic 2
+	endif
 	even
 ArtNem_Invincible_stars:	BINCLUDE	"art/nemesis/Invincibility stars.nem"
 	even

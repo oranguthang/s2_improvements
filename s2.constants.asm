@@ -656,6 +656,10 @@ PLCID_Tornado =		id(PLCptr_Tornado) ; 3F
 PLCID_Capsule =		id(PLCptr_Capsule) ; 40
 PLCID_Explosion =	id(PLCptr_Explosion) ; 41
 PLCID_ResultsTails =	id(PLCptr_ResultsTails) ; 42
+	if FeatureKnuckles
+PLCID_KnucklesLife =	id(PLCptr_KnucklesLife) ; 43
+PLCID_SignpostKnuckles = id(PLCptr_SignpostKnuckles) ; 44
+	endif
 
 ; Object IDs
 offset :=	Obj_Index
