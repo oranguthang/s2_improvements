@@ -550,6 +550,8 @@ ArtNem_KnucklesLife:		BINCLUDE	"art/nemesis/Knuckles lives counter.nem"
 	even
 ArtNem_MiniKnuckles:		BINCLUDE	"art/nemesis/Knuckles continue.nem"
 	even
+ArtNem_EndingKnuckles:		BINCLUDE	"art/nemesis/Final image of Knuckles.nem"
+	even
 ArtNem_SpecialKnuckles:		BINCLUDE	"art/nemesis/Knuckles animation frames in special stage.nem"
 	even
 ArtNem_PowerupsKnucklesPatch:	BINCLUDE	"art/nemesis/Monitor Knuckles patch.nem"

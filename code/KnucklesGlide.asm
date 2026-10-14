@@ -135,6 +135,17 @@ Knuckles_WFZJumpButtons:
 	move.w	d0,(Ctrl_1_Logical).w
 	rts
 
+; Cutscenes that set Sonic's standing frame directly: restart Knuckles'
+; waiting animation instead (a1 = the player).
+Knuckles_RestartWait:
+	tst.b	(Main_character).w
+	beq.s	.return
+	cmpa.w	#MainCharacter,a1
+	bne.s	.return
+	move.w	#(AniIDSonAni_Wait<<8)|AniIDSonAni_Walk,anim(a1)	; prev_anim differs: restart
+.return:
+	rts
+
 ; Standing on the Tornado: restart his waiting animation and keep him still.
 Knuckles_WFZWaitPose:
 	tst.b	(Main_character).w

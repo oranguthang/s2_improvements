@@ -13535,6 +13535,12 @@ EndingSequence:
 +
 	addq.w	#2,d0
 +
+	if FeatureKnuckles
+	tst.b	(Main_character).w	; Knuckles in Sonic 2: one ending for Knuckles
+	beq.s	.routine
+	moveq	#0,d0
+.routine:
+	endif
 	move.w	d0,(Ending_Routine).w
 	bsr.w	EndingSequence_LoadCharacterArt
 	bsr.w	EndingSequence_LoadFlickyArt
@@ -13565,6 +13571,12 @@ EndingSequence:
 	dbf	d0,-
 
 	lea	(Pal_AC7E).l,a1
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	+
+	lea	(Pal_EndingKnuckles).l,a1	; Knuckles in Sonic 2's
++
+	endif
 	lea	(Target_palette).w,a2
 
 	moveq	#bytesToLcnt(palette_line_size*4),d0
@@ -14121,6 +14133,12 @@ loc_A4B6:
 	clr.b	anim_frame(a0)
 	clr.b	anim_frame_duration(a0)
 	move.l	#ObjCF_MapUnc_ADA2,mappings(a0)
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	+
+	move.l	#ObjCF_MapUnc_Knuckles,mappings(a0)	; Knuckles in Sonic 2's
++
+	endif
 	move.w	#make_art_tile(ArtTile_ArtKos_LevelArt,0,0),art_tile(a0)
 	jsr	(Adjust2PArtPointer).l
 	subi.w	#$14,x_pos(a0)
@@ -14152,6 +14170,9 @@ loc_A53A:
 	move.w	x_pos(a0),x_pos(a1)
 	move.l	#(1<<24)|(0<<16)|(AniIDSonAni_Wait<<8)|(AniIDSonAni_Wait<<0),mapping_frame(a1)
 	move.w	#$100,anim_frame_duration(a1)
+	if FeatureKnuckles
+	jsr	(Knuckles_RestartWait).l	; Knuckles' frame 1 is no standing frame
+	endif
 	rts
 ; ===========================================================================
 
@@ -14416,6 +14437,12 @@ ObjCE_Init:
 	lea	(ObjB3_SubObjData).l,a1
 	jsrto	JmpTo_LoadSubObject_Part3
 	move.l	#ObjCF_MapUnc_ADA2,mappings(a0)
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	+
+	move.l	#ObjCF_MapUnc_Knuckles,mappings(a0)	; Knuckles in Sonic 2's
++
+	endif
 	move.w	#make_art_tile(ArtTile_ArtKos_LevelArt,0,1),art_tile(a0)
 	move.b	#1,priority(a0)
 	jsr	(Adjust2PArtPointer).l
@@ -14511,6 +14538,12 @@ ObjCF_Init:
 	lea	(ObjB3_SubObjData).l,a1
 	jsrto	JmpTo_LoadSubObject_Part3
 	move.l	#ObjCF_MapUnc_ADA2,mappings(a0)
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	+
+	move.l	#ObjCF_MapUnc_Knuckles,mappings(a0)	; Knuckles in Sonic 2's
++
+	endif
 	move.w	#make_art_tile(ArtTile_ArtKos_LevelArt,0,1),art_tile(a0)
 	move.b	#3,priority(a0)
 	jsr	(Adjust2PArtPointer).l
@@ -14753,6 +14786,14 @@ sub_ABBA:
 
 ; sub_ABE2:
 EndingSequence_LoadCharacterArt:
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	+
+	move.l	#vdpComm(tiles_to_bytes(ArtTile_EndingCharacter),VRAM,WRITE),(VDP_control_port).l
+	lea	(ArtNem_EndingKnuckles).l,a0	; Knuckles in Sonic 2's
+	jmpto	JmpTo_NemDec
++
+	endif
 	move.w	(Ending_Routine).w,d0
 	move.w	EndingSequence_LoadCharacterArt_Characters(pc,d0.w),d0
 	jmp	EndingSequence_LoadCharacterArt_Characters(pc,d0.w)
@@ -14788,6 +14829,15 @@ EndingSequence_LoadCharacterArt_Tails:
 ; sub_AC30:
 EndingSequence_LoadFlickyArt:
 	move.w	(Ending_Routine).w,d0
+	if FeatureKnuckles
+	tst.b	(Main_character).w	; Knuckles: eagles with all the emeralds (Knuckles in Sonic 2)
+	beq.s	+
+	moveq	#0,d0
+	jsr	(HasAllEmeralds).l
+	bne.s	+
+	moveq	#2,d0
++
+	endif
 	move.w	EndingSequence_LoadFlickyArt_Flickies(pc,d0.w),d0
 	jmp	EndingSequence_LoadFlickyArt_Flickies(pc,d0.w)
 ; End of function EndingSequence_LoadFlickyArt
@@ -14817,6 +14867,9 @@ EndingSequence_LoadFlickyArt_Chicken:
 	jmpto	JmpTo_NemDec
 ; ===========================================================================
 Pal_AC7E:	BINCLUDE	"art/palettes/Ending Sonic.bin"
+	if FeatureKnuckles
+Pal_EndingKnuckles:	BINCLUDE	"art/palettes/Ending Knuckles.bin"	; Knuckles in Sonic 2's
+	endif
 Pal_AC9E:	BINCLUDE	"art/palettes/Ending Tails.bin"
 Pal_ACDE:	BINCLUDE	"art/palettes/Ending Background.bin"
 Pal_AD1E:	BINCLUDE	"art/palettes/Ending Photos.bin"
@@ -14859,6 +14912,9 @@ byte_AD9E:	dc.b   1,  5,  6,$FF
 ; sprite mappings
 ; -----------------------------------------------------------------------------
 ObjCF_MapUnc_ADA2:	include "mappings/sprite/objCF.asm"
+	if FeatureKnuckles
+ObjCF_MapUnc_Knuckles:	include "mappings/sprite/objCF Knuckles.asm"	; Knuckles in Sonic 2's
+	endif
 ; --------------------------------------------------------------------------------------
 ; Enigma compressed art mappings
 ; "Sonic the Hedgehog 2" mappings		; MapEng_B23A:
@@ -27582,6 +27638,14 @@ ObjC9_Init:
 	adda.w	(a1,d0.w),a1
 	move.l	(a1)+,ttlscrpalchanger_codeptr(a0)
 	movea.l	(a1)+,a2
+	if FeatureKnuckles
+	cmpa.l	#Pal_AC7E,a2		; the ending's player palette
+	bne.s	+
+	tst.b	(Main_character).w
+	beq.s	+
+	lea	(Pal_EndingKnuckles).l,a2	; Knuckles in Sonic 2's
++
+	endif
 	move.b	(a1)+,d0
 	move.w	d0,ttlscrpalchanger_start_offset(a0)
 	lea	(Target_palette).w,a3
@@ -80927,6 +80991,9 @@ loc_3AB18:
 	bclr	#status.player.rolling,status(a1)
 	move.l	#(1<<24)|(0<<16)|(AniIDSonAni_Wait<<8)|(AniIDSonAni_Wait<<0),mapping_frame(a1)
 	move.w	#$100,anim_frame_duration(a1)
+	if FeatureKnuckles
+	jsr	(Knuckles_RestartWait).l	; Knuckles' frame 1 is no standing frame
+	endif
 	move.b	#$13,y_radius(a1)
 	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	bne.s	+
