@@ -97,8 +97,6 @@ FeatureFastSoundTest = 1
 ;	| Sound tests: B+A steps back by $10 (A already steps ahead by $10)
 FeatureSpecialStageSelect = 1
 ;	| Left/Right on SPECIAL STAGE in the Level Select choose the stage (1-7)
-FeatureCentiseconds = 1
-;	| The 1P clock also shows hundredths of a second (0:00:00), as in Sonic CD
 FeatureLightDash = 1
 ;	| In the air, A next to a chain of 3+ rings dashes along it (Sonic, Tails Alone)
 FeaturePeelOut = 1
@@ -126,6 +124,8 @@ FeatureImprovedMusic = 1
 ;	| (explicit rests where a bare duration repeated a note); 0 keeps the original note data
 
 ; Optional alternatives, off by default.
+FeatureCentiseconds = 0
+;	| If 1, the 1P clock also shows hundredths of a second (0:00:00), as in Sonic CD
 FeatureInfiniteLives = 0
 ;	| If 1, 1P games hide the lives counter and never end: no Game Over or extra lives,
 ;	| and 1-up monitors give 10 rings. 2P VS games keep their lives.

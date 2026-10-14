@@ -168,7 +168,6 @@ features. The default build is unchanged by these switches.
 | `FeatureInvincibilityFlash` | The invincibility stars stay steady until they vanish. |
 | `FeatureFastSoundTest` | B+A no longer steps the sound tests back by $10 (A still steps ahead by $10). |
 | `FeatureSpecialStageSelect` | SPECIAL STAGE in the Level Select starts the next stage in order, without a number; replaying a stage can count its emerald twice. |
-| `FeatureCentiseconds` | The 1P clock shows minutes and seconds only. |
 | `FeatureLightDash` | A in the air never starts a Light Dash; it does the normal air move. |
 | `FeaturePeelOut` | Up + A/B/C while standing jumps, as in the original game. |
 | `FeatureVictoryPoses` | After the signpost the player runs off to the right before the results, as in the original game. |
@@ -178,10 +177,11 @@ features. The default build is unchanged by these switches.
 | `FeatureS3KDrums` | With Flamedriver, Sonic 2 songs play Sonic 2's own kick, snare and timpani samples. |
 | `FeatureImprovedMusic` | With Flamedriver, seven songs keep their original note data (see Sound driver). |
 
-Two optional alternatives are off by default; 1 enables them:
+Three optional alternatives are off by default; 1 enables them:
 
 | Option | When 1 |
 |---|---|
+| `FeatureCentiseconds` | The 1P clock also shows hundredths of a second (`0:00:00`), as in Sonic CD. |
 | `FeatureInfiniteLives` | 1P games hide the lives counter and never end: dying (Time Over too) restarts the act without using a life, rings, score and 1-ups give no lives, and 1-up monitors give 10 rings. 2P VS games keep their lives. |
 | `FeatureCDDrowning` | As in Sonic CD, the music keeps playing below 12 seconds of air and the water warning sounds every second; the countdown numbers still appear. The invincibility music is no longer held back while air is low. |
 
@@ -192,7 +192,7 @@ free tiles after the horizontal scroll table (`$7FC-$7FF`); BuildHUD queues
 them by DMA from a lookup table only when the hundredths change. The ARZ title
 demo runs right at the edge of the frame budget, so even this small cost makes
 it about 20 lag frames longer (1712 -> 1734 frames; the per-frame checks of the later features add a few more, 1742); a 300-cycle empty loop
-in the same place costs 14. The optimizations below bring it back to 1693. With
+in the same place costs 14. The optimizations below bring it back to 1693 with the hundredths on (1697 once Knuckles' checks were added); with the default `FeatureCentiseconds = 0` it takes 1674. With
 `FeatureSpecialStageSelect`, Left/Right on SPECIAL STAGE choose the stage shown
 as 1-7 after the name, and an emerald that was already earned is not counted again.
 
