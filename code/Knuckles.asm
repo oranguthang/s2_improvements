@@ -75,14 +75,36 @@ Knuckles_PalID:
 	rts
 
 ; ---------------------------------------------------------------------------
+; Knuckles' mappings and DPLCs: in 2P VS the split screen draws 8x16 cells,
+; so Knuckles uses tools/knuckles_vs.py's frames there.
+; ---------------------------------------------------------------------------
+Knuckles_Mappings:	; a0 = Obj01
+	tst.b	(Main_character).w
+	beq.s	.return
+	move.l	#MapUnc_Knuckles,mappings(a0)
+	tst.w	(Two_player_mode).w
+	beq.s	.return
+	move.l	#MapUnc_KnucklesVS,mappings(a0)
+.return:
+	rts
+
+Knuckles_DPLC:		; -> a2 = DPLC table, d6 = art
+	lea	(MapRUnc_Knuckles).l,a2
+	move.l	#ArtUnc_Knuckles,d6
+	tst.w	(Two_player_mode).w
+	beq.s	.return
+	lea	(MapRUnc_KnucklesVS).l,a2
+	move.l	#ArtUnc_KnucklesVS,d6
+.return:
+	rts
+
+; ---------------------------------------------------------------------------
 ; Level start (Level_ClrRam): Knuckles' life icon, and grey shield and
 ; invincibility monitors and stars, since Sonic's blue is his red and green.
 ; ---------------------------------------------------------------------------
 Knuckles_LevelPLC:
 	tst.b	(Main_character).w
 	beq.s	.return
-	tst.w	(Two_player_mode).w
-	bne.s	.return
 	moveq	#PLCID_KnucklesLife,d0
 	jmp	(LoadPLC).l
 .return:
@@ -614,6 +636,14 @@ ArtUnc_Knuckles_End:
 	if (ArtUnc_Knuckles_End-ArtUnc_Knuckles)>$20000
 		fatal "Knuckles' art must fit in one 128 KiB bank"
 	endif
+; 2P VS (tools/knuckles_vs.py), also in a bank of its own (right after the
+; one above, so the alignment wastes nothing)
+	align	$20000
+ArtUnc_KnucklesVS:	BINCLUDE	"art/uncompressed/Knuckles VS.bin"
+ArtUnc_KnucklesVS_End:
+	include	"mappings/sprite/Knuckles VS.asm"	; MapUnc_KnucklesVS
+	include	"mappings/spriteDPLC/Knuckles VS.asm"	; MapRUnc_KnucklesVS
+ArtUnc_SignpostKnuckles:	BINCLUDE	"art/uncompressed/Signpost Knuckles.bin"	; 2P VS signpost
 
 ; ---------------------------------------------------------------------------
 ; Knuckles' HUD, monitor, signpost and slot machine art (tools/import_kis2.py)

@@ -113,8 +113,15 @@ def greys():
     stars = recolour(nemesis.decode(stars_nem), STARS_GREY)
     packed = nemesis.encode_with_table(stars_nem, stars)
     assert nemesis.decode(packed) == stars
+    # 2P VS: the uncompressed signpost (the same art as the Nemesis one) with
+    # KiS2's patch at the same tiles as PlrList_SignpostKnuckles puts it
+    signpost = bytearray(nemesis.decode((ROOT / 'art/nemesis/Signpost.nem').read_bytes()))
+    assert bytes(signpost) == (ROOT / 'art/uncompressed/Signpost.bin').read_bytes()
+    patch = nemesis.decode(kis2('art/nemesis/Signpost (Knuckles patch).nem'))
+    signpost[34 * 32:34 * 32 + len(patch)] = patch
     return {ROOT / 'art/uncompressed/Shield Knuckles.bin': recolour(shield, SHIELD_GREY),
-            ROOT / 'art/nemesis/Invincibility stars Knuckles.nem': packed}
+            ROOT / 'art/nemesis/Invincibility stars Knuckles.nem': packed,
+            ROOT / 'art/uncompressed/Signpost Knuckles.bin': bytes(signpost)}
 
 
 def generate():

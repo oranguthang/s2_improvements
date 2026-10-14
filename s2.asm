@@ -5123,6 +5123,14 @@ Level_SetPlayerMode:
 +
 	move.w	#PlayerMode_SonicTails,(Player_mode).w	; force Sonic and Tails
 	move.b	#CharID_Sonic,(Main_character).w
+	if FeatureKnuckles
+	tst.w	(Two_player_mode).w	; 2P VS: Knuckles against Tails if a Knuckles entry is chosen
+	beq.s	+
+	cmpi.w	#PlayerOption_KnucklesTails,(Player_option).w
+	blo.s	+
+	move.b	#CharID_Knuckles,(Main_character).w
++
+	endif
 	rts
 ; End of function Level_SetPlayerMode
 
@@ -35945,6 +35953,12 @@ loc_19564:
 	andi.w	#$FFF,d1
 	lsl.l	#5,d1
 	addi.l	#ArtUnc_Signpost,d1
+	if FeatureKnuckles
+	tst.b	(Main_character).w	; Knuckles' face (2P VS)
+	beq.s	+
+	addi.l	#ArtUnc_SignpostKnuckles-ArtUnc_Signpost,d1
++
+	endif
 	move.w	d4,d2
 	add.w	d3,d4
 	add.w	d3,d4
@@ -37189,10 +37203,7 @@ Obj01_Init:
 	move.b	#9,x_radius(a0)	; this sets Sonic's Collision width (2*pixels)
 	move.l	#MapUnc_Sonic,mappings(a0)	; load Sonic's mappings
 	if FeatureKnuckles
-	tst.b	(Main_character).w
-	beq.s	+
-	move.l	#MapUnc_Knuckles,mappings(a0)
-+
+	jsr	(Knuckles_Mappings).l	; Knuckles' (VS ones in 2P)
 	endif
 	move.b	#2,priority(a0)	; set sprite priority
 	move.b	#$18,width_pixels(a0)	; set render width
@@ -40461,8 +40472,7 @@ LoadSonicDynPLC_Part2:
 	if FeatureKnuckles
 	tst.b	(Main_character).w
 	beq.s	+
-	lea	(MapRUnc_Knuckles).l,a2
-	move.l	#ArtUnc_Knuckles,d6
+	jsr	(Knuckles_DPLC).l	; a2, d6 = Knuckles' (VS ones in 2P)
 +
 	endif
 	jmp	(LoadDynPLC).l			; load DPLC
@@ -90767,10 +90777,9 @@ Debug_ExitDebugMode:
 .sonic:
 	move.l	#MapUnc_Sonic,mappings(a1)
 	if FeatureKnuckles
-	tst.b	(Main_character).w
-	beq.s	+
-	move.l	#MapUnc_Knuckles,mappings(a1)
-+
+	exg	a0,a1
+	jsr	(Knuckles_Mappings).l
+	exg	a0,a1
 	endif
 	move.w	#make_art_tile(ArtTile_ArtUnc_Sonic,0,0),art_tile(a1)
 	move.b	#$13,y_radius(a1)
