@@ -340,7 +340,7 @@ def debug(repo):
                 c.write('Player_mode',2 if character=='ObjID_Tails' else 0,2)
                 c.call('Debug_Init',obj)
                 assert c.read('Camera_Y_pos_bias',2)==c.read('Camera_Y_pos_bias_P2',2)==96
-                assert c.read('Camera_pan',2)==0 and c.read(obj+c.s['air_left'])==30
+                assert c.read('Camera_pan',2)==0xA0 and c.read(obj+c.s['air_left'])==30
                 assert c.read(obj+c.s['status'])&0x42==0,'Water/in-air not reset on entry'
                 speed='Tails_top_speed' if character=='ObjID_Tails' else 'Sonic_top_speed'
                 expected_top=0xC00 if shoes else (0xA00 if super_form else 0x600)

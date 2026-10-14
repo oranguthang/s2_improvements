@@ -89959,7 +89959,7 @@ return_41CB6:
 Debug_PreparePlayer:
 	move.w	#(screen_height/2)-16,(Camera_Y_pos_bias).w
 	move.w	#(screen_height/2)-16,(Camera_Y_pos_bias_P2).w
-	clr.w	(Camera_pan).w
+	move.w	#(screen_width/2),(Camera_pan).w	; centre the extended camera again
 	bclr	#status.player.underwater,status(a0)
 	movea.l	a0,a1
 	jsr	(ResumeMusic).l
