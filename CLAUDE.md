@@ -24,7 +24,7 @@ The user writes in Russian; answer in Russian.
   Every boolean in the report must be true.
 - Real emulator: `python tests/check_demo_cycle.py` plays the title demos in Genesis Plus GX via the
   libretro harness `work/retro.py` from the Codex folder. Healthy cycle (6 demos):
-  EHZ 2P, CPZ1, ARZ (1674 frames), CNZ1 (originals), CPZ1 assist (~53 carry frames), CNZ1 assist (flight,
+  EHZ 2P, CPZ1, ARZ (1676 frames), CNZ1 (originals), CPZ1 assist (~53 carry frames), CNZ1 assist (flight,
   ~291 carry frames since before 2026-10-15); no deaths. With every Feature* = 0: the four originals, no deaths.
   Frame counts may differ by 1-2 between builds (lag frames).
 - Harness tips: RetroPad ids B=0 (Genesis B), Y=1 (Genesis A), START=3, UP=4, DOWN=5, LEFT=6, RIGHT=7, A=8 (Genesis C).
@@ -69,11 +69,16 @@ The user writes in Russian; answer in Russian.
   In 2P, tiles $500-$57F are player 2's plane A name table (only the bottom half of plane B, tiles $740+, is free).
 - Open questions for the user (2026-10-15, decided alone while the user was away): HTZ VS drops a spike row and
   two Spikers in act 2 and moves a path swapper 8 px (12-slot column limit); HTZ's far mountains and clouds
-  stand still in 2P; the ring spill fix 0c3a43d changes the user's older Speed Up Ring Loss code. Waiting for
-  the user: Knuckles as player 2 in VS and a KNUCKLES menu background pattern.
+  stand still in 2P; the ring spill fix 0c3a43d changes the user's older Speed Up Ring Loss code. The
+  coordinator answered for the user overnight: any character for either VS player (done, d01dcfe and
+  241b287), no KNUCKLES menu background. VS characters: in Sonic+Knuckles games player 2 takes player 1's
+  colours; the tiebreak Special Stage stays Sonic/Knuckles + Tails; checked by scripted runs only.
+- VS characters exchange the "Sonic" and "Tails" RAM around the off-slot object's frame (code/VSPlayers.asm,
+  VS_SwapPlayerContext). Code running inside that frame that reads the other set's variables sees them
+  swapped: check a0 for slot-owned data (lives, rings, star post, position record, VRAM) instead.
 - Never add an anonymous `+`/`-` label between a pre-existing branch and its target (765fe44 did, see 350141d);
   use a named local label inside new `if Feature*` blocks.
 
 ## Possible next steps
 Play-test flight/carry/swimming; stage 3 (S3K rings/object managers with 2P support, only if needed);
-Knuckles as player 2 in VS (waiting for the user's decision); Hidden Palace (slot $08 exists).
+Hidden Palace (slot $08 exists).

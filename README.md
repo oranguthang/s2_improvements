@@ -173,7 +173,7 @@ features. The default build is unchanged by these switches.
 | `FeaturePeelOut` | Up + A/B/C while standing jumps, as in the original game. |
 | `FeatureVictoryPoses` | After the signpost the player runs off to the right before the results, as in the original game. |
 | `FeatureSuperTails` | Tails cannot turn Super. |
-| `FeatureKnuckles` | The player select has no Knuckles entries, and player 2 is always Tails in VS. |
+| `FeatureKnuckles` | The player select has no Knuckles entries, and VS is always Sonic against Tails. |
 | `FeatureSuperKnuckles` | Knuckles cannot turn Super. |
 | `FeatureHTZVS` | The VS menu's fourth entry is the Special Stage series again and Hill Top Zone is not playable in VS (only one of the two fits in the menu). |
 | `FeatureS3KDrums` | With Flamedriver, Sonic 2 songs play Sonic 2's own kick, snare and timpani samples. |
@@ -532,8 +532,8 @@ Special Stage/level RAM clears and manager initialization. VDP rendering and
 physical controller timing still need a play-through in an emulator or on hardware.
 
 `tests/check_demo_cycle.py` plays the title demos in Genesis Plus GX through a
-libretro harness. Last run (2026-10-15): the default build plays EHZ 2P, CPZ1,
-ARZ (1674 frames), CNZ1, the CPZ1 assist demo (53 frames carrying Sonic) and
+libretro harness. Last run (2026-10-15, after the VS characters): the default build plays EHZ 2P, CPZ1,
+ARZ (1676 frames), CNZ1, the CPZ1 assist demo (53 frames carrying Sonic) and
 the CNZ1 assist demo (291) without a death; with every `Feature*` switch at 0
 the four original demos play through without a death.
 
