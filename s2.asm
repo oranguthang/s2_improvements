@@ -35361,6 +35361,10 @@ Obj0D_Main:
 	move.w	#0,obj0D_spinframe(a0)
 	move.w	(Camera_Max_X_pos).w,(Camera_Min_X_pos).w	; lock screen
 	move.b	#2,routine_secondary(a0) ; => Obj0D_Main_State2
+	; Restore the zone music if the VS countdown music is playing. When the
+	; countdown is off, Loser_Time_Left is 0 and the zone music must not restart.
+	tst.w	(Loser_Time_Left).w
+	beq.s	loc_192A0
 	cmpi.b	#$C,(Loser_Time_Left).w
 	bhi.s	loc_192A0
 	move.w	(Level_Music).w,d0
@@ -35401,6 +35405,10 @@ loc_192D6:
 	move.w	#0,obj0D_spinframe(a0)
 	move.w	(Tails_Max_X_pos).w,(Tails_Min_X_pos).w
 	move.b	#2,routine_secondary(a0) ; => Obj0D_Main_State2
+	; Restore the zone music if the VS countdown music is playing. When the
+	; countdown is off, Loser_Time_Left is 0 and the zone music must not restart.
+	tst.w	(Loser_Time_Left).w
+	beq.s	loc_1932E
 	cmpi.b	#$C,(Loser_Time_Left).w
 	bhi.s	loc_1932E
 	move.w	(Level_Music).w,d0

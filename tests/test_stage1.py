@@ -237,6 +237,33 @@ def vs_countdown(repo):
             'music_threshold_preserved':True,'both_racer_expiry_cases':expiry,'off_and_pause_passed':True,
             'inactive_countdown_digits_hidden_for_both_players':True}
 
+def vs_signpost_music(repo):
+    # When a racer passes the signpost, the zone music only comes back if the
+    # countdown music is playing (12 seconds or less left); an inactive (off)
+    # countdown must not restart it.
+    checked=0
+    for racer in (1,2):
+        for remaining,restore in ((0,False),(0x0B10,True),(0x3C3C,False)):
+            c=CPU(repo);obj=c.s['MainCharacter']+0x100
+            c.write('Two_player_mode',1,2);c.write('VS_countdown_option',2 if remaining==0 else 0,2)
+            c.write('Loser_Time_Left',remaining,2);c.write('Level_Music',c.s['MusID_EHZ'],2)
+            c.write(obj+c.s['x_pos'],0x1000,2)
+            if racer==1:
+                c.write('Update_HUD_timer',1);c.write(c.s['MainCharacter']+c.s['x_pos'],0x1010,2)
+            else:
+                c.write('Update_HUD_timer',0);c.write('Update_HUD_timer_2P',1)
+                c.write(c.s['Sidekick']+c.s['x_pos'],0x1010,2)
+            sounds=[]
+            def music(uc,pc,size,user):
+                sounds.append(uc.reg_read(UC_M68K_REG_D0)&0xFFFF)
+            c.uc.hook_add(UC_HOOK_CODE,music,begin=c.s['PlayMusic'],end=c.s['PlayMusic'])
+            c.skip('PlayMusic');c.skip('PlaySound');c.skip('loc_19350')
+            c.call('Obj0D_Main',obj)
+            assert c.s['SndID_Signpost'] in sounds,(racer,remaining,sounds)
+            assert (c.s['MusID_EHZ'] in sounds)==restore,(racer,remaining,sounds)
+            checked+=1
+    return {'signpost_music_cases':checked,'off_countdown_keeps_zone_music':True}
+
 def options_layout(repo):
     c=CPU(repo);base=c.s['Chunk_Table'];templates={}
     # OptionScreen_Choices stores limits in pointer bits 24..31. Real M68000
@@ -578,6 +605,7 @@ def main():
         results['controllers']=controllers(args.repo)
     if 'VS_StartCountdown' in symbols(args.repo/'s2.lst'):
         results['vs_countdown']=vs_countdown(args.repo)
+        results['vs_signpost_music']=vs_signpost_music(args.repo)
         results['options_layout']=options_layout(args.repo)
     if 'Debug_PreparePlayer' in symbols(args.repo/'s2.lst'):
         results['debug']=debug(args.repo)
