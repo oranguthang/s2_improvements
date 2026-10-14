@@ -7,6 +7,12 @@
 Tails_CheckFlying:
 	tst.b	flying(a0)			; is Tails already flying?
 	bne.w	Tails_NoFlight			; if yes, branch
+	tst.w	(Demo_mode_flag).w		; is a title demo playing?
+	beq.s	.notdemo			; if not, branch
+	jsr	(Demo_TailsAssistIndex).l	; only the Tails Flight Assist demos use flight
+	bcs.w	Tails_NoFlight			; the original demo scripts predate it
+
+.notdemo:
 	move.b	(Ctrl_2_Press_Logical).w,d0	; get Tails' controller input
 	andi.b	#button_A_mask|button_B_mask|button_C_mask,d0	; has been any jump button pressed?
 	beq.w	Tails_NoFlight			; if not, branch
@@ -317,6 +323,11 @@ Tails_CarryNoGrab:
 Sonic_RequestTailsAssist:
 	tst.w (Two_player_mode).w
 	bne.s .return
+	tst.w (Demo_mode_flag).w		; is a title demo playing?
+	beq.s .notdemo
+	jsr (Demo_TailsAssistIndex).l	; only the Tails Flight Assist demos call Tails
+	bcs.s .return
+.notdemo:
 	tst.w (Player_mode).w
 	bne.s .return
 	tst.b (Control_Locked).w

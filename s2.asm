@@ -5945,15 +5945,22 @@ MoveDemo_On_SkipP2:
 ; of the Tails Flight Assist demos. Demo_number already holds the next slot.
 ; ---------------------------------------------------------------------------
 Demo_GetTailsAssistScript:
+	bsr.s	Demo_TailsAssistIndex
+	bcs.s	+	; not a Tails Flight Assist demo
+	lsl.w	#2,d0
+	movea.l	DemoTailsAssistScripts(pc,d0.w),a1
++
+	rts
+; ===========================================================================
+; Returns d0 = index of the current demo among the Tails Flight Assist demos,
+; with carry set if it is one of the original demos instead. Those scripts were
+; recorded without Tails' flight, so flight and the assist are disabled there.
+Demo_TailsAssistIndex:
 	move.w	(Demo_number).w,d0
 	bne.s	+
 	moveq	#(DemoLevels_End-DemoLevels)/2,d0	; the counter wrapped after the last demo
 +
 	subq.w	#1+(DemoLevels_TailsAssist-DemoLevels)/2,d0
-	bcs.s	+	; not a Tails Flight Assist demo
-	lsl.w	#2,d0
-	movea.l	DemoTailsAssistScripts(pc,d0.w),a1
-+
 	rts
 ; ===========================================================================
 DemoTailsAssistScripts:
