@@ -93,12 +93,14 @@ FeatureExtraLives = 1
 ;	| An extra life for every 100 rings; 0 = only at 100 and 200 rings
 FeatureInvincibilityFlash = 1
 ;	| The invincibility stars blink during the last two seconds
+FeatureFastSoundTest = 1
+;	| Sound tests: B+A steps back by $10 (A already steps ahead by $10)
 FeatureBurntDeath = 1
 ;	| Sonic plays the burnt death animation when killed by fire or lasers
 FeatureActMusic = 1
 ;	| Act 2 of EHZ, MCZ and CNZ plays the track from 2P mode; 0 = the same track in both acts
 
-	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureBurntDeath|FeatureActMusic)&~1
+	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureBurntDeath|FeatureActMusic)&~1
 		error "Feature options must be 0 or 1"
 	endif
 
@@ -12551,6 +12553,13 @@ OptionScreen_Controls:
 	btst	#button_A,d0
 	beq.s	+
 	addi.b	#$10,d2		; wraps around within $00-$FF
+	if FeatureFastSoundTest
+	move.b	(Ctrl_1_Held).w,d1
+	or.b	(Ctrl_2_Held).w,d1
+	btst	#button_B,d1	; B+A goes back by $10 instead
+	beq.s	+
+	subi.b	#$20,d2
+	endif
     else
 	; This code appears to have been carelessly created from a copy of the
 	; above block of code. It makes no sense to advance by $10 on options
@@ -13200,6 +13209,11 @@ LevSelControls_CheckLR:
 	btst	#button_A,d1
 	beq.s	+
 	addi.b	#$10,d0
+	if FeatureFastSoundTest
+	btst	#button_B,(Ctrl_1_Held).w	; B+A goes back by $10 instead
+	beq.s	+
+	subi.b	#$20,d0
+	endif
 
 +
 	move.w	d0,(Sound_test_sound).w

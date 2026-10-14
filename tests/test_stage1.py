@@ -708,6 +708,28 @@ def invincibility_flash(repo):
     assert shown(120,0) and not shown(120,4) and not shown(1,5),'no blink in the last two seconds'
     return {'blinks_last_two_seconds':True}
 
+def fast_sound_test(repo):
+    """Sound tests: A steps ahead by $10, B+A back by $10 (FeatureFastSoundTest)."""
+    back=bool(symbols(repo/'s2.lst').get('FeatureFastSoundTest',0))
+    def levsel(held):
+        c=CPU(repo); c.skip('PlayMusic')
+        c.call('LevelSelect_GetPage'); last=c.read(c.uc.reg_read(UC_M68K_REG_A2)+c.s['levselpage_last'],2)
+        c.write('Level_select_zone',last,2); c.write('Sound_test_sound',0x25,2)
+        c.write('Ctrl_1_Press',c.s['button_A_mask']); c.write('Ctrl_1_Held',c.s['button_A_mask']|held)
+        c.call('LevSelControls_CheckLR')
+        return c.read('Sound_test_sound',2)
+    def options(held):
+        c=CPU(repo); c.skip('PlayMusic')
+        c.write('Options_menu_box',2); c.write('Sound_test_sound',0x25,2)
+        c.write('Ctrl_1_Press',c.s['button_A_mask']); c.write('Ctrl_1_Held',c.s['button_A_mask']|held)
+        c.call('OptionScreen_Controls')
+        return c.read('Sound_test_sound',2)
+    b=CPU(repo).s['button_B_mask']
+    assert levsel(0)==0x35 and options(0)==0x35,'A no longer steps ahead by $10'
+    want=0x15 if back else 0x35
+    assert levsel(b)==want and options(b)==want,(levsel(b),options(b))
+    return {'a_steps_ahead':True,'b_a_steps_back':'on' if back else 'off'}
+
 def title_palette(repo):
     def setup():
         c=CPU(repo)
@@ -766,6 +788,7 @@ def main():
     results['extra_lives']=extra_lives(args.repo)
     if 'InvStars_Display' in symbols(args.repo/'s2.lst'):
         results['invincibility_flash']=invincibility_flash(args.repo)
+    results['fast_sound_test']=fast_sound_test(args.repo)
     results['rom_sha256']=hashlib.sha256((args.repo/'s2built.bin').read_bytes()).hexdigest()
     if args.report:
         args.report.write_text(json.dumps(results,indent=2)+'\n',encoding='utf-8')
