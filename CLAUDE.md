@@ -53,8 +53,10 @@ The user writes in Russian; answer in Russian.
 ## Known risks / open items
 - 2026-10-14: swimming, tired swimming, drowning while swimming, surfacing, carrying Sonic out of the water
   and Tails' respawn while Sonic is underwater were checked in Genesis Plus GX (ARZ1, CPZ2) by scripted
-  inputs and RAM teleports, not by a full play-through. Cosmetic: when Tails lands while carrying, Sonic falls
-  in the hanging pose until he lands.
+  inputs and RAM teleports, not by a full play-through. (Sonic falling in the hanging pose after Tails lands
+  while carrying was fixed in ca57ad4.)
+- Super Tails/Knuckles underwater colours (da320ef) come from tools/super_water.py's nearest-example tint, not
+  hand-drawn palettes; checked by RAM values in ARZ1/CPZ2, HPZ (not in the Level Select) only by data.
 - Tails AI respawns even while Sonic is airborne or underwater (e09dde6 removed those checks on purpose for swimming).
 - Flight and the assist are disabled in the four original title demos (scripts predate flight); the EHZ 2P
   demo still drifts from frame 742 because Tails no longer has an air speed cap.
