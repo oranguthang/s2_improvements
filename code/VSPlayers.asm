@@ -32,7 +32,7 @@ VS_Obj02Player1:
 	st.b	(P2_context_active).w
 	jsr	(Obj02_Normal).l
 	sf.b	(P2_context_active).w
-	bra.s	VS_SwapPlayerContext
+	; fall through: exchange the RAM back
 
 ; Exchanges player 1's Obj01 RAM with player 2's. Keeps every register.
 VS_SwapPlayerContext:
