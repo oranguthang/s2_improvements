@@ -37477,6 +37477,12 @@ Obj01_Control:
 	bne.s Obj01_AfterMovement
 Obj01_ReleaseCarry:
 	bclr #status_secondary.carry,status_secondary(a0)
+	if FeatureTailsFlight
+	; Tails landed or was hurt: fall in the normal airborne pose, not hanging
+	btst	#status.player.in_air,status(a0)
+	beq.s	Obj01_FreeMovement
+	move.b	#AniIDSonAni_Walk,anim(a0)
+	endif
 Obj01_FreeMovement:
 	btst	#0,obj_control(a0)	; is Sonic interacting with another object that holds him in place or controls his movement somehow?
 	if FeatureKnuckles
