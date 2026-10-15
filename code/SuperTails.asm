@@ -218,6 +218,7 @@ PalCycle_SuperTails:
 	move.w	(a0,d0.w),11*2(a1)
 	move.w	2(a0,d0.w),15*2(a1)
 	move.w	4(a0,d0.w),14*2(a1)
+	if FeatureSuperTails
 	tst.b	(Water_flag).w
 	beq.s	.return
 	; below the water line: the zone's tinted colours (tools/super_water.py),
@@ -234,6 +235,7 @@ PalCycle_SuperTails:
 	move.w	(a0,d0.w),11*2(a1)
 	move.w	2(a0,d0.w),15*2(a1)
 	move.w	4(a0,d0.w),14*2(a1)
+	endif
 .return:
 	rts
 
@@ -250,7 +252,9 @@ PalCycle_SuperTails_Colours:
 	dc.w	$048E, $08CE, $0AEE, 0
 	dc.w	$046C, $04CE, $08CE, 0
 	dc.w	$046A, $02AE, $04CE, 0
+	if FeatureSuperTails
 ; the same frames below the water line (tools/super_water.py)
 PalCycle_SuperTails_CPZ:	BINCLUDE	"art/palettes/Super Tails CPZ underwater.bin"
 PalCycle_SuperTails_ARZ:	BINCLUDE	"art/palettes/Super Tails ARZ underwater.bin"
 PalCycle_SuperTails_HPZ:	BINCLUDE	"art/palettes/Super Tails HPZ underwater.bin"
+	endif
