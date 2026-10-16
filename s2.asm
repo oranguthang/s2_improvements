@@ -72820,6 +72820,12 @@ LoadSSTailsTailsDynPLC:
 +
 	jsrto	JmpTo43_DisplaySprite
 	move.l	#$FF0000,d6
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	.tailsArt
+	move.l	#$FF0000+tiles_to_bytes(SS_KnucklesExtraTiles),d6	; his tails follow Knuckles' frames too
+.tailsArt:
+	endif
 	lea	(Obj88_MapRUnc).l,a2
 	lea	(TailsTails_LastLoadedDPLC).w,a4
 	move.w	#tiles_to_bytes(ArtTile_ArtNem_SpecialTails_Tails),d4
