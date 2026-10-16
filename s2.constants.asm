@@ -52,7 +52,7 @@ subtype =		$28
 ; note: $1F is unused (but cleared by loc_A53A and ObjB2_Landed_on_plane).
 ; $20, $21 and $23 are used per character (Sonic: Super combo, Tails: flight
 ; and carrying, defined with the Tails flight constants); see MEMORY.md.
-transform_combo_timer =   $20 ; Countdown timer for Super Sonic A+B / B+C combo window (6 frames).
+transform_combo_timer =   $20 ; Countdown timer for the Super A+B / A+C / B+C combo window (Sonic and Knuckles).
 transform_combo_buttons = $21 ; Bitmask of jump buttons pressed within window. Bit 7 = lock until release.
 peelout_flag =		$23 ; Sonic only: charging a Super Peel-Out (FeaturePeelOut); Tails uses $23 as carry_delay
 glide_mode =		$23 ; Knuckles only (FeatureKnuckles): 0 none, 1 gliding, 2 falling, 3 sliding, 4 climbing, 5 onto a ledge

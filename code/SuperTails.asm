@@ -1,8 +1,8 @@
 ; ---------------------------------------------------------------------------
 ; Super Tails (FeatureSuperTails), as in s1_improvements and Sonic 3 & Knuckles:
 ; in a Tails Alone game, with seven emeralds (or ALL EMERALDS) and enough rings
-; (SUPER RINGS), A+B or B+C during a jump turns Tails Super; the same combo
-; turns him back. He keeps his normal sprites, plays S3K's transformation pose,
+; (SUPER RINGS), A+B, A+C or B+C during a jump turns Tails Super; the same
+; combo turns him back, also in flight. He keeps his normal sprites, plays S3K's transformation pose,
 ; and his fur cycles through S3K's yellow ramp. Super movement uses S3K's values
 ; for Tails (ApplySpeedSettings). No stars and no Flickies. Rings drain as for
 ; Super Sonic (RING DRAIN). It shares Super Sonic's state: Super_Sonic_flag,
@@ -57,8 +57,10 @@ Tails_ToggleSuper:
 	move.b	(Ctrl_1_Press_Logical).w,d0
 	andi.b	#button_A_mask|button_B_mask|button_C_mask,d0
 	beq.w	.none
-	tst.b	flying(a0)			; a combo never starts later in a flight
-	beq.s	.accumulate
+	tst.b	flying(a0)			; later in a flight a combo only
+	beq.s	.accumulate			; turns Super Tails back
+	tst.b	(Super_Sonic_flag).w
+	bne.s	.accumulate
 	tst.b	(SuperTails_combo_timer).w
 	beq.w	.none
 .accumulate:
@@ -66,10 +68,14 @@ Tails_ToggleSuper:
 	andi.b	#button_A_mask|button_B_mask|button_C_mask,d1
 	or.b	d0,d1
 	move.b	d1,(SuperTails_combo_buttons).w
-	move.b	#6,(SuperTails_combo_timer).w
+	move.b	#super_combo_window,(SuperTails_combo_timer).w
 	move.b	d1,d2
 	andi.b	#button_A_mask|button_B_mask,d2
 	cmpi.b	#button_A_mask|button_B_mask,d2
+	beq.s	.combo
+	move.b	d1,d2
+	andi.b	#button_A_mask|button_C_mask,d2
+	cmpi.b	#button_A_mask|button_C_mask,d2
 	beq.s	.combo
 	andi.b	#button_B_mask|button_C_mask,d1
 	cmpi.b	#button_B_mask|button_C_mask,d1

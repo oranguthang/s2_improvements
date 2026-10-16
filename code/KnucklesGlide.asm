@@ -10,7 +10,10 @@
 
 ; ---------------------------------------------------------------------------
 ; Sonic_JumpHeight jumps here for Knuckles once the jump height is handled:
-; a jump button press when he no longer rises fast starts a glide.
+; a jump button press when he no longer rises fast starts a glide. With
+; FeatureSuperToggle, an A+B, A+C or B+C combo turns him Super and back, as
+; for Sonic (Sonic_ToggleSuper); a second button soon after the first ends a
+; glide the first one started (Knuckles_GlideCombo).
 ; ---------------------------------------------------------------------------
 Knuckles_JumpHeight:
 	jsr	(Sonic_RequestTailsAssist).l	; Up + jump calls Tails (Knuckles and Tails)
@@ -18,6 +21,13 @@ Knuckles_JumpHeight:
 	bne.s	.return
 	tst.b	glide_mode(a0)
 	bne.s	.return
+	if SuperKnucklesOn&FeatureSuperToggle
+	move.b	(Super_Sonic_flag).w,-(sp)
+	jsr	(Sonic_ToggleSuper).l
+	move.b	(sp)+,d0
+	cmp.b	(Super_Sonic_flag).w,d0
+	bne.s	.return			; the combo changed his form
+	endif
 	move.w	#-$400,d1
 	btst	#status.player.underwater,status(a0)
 	beq.s	+
@@ -35,7 +45,7 @@ Knuckles_JumpHeight:
 	btst	#button_up,(Ctrl_1_Held_Logical).w	; Up + jump calls Tails instead
 	bne.s	.return
 .notTails:
-	if SuperKnucklesOn
+	if SuperKnucklesOn&(FeatureSuperToggle=0)
 	; As in Knuckles in Sonic 2, the same press turns him Super when he can.
 	tst.b	(Super_Sonic_flag).w
 	bne.s	Knuckles_BeginGlide
@@ -233,6 +243,10 @@ Knuckles_GlideBounce:
 ; From Knuckles in Sonic 2
 ; ===========================================================================
 Knuckles_MdAirGliding:	; Obj01_MdAir jumps here while glide_mode is set
+	if SuperKnucklesOn&FeatureSuperToggle
+	bsr.s	Knuckles_GlideCombo
+	beq.s	return_3156B8		; he turned Super
+	endif
 	bsr.w	Knuckles_GlideSpeedControl
 	jsr	(Sonic_LevelBound).l
 	jsr	(ObjectMove).l
@@ -240,6 +254,33 @@ Knuckles_MdAirGliding:	; Obj01_MdAir jumps here while glide_mode is set
 
 return_3156B8:
 	rts
+
+	if SuperKnucklesOn&FeatureSuperToggle
+; Super combo while gliding, climbing or falling from a glide: Super Knuckles
+; may turn back at any time, and the second button of a combo begun in the
+; jump turns him Super, ending the glide its first button started. A combo
+; never starts later in a glide. Z=1 if he turned Super.
+Knuckles_GlideCombo:
+	tst.b	(Super_Sonic_flag).w
+	bne.s	.combo
+	tst.b	transform_combo_timer(a0)	; window from the jump still open?
+	beq.s	.none
+.combo:
+	move.b	(Super_Sonic_flag).w,-(sp)
+	jsr	(Sonic_ToggleSuper).l
+	move.b	(sp)+,d0
+	cmp.b	(Super_Sonic_flag).w,d0
+	beq.s	.none
+	tst.b	(Super_Sonic_flag).w
+	beq.s	.none			; turned back: the glide goes on
+	clr.b	glide_mode(a0)		; the transformation pose replaces the glide
+	clr.b	jumping(a0)
+	ori	#4,ccr			; Z=1
+	rts
+.none:
+	andi	#~4,ccr			; Z=0
+	rts
+	endif
 
 
 ; =============== S U B	R O U T	I N E =======================================

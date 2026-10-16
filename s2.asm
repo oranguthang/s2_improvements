@@ -75,8 +75,9 @@ FeatureMomentum = 1
 FeatureRollJumpSteering = 1
 ;	| Allow steering after jumping from a roll
 FeatureSuperToggle = 1
-;	| A+B or B+C in the air turns Super (7 emeralds, 50 rings) and back to normal;
-;	| 0 = turn Super at the peak of a jump, with no way back
+;	| A+B, A+C or B+C during a jump turns Super (7 emeralds, 50 rings) and back to normal,
+;	| for Sonic, Tails and Knuckles (Tails and Knuckles also turn back while flying or gliding);
+;	| 0 = Sonic turns Super at the peak of a jump and Knuckles with a jump button, with no way back
 FeatureInstantTally = 1
 ;	| Holding A/B/C finishes the act bonus count at once; the act jingle starts
 ;	| when the result cards are in place; 0 = original count and music
@@ -108,7 +109,8 @@ FeatureSuperTails = 1
 FeatureKnuckles = 1
 ;	| Knuckles from Knuckles in Sonic 2: KNUCKLES AND MILES and KNUCKLES ALONE in the player select
 FeatureSuperKnuckles = 1
-;	| With FeatureKnuckles, Knuckles turns Super as in Knuckles in Sonic 2 (a jump button in the air)
+;	| With FeatureKnuckles, Knuckles turns Super (the FeatureSuperToggle combo, or a jump button
+;	| in the air as in Knuckles in Sonic 2 when FeatureSuperToggle = 0)
 FeatureHTZVS = 1
 ;	| 2P VS: the fourth level is Hill Top Zone (two acts and a tiebreak Special Stage);
 ;	| 0 keeps Sonic 2's Special Stage entry. Only one of them fits in the menu.
@@ -39111,19 +39113,18 @@ return_1AB36:
 ; End of subroutine Sonic_JumpHeight
 
 ; ---------------------------------------------------------------------------
-; Subroutine detecting A+B or B+C combo (within a 6-frame window) to trigger
-; Super Sonic transformation. Based on the Sonic 1 toggle implementation.
+; Subroutine detecting an A+B, A+C or B+C combo (the second button within
+; super_combo_window frames of the first) that turns Sonic or Knuckles Super
+; and back, as in s1_improvements. Sonic may also hold one button and press
+; the other; Knuckles holds a button to glide, so only presses count for him.
 ; ---------------------------------------------------------------------------
+super_combo_window = 10
 
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 
 Sonic_ToggleSuper:
-	if FeatureKnuckles
-	tst.b	(Main_character).w
-	bne.s	Sonic_ComboReturn
-	endif
 	tst.b	(Control_Locked).w		; are controls locked? (e.g. WFZ cutscene)
-	bne.s	Sonic_ComboReturn		; if yes, skip super toggle entirely
+	bne.w	Sonic_ComboReturn		; if yes, skip super toggle entirely
 	; If lock bit is set, wait until all jump buttons are released
 	btst	#7,transform_combo_buttons(a0)
 	beq.s	Sonic_ComboCheckTimer
@@ -39146,17 +39147,29 @@ Sonic_ComboCheckPress:
 	andi.b	#button_A_mask|button_B_mask|button_C_mask,d0
 	beq.s	Sonic_ComboReturn		; no jump button pressed this frame
 
-	; Accumulate button into history and restart 6-frame window
+	; Accumulate button into history and restart the window
 	move.b	transform_combo_buttons(a0),d1
-	andi.b	#button_A_mask|button_B_mask|button_C_mask,d1
 	or.b	d0,d1
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	bne.s	.pressesOnly
+	endif
+	or.b	(Ctrl_1_Held_Logical).w,d1	; Sonic: hold one button and press another
+.pressesOnly:
+	andi.b	#button_A_mask|button_B_mask|button_C_mask,d1
 	move.b	d1,transform_combo_buttons(a0)
-	move.b	#6,transform_combo_timer(a0)
+	move.b	#super_combo_window,transform_combo_timer(a0)
 
 	; Check A+B combo
 	move.b	d1,d2
 	andi.b	#button_A_mask|button_B_mask,d2
 	cmpi.b	#button_A_mask|button_B_mask,d2
+	beq.s	Sonic_ComboTriggered
+
+	; Check A+C combo
+	move.b	d1,d2
+	andi.b	#button_A_mask|button_C_mask,d2
+	cmpi.b	#button_A_mask|button_C_mask,d2
 	beq.s	Sonic_ComboTriggered
 
 	; Check B+C combo
@@ -39183,8 +39196,10 @@ Sonic_ComboReturn:
 ; loc_1AB38: test_set_SS:
 Sonic_CheckGoSuper:
 	if FeatureKnuckles
+	if SuperKnucklesOn=0
 	tst.b	(Main_character).w
 	bne.w	return_1ABA4
+	endif
 	tst.b	(P2_context_active).w	; player 2 never turns Super
 	bne.w	return_1ABA4
 	endif
@@ -42550,7 +42565,7 @@ Tails_JumpHeight:
 	tst.b	jumping(a0)	; is Tails jumping?
 	beq.s	Tails_UpVelCap	; if not, branch
 	if FeatureSuperTails
-	jsr	(Tails_ToggleSuper).l	; A+B or B+C: Super Tails
+	jsr	(Tails_ToggleSuper).l	; A+B, A+C or B+C: Super Tails
 	bne.w	return_1C70C
 	endif
 
