@@ -71,6 +71,14 @@ LevelSelect_Cheats:
 	tst.w	(sp)+				; leave the page?
 	beq.s	.loop
 	jsr	(Settings_Save).l
+	if FeatureTitleMenu
+	tst.b	(Cheats_from_title).w		; opened from the title menu?
+	beq.s	.levelList
+	clr.b	(Cheats_from_title).w
+	move.b	#GameModeID_TitleScreen,(Game_Mode).w	; back to the title
+	rts
+.levelList:
+	endif
 	jmp	(LevelSelect_RedrawPage).l	; back to the level list, CHEATS still selected
 
 ; Fills the visible part of plane A with blank tiles.

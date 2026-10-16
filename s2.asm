@@ -96,8 +96,6 @@ FeatureInvincibilityFlash = 1
 ;	| The invincibility stars blink during the last two seconds
 FeatureFastSoundTest = 1
 ;	| Sound tests: B+A steps back by $10 (A already steps ahead by $10)
-FeatureSpecialStageSelect = 1
-;	| Left/Right on SPECIAL STAGE in the Level Select choose the stage (1-7)
 FeatureLightDash = 1
 ;	| In the air, A next to a chain of 3+ rings dashes along it (Sonic, Tails Alone)
 FeaturePeelOut = 1
@@ -114,6 +112,10 @@ FeatureSuperKnuckles = 1
 FeatureHTZVS = 1
 ;	| 2P VS: the fourth level is Hill Top Zone (two acts and a tiebreak Special Stage);
 ;	| 0 keeps Sonic 2's Special Stage entry. Only one of them fits in the menu.
+FeatureTitleMenu = 1
+;	| After a cheat code (the title code or the sound test code) the title menu goes on
+;	| below OPTIONS with LEVEL SELECT and CHEATS; 0 = A + Start on 1 PLAYER opens the
+;	| Level Select, whose list has the CHEATS item
 FeatureBurntDeath = 1
 ;	| Sonic plays the burnt death animation when killed by fire or lasers
 FeatureSoundDriver = 2
@@ -135,11 +137,13 @@ FeatureInfiniteLives = 0
 FeatureCDDrowning = 0
 ;	| If 1, the music keeps playing below 12 seconds of air and a warning sounds every
 ;	| second, as in Sonic CD; the countdown numbers still appear
+FeatureSpecialStageSelect = 0
+;	| If 1, Left/Right on SPECIAL STAGE in the Level Select choose the stage (1-7)
 FeatureActMusic = 0
 ;	| If 1, act 2 of EHZ, MCZ and CNZ plays the track from 2P mode; the music table
 ;	| (MusicList) can give any act its own song
 
-	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureCentiseconds|FeatureLightDash|FeaturePeelOut|FeatureVictoryPoses|FeatureSuperTails|FeatureKnuckles|FeatureSuperKnuckles|FeatureHTZVS|FeatureBurntDeath|FeatureActMusic|FeatureS3KDrums|FeatureImprovedMusic|FeatureInfiniteLives|FeatureCDDrowning)&~1
+	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureCentiseconds|FeatureLightDash|FeaturePeelOut|FeatureVictoryPoses|FeatureSuperTails|FeatureKnuckles|FeatureSuperKnuckles|FeatureHTZVS|FeatureBurntDeath|FeatureTitleMenu|FeatureActMusic|FeatureS3KDrums|FeatureImprovedMusic|FeatureInfiniteLives|FeatureCDDrowning)&~1
 		error "Feature options must be 0 or 1"
 	endif
 
@@ -4416,12 +4420,14 @@ TitleScreen_Loop:
     else
 	move.w	#emerald_hill_zone_act_1,(Current_ZoneAndAct).w
     endif
+	if FeatureTitleMenu=0
 	tst.b	(Level_select_flag).w	; has level select cheat been entered?
 	beq.s	+			; if not, branch
 	btst	#button_A,(Ctrl_1_Held).w ; is A held down?
 	beq.s	+	 		; if not, branch
 	move.b	#GameModeID_LevelSelect,(Game_Mode).w ; => LevelSelectMenu
 	rts
+	endif
 ; ---------------------------------------------------------------------------
 +
 	move.w	d0,(Current_Special_StageAndAct).w
@@ -4450,6 +4456,17 @@ TitleScreen_CheckIfChose2P:
 ; ---------------------------------------------------------------------------
 ; loc_3D20:
 TitleScreen_ChoseOptions:
+	if FeatureTitleMenu
+	subq.b	#1,d0		; OPTIONS?
+	beq.s	.options
+	subq.b	#1,d0		; LEVEL SELECT?
+	beq.s	.levelSelect
+	st.b	(Cheats_from_title).w	; CHEATS: the Level Select opens on that page
+.levelSelect:
+	move.b	#GameModeID_LevelSelect,(Game_Mode).w ; => LevelSelectMenu
+	rts
+.options:
+	endif
 	move.b	#GameModeID_OptionsMenu,(Game_Mode).w ; => OptionsMenu
 	move.b	#0,(Options_menu_box).w
 	rts
@@ -12825,8 +12842,17 @@ MenuScreen_LevelSelect:
     endif
 
 	; Load and draw the current page (sans zone icon)
+	if FeatureTitleMenu
+	tst.b	(Cheats_from_title).w	; CHEATS on the title menu?
+	beq.s	.levelList
+	jsr	(CheatsPage_Clear).l
+	jsr	(CheatsPage_Draw).l
+	bra.s	.pageDrawn
+.levelList:
+	endif
 	bsr.w	LevelSelect_DrawPage
 	bsr.w	LevelSelect_DrawIcon
+.pageDrawn:
 
 	clr.w	(Player_mode).w
 	clr.w	(Results_Screen_2P).w	; VsRSID_Act
@@ -12866,6 +12892,11 @@ MenuScreen_LevelSelect:
 	move.w	d0,(VDP_control_port).l
 
 	bsr.w	Pal_FadeFromBlack
+	if FeatureTitleMenu
+	tst.b	(Cheats_from_title).w
+	beq.s	LevelSelect_Main
+	jmp	(LevelSelect_Cheats).l
+	endif
 
 ;loc_93AC:
 LevelSelect_Main:	; routine running during level select
@@ -12968,7 +12999,9 @@ LevelSelect_Order:
 	dc.w	wing_fortress_zone_act_1	; 18
 	dc.w	death_egg_zone_act_1	; 19
 	dc.w	LevSelEntry_SpecialStage	; 20
-	dc.w	LevSelEntry_Cheats	; 21
+	if FeatureTitleMenu=0
+	dc.w	LevSelEntry_Cheats	; 21 (the title menu has CHEATS otherwise)
+	endif
 	dc.w	LevSelEntry_SoundTest	; 22 - must be the last entry of every page
 LevelSelect_Order_End:
 
@@ -13027,9 +13060,11 @@ LevelSelect_Pages_End:
 LevelSelect_PageCount = (LevelSelect_Pages_End-LevelSelect_Pages)/levselpage_len
 
 LevelSelect_Texts:
+	if FeatureTitleMenu=0
 	dc.w	planeLoc(40,3,26)
 	dc.l	LevelSelect_CheatsItemText
 	dc.w	LevelSelect_CheatsItemText_End-LevelSelect_CheatsItemText-1
+	endif
 	dc.w	-1
 
 ; Returns a2 = the current page in LevelSelect_Pages.
@@ -13246,8 +13281,8 @@ LevelSelect_SwitchTable:
 	dc.b $13	; 7
 	dc.b $14	; 8
 	dc.b $14	; 9
-	dc.b $16	; 10
-	dc.b $16	; 11
+	dc.b LevSel_SoundTestItem	; 10
+	dc.b LevSel_SoundTestItem	; 11
 	dc.b $C		; 12
 	dc.b $D		; 13
 	dc.b 0		; 14
@@ -13257,9 +13292,16 @@ LevelSelect_SwitchTable:
 	dc.b 4		; 18
 	dc.b 6		; 19
 	dc.b 8		; 20
+	if FeatureTitleMenu=0
 	dc.b $C		; 21 CHEATS
+	endif
 	dc.b $A		; 22
 LevelSelect_SwitchTable_End:
+	if FeatureTitleMenu
+LevSel_SoundTestItem = $15
+	else
+LevSel_SoundTestItem = $16
+	endif
 	even
 ; ===========================================================================
 
@@ -13437,7 +13479,9 @@ LevelSelect_IconTable:
 	dc.b  $A	;$12	WFZ
 	dc.b  $B	;$13	DEZ
 	dc.b  $C	;$14	Special Stage
+	if FeatureTitleMenu=0
 	dc.b  $E	;$15	CHEATS
+	endif
 	dc.b  $E	;$16	Sound Test
 LevelSelect_IconTable_End:
 	even
@@ -13466,7 +13510,9 @@ LevelSelect_MarkTable:	; 4 bytes per level select entry
 	dc.b   9,$2C,  0,  0
 	dc.b  $C,$2C,  0,  0
 	dc.b  $F,$2C,  0,  0	;$14
+	if FeatureTitleMenu=0
 	dc.b $1A,  6,  0,  0	;$15 CHEATS, below the player option
+	endif
 	dc.b $12,$2C,$12,$48
 LevelSelect_MarkTable_End:
 	levselpagecheck LevelSelect
@@ -28096,6 +28142,26 @@ Obj0F_Main:
 	move.b	(Title_screen_option).w,d2
 	move.b	(Ctrl_1_Press).w,d0
 	or.b	(Ctrl_2_Press).w,d0
+	if FeatureTitleMenu
+	moveq	#2,d3		; 1 PLAYER, 2 PLAYER VS, OPTIONS
+	tst.b	(Level_select_flag).w
+	beq.s	.count
+	moveq	#4,d3		; then LEVEL SELECT and CHEATS after a cheat code
+.count:
+	btst	#button_up,d0
+	beq.s	.notUp
+	subq.b	#1,d2
+	bcc.s	.notUp
+	move.b	d3,d2
+.notUp:
+	btst	#button_down,d0
+	beq.s	.notDown
+	addq.b	#1,d2
+	cmp.b	d3,d2
+	bls.s	.notDown
+	moveq	#0,d2
+.notDown:
+	else
 	btst	#button_up,d0
 	beq.s	+
 	subq.b	#1,d2
@@ -28109,6 +28175,7 @@ Obj0F_Main:
 	blo.s	+
 	moveq	#0,d2
 +
+	endif
 	move.b	d2,mapping_frame(a0)
 	move.b	d2,(Title_screen_option).w
 	andi.b	#button_up_mask|button_down_mask,d0
@@ -30211,7 +30278,7 @@ loc_15714:
 	move.w	d1,d4
 	moveq	#-$10,d5
 	moveq	#$1F,d6
-	bsr.w	DrawBlockRow_CustomWidth
+	jsr	(DrawBlockRow_CustomWidth).l
 	movem.l	(sp)+,d4-d6
 	addi.w	#$10,d4
 	dbf	d6,-
@@ -30230,7 +30297,7 @@ loc_15758:
 	move.w	d1,d4
 	moveq	#-16,d5
 	moveq	#64/2-1,d6
-	bsr.w	DrawBlockRow_CustomWidth
+	jsr	(DrawBlockRow_CustomWidth).l
 	movem.l	(sp)+,d4-d6
 	addi.w	#16,d4
 	dbf	d6,-

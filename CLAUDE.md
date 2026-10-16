@@ -28,7 +28,8 @@ The user writes in Russian; answer in Russian.
   ~291 carry frames since before 2026-10-15); no deaths. With every Feature* = 0: the four originals, no deaths.
   Frame counts may differ by 1-2 between builds (lag frames).
 - Harness tips: RetroPad ids B=0 (Genesis B), Y=1 (Genesis A), START=3, UP=4, DOWN=5, LEFT=6, RIGHT=7, A=8 (Genesis C).
-  Level Select needs `debugTesting = 1` and Genesis A held while pressing Start on the title (game mode $28).
+  Level Select (game mode $28): after the title code Up, Down, Down, Down, Left, Right (or with `debugTesting = 1`),
+  Down past OPTIONS on the title menu to LEVEL SELECT (option 3) or CHEATS (option 4, `Title_screen_option`), then Start.
   Writing Game_Mode on the title does not start a level; press Start repeatedly. Audio can be captured by
   replacing the harness' audio_sample_batch callback; queue sounds from the Options menu (mode $24) after
   sending `$FD` (stop), since the title screen starts its own music.

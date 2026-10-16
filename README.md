@@ -167,7 +167,7 @@ features. The default build is unchanged by these switches.
 | `FeatureExtraLives` | Rings give lives only at 100 and 200, as in the original game. |
 | `FeatureInvincibilityFlash` | The invincibility stars stay steady until they vanish. |
 | `FeatureFastSoundTest` | B+A no longer steps the sound tests back by $10 (A still steps ahead by $10). |
-| `FeatureSpecialStageSelect` | SPECIAL STAGE in the Level Select starts the next stage in order, without a number; replaying a stage can count its emerald twice. |
+| `FeatureTitleMenu` | The title menu keeps its three entries; A + Start on 1 PLAYER opens the Level Select, whose list has a CHEATS item below the player option. |
 | `FeatureLightDash` | A in the air never starts a Light Dash; it does the normal air move. |
 | `FeaturePeelOut` | Up + A/B/C while standing jumps, as in the original game. |
 | `FeatureVictoryPoses` | After the signpost the player runs off to the right before the results, as in the original game. |
@@ -178,13 +178,14 @@ features. The default build is unchanged by these switches.
 | `FeatureS3KDrums` | With Flamedriver, Sonic 2 songs play Sonic 2's own kick, snare and timpani samples. |
 | `FeatureImprovedMusic` | With Flamedriver, seven songs keep their original note data (see Sound driver). |
 
-Four optional alternatives are off by default; 1 enables them:
+Five optional alternatives are off by default; 1 enables them:
 
 | Option | When 1 |
 |---|---|
 | `FeatureCentiseconds` | The 1P clock also shows hundredths of a second (`0:00:00`), as in Sonic CD. |
 | `FeatureInfiniteLives` | 1P games hide the lives counter and never end: dying (Time Over too) restarts the act without using a life, rings, score and 1-ups give no lives, and 1-up monitors give 10 rings. 2P VS games keep their lives. |
 | `FeatureCDDrowning` | As in Sonic CD, the music keeps playing below 12 seconds of air and the water warning sounds every second; the countdown numbers still appear. The invincibility music is no longer held back while air is low. |
+| `FeatureSpecialStageSelect` | Left/Right on SPECIAL STAGE in the Level Select choose the stage, shown as 1-7 after the name; an emerald that was already earned is not counted again. |
 | `FeatureActMusic` | Act 2 of EHZ, MCZ and CNZ plays the track from 2P mode. `MusicList` has an entry per act, so any act can get its own song. |
 
 With `FeatureCentiseconds` the clock reads `0:00:00` (after Selbi's
@@ -209,13 +210,16 @@ options (VS countdown, VS items) have no switch.
 
 **Unlocking.** Either the original sound test code 19, 65, 9, 17 (in Options)
 or the Sonic 1 code Up, Down, Down, Down, Left, Right on the title unlocks the
-Level Select (hold **A** and press Start on the title) with its CHEATS item.
+Level Select and the CHEATS page: as in s1_improvements, the title menu then
+goes on below OPTIONS with LEVEL SELECT and CHEATS (`FeatureTitleMenu`; with it
+off, hold **A** and press Start on 1 PLAYER, and CHEATS is an item in the Level
+Select list).
 The other original codes still work (debug 1, 9, 9, 2, 1, 1, 2, 4 and the
 emeralds 4, 1, 2, 6 in the Level Select sound test, continues 1, 1, 2, 4).
 With the unlock, **A** while paused returns to the Level Select.
 
-**CHEATS** is the item below the player option in the Level Select. Up/Down
-select, Left/Right/A/B/C change, Start returns to the level list.
+**CHEATS** (title menu) has Up/Down to select, Left/Right/A/B/C to change, and
+Start to return to the title.
 
 | Setting | Values | Default | Effect |
 |---|---|---|---|
@@ -296,13 +300,14 @@ the console is on. To add a page:
 
 In order tables, `LevSelEntry_NextPage` and `LevSelEntry_PrevPage` switch pages
 (with wrap-around) when Start is pressed, `LevSelEntry_SpecialStage` starts the
-Special Stage, `LevSelEntry_Cheats` opens the CHEATS page and
+Special Stage, `LevSelEntry_Cheats` opens the CHEATS page (only with
+`FeatureTitleMenu = 0`) and
 `LevSelEntry_SoundTest` must be the last item of every page.
 
 The optional third `levselpage` argument lists item names written into the
 decompressed mappings before they are shown (`dc.w planeLoc(40,column,line)`,
-`dc.l text`, `dc.w length-1`, ending with `dc.w -1`). The CHEATS item is added
-to the stock page this way, so items can be added without new Enigma mappings.
+`dc.l text`, `dc.w length-1`, ending with `dc.w -1`). With `FeatureTitleMenu = 0`
+the CHEATS item is added to the stock page this way, so items can be added without new Enigma mappings.
 Two pages were verified with a temporary copy of the stock page: NEXT and PREV
 redraw instantly and items on either page start their own zone.
 

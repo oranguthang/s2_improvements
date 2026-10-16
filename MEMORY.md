@@ -58,6 +58,7 @@ Other objects:
 | `$FF44-$FF47` | `SS_saved_perfect_rings`, `SS_saved_perfect_flag` | Level state after a Special Stage |
 | `$FF60-$FF64` | `Cheat_all_emeralds`, `Cheat_super_rings`, `Cheat_ring_drain`, `Cheat_god_mode`, `Cheats_menu_row` | CHEATS page (saved in SRAM) |
 | `$FF66` | `Title_unlock_entries` (word) | Title unlock code progress |
+| `$FF6B` | `Cheats_from_title` | CHEATS chosen on the title menu (FeatureTitleMenu): the Level Select opens on that page and returns to the title |
 | `$FF68` | `Main_character` | Character in the Sonic slot (`CharID_*`, FeatureKnuckles) |
 | `VS_Tails_Tails_P1` | object slot | The last of the five free reserved object slots: player 1 Tails' tails in VS |
 | `$FF69`, `$FF6A` | `VS_player2`, `Player2_character` | Player 2's VS character option and his Obj01's `CharID_*` (FeatureKnuckles) |
