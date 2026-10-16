@@ -24,6 +24,19 @@ Player_LightDashStart:
 	if FeatureLightDash=0
 	rts					; Light Dash disabled
 	endif
+	bsr.w	LightDash_NeedsSwap
+	beq.s	LightDash_Start			; this player's state is in place
+	bsr.w	LightDash_SwapPlayers
+	pea	.started(pc)			; LightDash_Start drops one return address when it dashes
+	bsr.s	LightDash_Start
+	addq.l	#4,sp				; no dash
+	bra.w	LightDash_SwapPlayers
+.started:
+	bsr.w	LightDash_SwapPlayers
+	addq.l	#4,sp				; skip the rest of the air mode
+	rts
+
+LightDash_Start:
 	tst.b	(LightDash_active).w
 	bne.w	.return
 	btst	#button_A,(Ctrl_1_Press_Logical).w
@@ -79,7 +92,7 @@ Player_LightDashStart:
 	bsr.w	LightDash_SetAnim
 	clr.l	(LightDash_full_x).w		; and LightDash_full_y
 	bclr	#button_A,(Ctrl_1_Press_Logical).w
-	bsr.w	Player_LightDashUpdate
+	bsr.w	LightDash_Update
 	addq.l	#4,sp				; skip the rest of the air mode
 	rts
 .noChain:
@@ -89,10 +102,27 @@ Player_LightDashStart:
 	rts
 
 ; ---------------------------------------------------------------------------
-; Called every frame of the dash before the modes. Returns d0 = 1 if the frame
-; was handled, 0 if normal physics may run instead.
+; Called every frame before the modes. Returns d0 = 1 if the dash moved the
+; player this frame, 0 if normal physics may run instead.
 ; ---------------------------------------------------------------------------
-Player_LightDashUpdate:
+Player_LightDashFrame:
+	moveq	#0,d0
+	bsr.w	LightDash_IsPlayer		; not Tails following Sonic
+	beq.s	.return
+	bsr.w	LightDash_NeedsSwap
+	beq.s	.own
+	bsr.w	LightDash_SwapPlayers
+	bsr.s	.own
+	bra.w	LightDash_SwapPlayers
+.own:
+	clr.b	(LightDash_hitframe).w		; attacks only on frames the dash moved
+	moveq	#0,d0
+	tst.b	(LightDash_active).w
+	bne.s	LightDash_Update
+.return:
+	rts
+
+LightDash_Update:
 	movem.l	d1-d7/a1-a4,-(sp)
 	bsr.w	LightDash_Allowed
 	beq.w	.cancelBeforeMove
@@ -290,8 +320,8 @@ Player_LightDashUpdate:
 ; Guards shared by the start and the dash. Returns Z=0 if the dash may run.
 ; ---------------------------------------------------------------------------
 LightDash_Allowed:
-	cmpa.w	#MainCharacter,a0		; only the player-controlled character
-	bne.s	.deny
+	bsr.s	LightDash_IsPlayer		; only player-controlled characters
+	beq.s	.deny
 	cmpi.b	#2,routine(a0)
 	bne.s	.deny
 	move.b	(Game_Mode).w,d0
@@ -299,8 +329,6 @@ LightDash_Allowed:
 	cmpi.b	#GameModeID_Level,d0
 	bne.s	.deny
 	tst.w	(Demo_mode_flag).w
-	bne.s	.deny
-	tst.w	(Two_player_mode).w
 	bne.s	.deny
 	tst.w	(Debug_placement_mode).w
 	bne.s	.deny
@@ -314,6 +342,57 @@ LightDash_Allowed:
 	rts
 .deny:
 	ori	#4,ccr				; Z=1
+	rts
+
+; Z=0 if a0 is a player: the main character, or either player in 2P VS.
+LightDash_IsPlayer:
+	cmpa.w	#MainCharacter,a0
+	beq.s	.yes
+	tst.w	(Two_player_mode).w
+	beq.s	.no
+	cmpa.w	#Sidekick,a0
+	beq.s	.yes
+.no:
+	ori	#4,ccr				; Z=1
+	rts
+.yes:
+	andi	#~4,ccr				; Z=0
+	rts
+
+; ---------------------------------------------------------------------------
+; In 2P VS each player has a Light Dash state: player 1's in LightDash_RAM and
+; player 2's in VS_LightDash_RAM_P2, and their logical pads in Ctrl_1_Logical
+; and Ctrl_2_Logical. VS_SwapPlayerContext exchanges them around the frame of
+; player 2's Obj01 and player 1's Tails (P2_context_active). Z=0 when a0's
+; are not the ones in place, so LightDash_SwapPlayers must exchange them
+; around the Light Dash code (Tails, or a player hit outside his frame).
+; ---------------------------------------------------------------------------
+LightDash_NeedsSwap:
+	tst.w	(Two_player_mode).w
+	beq.s	.return				; Z=1
+	move.l	d0,-(sp)
+	cmpa.w	#Sidekick,a0
+	seq	d0				; $FF for player 2
+	cmp.b	(P2_context_active).w,d0	; $FF while the exchange is on
+	movem.l	(sp)+,d0			; keeps the flags
+.return:
+	rts
+
+; Exchanges the two players' Light Dash state and logical pads. Keeps every register.
+LightDash_SwapPlayers:
+	movem.l	d0-d1/a1-a2,-(sp)
+	move.w	(Ctrl_1_Logical).w,d0
+	move.w	(Ctrl_2_Logical).w,(Ctrl_1_Logical).w
+	move.w	d0,(Ctrl_2_Logical).w
+	lea	(LightDash_RAM).w,a1
+	lea	(VS_LightDash_RAM_P2).w,a2
+	moveq	#bytesToWcnt(LightDash_RAM_End-LightDash_RAM),d1
+.word:
+	move.w	(a1),d0
+	move.w	(a2),(a1)+
+	move.w	d0,(a2)+
+	dbf	d1,.word
+	movem.l	(sp)+,d0-d1/a1-a2
 	rts
 
 ; ---------------------------------------------------------------------------
@@ -520,10 +599,10 @@ LightDash_SetAnim:
 ; never goes into angle(a0), which belongs to the floor collision.
 ; ---------------------------------------------------------------------------
 Player_LightDashPose:
-	tst.b	(LightDash_active).w
+	tst.b	(LightDash_active).w		; (Obj01 runs in his own context)
 	beq.s	.return
-	cmpa.w	#MainCharacter,a0
-	bne.s	.return
+	bsr.w	LightDash_IsPlayer
+	beq.s	.return
 	cmpi.b	#ObjID_Sonic,id(a0)
 	bne.s	.return
 	cmpi.b	#AniIDSonAni_Float,anim(a0)
@@ -632,18 +711,32 @@ LightDash_PlayerHit:
 	if FeaturePeelOut
 	jsr	(Sonic_CancelPeelOut).l		; and a Peel-Out charge
 	endif
-	cmpa.w	#MainCharacter,a0
-	bne.s	+
+	bsr.w	LightDash_IsPlayer
+	beq.s	.return
+	bsr.w	LightDash_NeedsSwap		; hit outside his own frame
+	beq.s	.own
+	bsr.w	LightDash_SwapPlayers
+	bsr.s	.own
+	bra.w	LightDash_SwapPlayers
+.own:
 	clr.b	(LightDash_active).w
 	clr.b	(LightDash_hitframe).w
-+
+.return:
 	rts
 
 ; Touch_Enemy: Z=0 while the dash moved the main character this frame, so he
 ; attacks badniks (and is vulnerable again once it ends, unless curled).
 LightDash_Attacking:
-	cmpa.w	#MainCharacter,a0
-	bne.s	.no
+	bsr.w	LightDash_IsPlayer
+	beq.s	.no
+	bsr.w	LightDash_NeedsSwap
+	beq.s	.own
+	bsr.w	LightDash_SwapPlayers
+	move.b	(LightDash_hitframe).w,-(sp)
+	bsr.w	LightDash_SwapPlayers
+	tst.b	(sp)+
+	rts
+.own:
 	tst.b	(LightDash_hitframe).w
 	rts
 .no:

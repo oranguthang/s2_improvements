@@ -37459,13 +37459,9 @@ Obj01_Control:
 	endif
 +
 	if FeatureLightDash
-	clr.b	(LightDash_hitframe).w	; attacks only on frames the dash moved
-	tst.b	(LightDash_active).w
-	beq.s	+
-	jsr	(Player_LightDashUpdate).l
+	jsr	(Player_LightDashFrame).l
 	tst.b	d0
 	bne.w	Obj01_AfterMovement	; the dash moved Sonic this frame
-+
 	endif
 	btst #status_secondary.carry,status_secondary(a0)
 	beq.s Obj01_FreeMovement
@@ -40924,15 +40920,9 @@ Obj02_Control_Joypad2:
 ; loc_1B9EA:
 Obj02_Control_Part2:
 	if FeatureLightDash
-	cmpa.w	#MainCharacter,a0	; Tails Alone
-	bne.s	+
-	clr.b	(LightDash_hitframe).w
-	tst.b	(LightDash_active).w
-	beq.s	+
-	jsr	(Player_LightDashUpdate).l
+	jsr	(Player_LightDashFrame).l	; Tails Alone, or either player in VS
 	tst.b	d0
 	bne.w	Obj02_AfterMovement
-+
 	endif
 	btst #0,obj_control(a0)
 	beq.s Obj02_FreeMovement
