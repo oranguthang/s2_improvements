@@ -164,7 +164,6 @@ features. The default build is unchanged by these switches.
 | `FeatureSpringPoses` | Sonic uses the original single spring pose. |
 | `FeatureBurntDeath` | Fire hazards and lasers use the normal death animation. |
 | `FeatureTailsFlight` | Tails cannot fly or swim, Up + jump does not call the Tails AI, the AI respawns only while Sonic is on the ground and out of water, and the title screen plays only the four original demos. |
-| `FeatureActMusic` | Act 2 of EHZ, MCZ and CNZ plays the act 1 track. |
 | `FeatureExtraLives` | Rings give lives only at 100 and 200, as in the original game. |
 | `FeatureInvincibilityFlash` | The invincibility stars stay steady until they vanish. |
 | `FeatureFastSoundTest` | B+A no longer steps the sound tests back by $10 (A still steps ahead by $10). |
@@ -179,13 +178,14 @@ features. The default build is unchanged by these switches.
 | `FeatureS3KDrums` | With Flamedriver, Sonic 2 songs play Sonic 2's own kick, snare and timpani samples. |
 | `FeatureImprovedMusic` | With Flamedriver, seven songs keep their original note data (see Sound driver). |
 
-Three optional alternatives are off by default; 1 enables them:
+Four optional alternatives are off by default; 1 enables them:
 
 | Option | When 1 |
 |---|---|
 | `FeatureCentiseconds` | The 1P clock also shows hundredths of a second (`0:00:00`), as in Sonic CD. |
 | `FeatureInfiniteLives` | 1P games hide the lives counter and never end: dying (Time Over too) restarts the act without using a life, rings, score and 1-ups give no lives, and 1-up monitors give 10 rings. 2P VS games keep their lives. |
 | `FeatureCDDrowning` | As in Sonic CD, the music keeps playing below 12 seconds of air and the water warning sounds every second; the countdown numbers still appear. The invincibility music is no longer held back while air is low. |
+| `FeatureActMusic` | Act 2 of EHZ, MCZ and CNZ plays the track from 2P mode. `MusicList` has an entry per act, so any act can get its own song. |
 
 With `FeatureCentiseconds` the clock reads `0:00:00` (after Selbi's
 [Add Centiseconds HUD](https://info.sonicretro.org/SCHG_How-to:Add_Centiseconds_HUD)).
@@ -561,7 +561,7 @@ You assume any and all responsibility for using this content responsibly. Sonic 
 | Carry Sonic and fly assist | Implemented | The Tails AI can catch Sonic during a flight. While held, Left/Right steer, a fresh Up flaps, and a fresh jump lets Sonic go. |
 | Shield DPLC | Implemented | The shield uses uncompressed tiles on demand. Both players have separate 12-tile slots. |
 | Sonic CD spring twirl | Implemented | Five new frames are appended to Sonic's mappings so the existing animation frame IDs remain stable. |
-| Music by act | Implemented | Act 2 has distinct EHZ, MCZ and CNZ tracks; all other zones keep the original track. |
+| Music by act | Implemented, off by default | `FeatureActMusic = 1` gives act 2 of EHZ, MCZ and CNZ their 2P tracks; `MusicList` has an entry per act. |
 | New title demos | Implemented | Two extra demos follow the original four: CPZ Act 1 shows the AI assist carrying Sonic, and CNZ Act 1 shows assisted flight. They are selected by demo slot, so the original CPZ and CNZ demos still play. |
 
 Tails flies with A, B or C after an initial jump. Player 2 can fly directly

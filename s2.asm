@@ -114,8 +114,6 @@ FeatureHTZVS = 1
 ;	| 0 keeps Sonic 2's Special Stage entry. Only one of them fits in the menu.
 FeatureBurntDeath = 1
 ;	| Sonic plays the burnt death animation when killed by fire or lasers
-FeatureActMusic = 1
-;	| Act 2 of EHZ, MCZ and CNZ plays the track from 2P mode; 0 = the same track in both acts
 FeatureSoundDriver = 2
 ;	| 2: Flamedriver, the Sonic 3 & Knuckles Z80 sound driver, plays music and sound effects;
 ;	| 0: Sonic 2's own Z80 sound driver
@@ -135,6 +133,9 @@ FeatureInfiniteLives = 0
 FeatureCDDrowning = 0
 ;	| If 1, the music keeps playing below 12 seconds of air and a warning sounds every
 ;	| second, as in Sonic CD; the countdown numbers still appear
+FeatureActMusic = 0
+;	| If 1, act 2 of EHZ, MCZ and CNZ plays the track from 2P mode; the music table
+;	| (MusicList) can give any act its own song
 
 	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureCentiseconds|FeatureLightDash|FeaturePeelOut|FeatureVictoryPoses|FeatureSuperTails|FeatureKnuckles|FeatureSuperKnuckles|FeatureHTZVS|FeatureBurntDeath|FeatureActMusic|FeatureS3KDrums|FeatureImprovedMusic|FeatureInfiniteLives|FeatureCDDrowning)&~1
 		error "Feature options must be 0 or 1"
