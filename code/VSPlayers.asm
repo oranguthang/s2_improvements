@@ -23,7 +23,7 @@ VS_Obj01Player2:
 	st.b	(P2_context_active).w
 	jsr	(Obj01_Normal).l	; (debug placement belongs to player 1)
 	sf.b	(P2_context_active).w
-	; fall through: exchange the RAM back
+	bra.s	VS_SwapPlayerContext	; exchange the RAM back
 
 ; Obj02 in the MainCharacter slot in 2P VS (a0 = MainCharacter)
 VS_Obj02Player1:
