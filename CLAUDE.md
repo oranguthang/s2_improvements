@@ -24,7 +24,7 @@ The user writes in Russian; answer in Russian.
   Every boolean in the report must be true.
 - Real emulator: `python tests/check_demo_cycle.py` plays the title demos in Genesis Plus GX via the
   libretro harness `work/retro.py` from the Codex folder. Healthy cycle (6 demos):
-  EHZ 2P, CPZ1, ARZ (1676 frames), CNZ1 (originals), CPZ1 assist (~53 carry frames), CNZ1 assist (flight,
+  EHZ 2P, CPZ1, ARZ (1681 frames), CNZ1 (originals), CPZ1 assist (~53 carry frames), CNZ1 assist (flight,
   ~291 carry frames since before 2026-10-15); no deaths. With every Feature* = 0: the four originals, no deaths.
   Frame counts may differ by 1-2 between builds (lag frames).
 - Harness tips: RetroPad ids B=0 (Genesis B), Y=1 (Genesis A), START=3, UP=4, DOWN=5, LEFT=6, RIGHT=7, A=8 (Genesis C).

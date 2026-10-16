@@ -194,7 +194,7 @@ free tiles after the horizontal scroll table (`$7FC-$7FF`); BuildHUD queues
 them by DMA from a lookup table only when the hundredths change. The ARZ title
 demo runs right at the edge of the frame budget, so even this small cost makes
 it about 20 lag frames longer (1712 -> 1734 frames; the per-frame checks of the later features add a few more, 1742); a 300-cycle empty loop
-in the same place costs 14. The optimizations below bring it back to 1693 with the hundredths on (1697 once Knuckles' checks were added); with the default `FeatureCentiseconds = 0` it takes 1674 (1676 since the VS character checks). With
+in the same place costs 14. The optimizations below bring it back to 1693 with the hundredths on (1697 once Knuckles' checks were added); with the default `FeatureCentiseconds = 0` it takes 1674 (1676 since the VS character checks, 1681 since the Light Dash in VS). With
 `FeatureSpecialStageSelect`, Left/Right on SPECIAL STAGE choose the stage shown
 as 1-7 after the name, and an emerald that was already earned is not counted again.
 
@@ -533,7 +533,7 @@ physical controller timing still need a play-through in an emulator or on hardwa
 
 `tests/check_demo_cycle.py` plays the title demos in Genesis Plus GX through a
 libretro harness. Last run (2026-10-15, after the VS characters): the default build plays EHZ 2P, CPZ1,
-ARZ (1676 frames), CNZ1, the CPZ1 assist demo (53 frames carrying Sonic) and
+ARZ (1681 frames), CNZ1, the CPZ1 assist demo (53 frames carrying Sonic) and
 the CNZ1 assist demo (291) without a death; with every `Feature*` switch at 0
 the four original demos play through without a death.
 

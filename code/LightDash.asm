@@ -24,6 +24,8 @@ Player_LightDashStart:
 	if FeatureLightDash=0
 	rts					; Light Dash disabled
 	endif
+	tst.w	(Two_player_mode).w
+	beq.s	LightDash_Start			; 1P: one Light Dash state
 	bsr.w	LightDash_NeedsSwap
 	beq.s	LightDash_Start			; this player's state is in place
 	bsr.w	LightDash_SwapPlayers
@@ -107,13 +109,10 @@ LightDash_Start:
 ; ---------------------------------------------------------------------------
 Player_LightDashFrame:
 	moveq	#0,d0
-	bsr.w	LightDash_IsPlayer		; not Tails following Sonic
-	beq.s	.return
-	bsr.w	LightDash_NeedsSwap
-	beq.s	.own
-	bsr.w	LightDash_SwapPlayers
-	bsr.s	.own
-	bra.w	LightDash_SwapPlayers
+	tst.w	(Two_player_mode).w
+	bne.s	.vs
+	cmpa.w	#MainCharacter,a0		; not Tails following Sonic
+	bne.s	.return
 .own:
 	clr.b	(LightDash_hitframe).w		; attacks only on frames the dash moved
 	moveq	#0,d0
@@ -121,6 +120,12 @@ Player_LightDashFrame:
 	bne.s	LightDash_Update
 .return:
 	rts
+.vs:						; both players are in control
+	bsr.w	LightDash_NeedsSwap
+	beq.s	.own
+	bsr.w	LightDash_SwapPlayers
+	bsr.s	.own
+	bra.w	LightDash_SwapPlayers
 
 LightDash_Update:
 	movem.l	d1-d7/a1-a4,-(sp)
