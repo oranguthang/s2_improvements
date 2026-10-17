@@ -36083,6 +36083,12 @@ Load_EndOfAct:
 	move.b	#ObjID_Results,id(a1) ; load obj3A (end of level results screen)
 +
 	moveq	#PLCID_Results,d0
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	.notKnuckles
+	moveq	#PLCID_ResultsKnuckles,d0	; his own continue icon
+.notKnuckles:
+	endif
 	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	bne.s	+
 	moveq	#PLCID_ResultsTails,d0
@@ -91976,6 +91982,7 @@ PLCptr_KnucklesLife:	offsetTableEntry.w PlrList_KnucklesLife
 PLCptr_SignpostKnuckles: offsetTableEntry.w PlrList_SignpostKnuckles
 PLCptr_SonicLife2P:	offsetTableEntry.w PlrList_SonicLife2P
 PLCptr_KnucklesLife2P:	offsetTableEntry.w PlrList_KnucklesLife2P
+PLCptr_ResultsKnuckles:	offsetTableEntry.w PlrList_ResultsKnuckles
 	endif
 	if FeatureHTZVS
 PLCptr_Htz1_2P:		offsetTableEntry.w PlrList_Htz1_2P
@@ -92112,6 +92119,15 @@ PlrList_SignpostKnuckles: plrlistheader
 	plreq ArtTile_ArtNem_Signpost, ArtNem_Signpost
 	plreq ArtTile_ArtNem_Signpost+34, ArtNem_SignpostKnucklesPatch
 PlrList_SignpostKnuckles_End
+;---------------------------------------------------------------------------------------
+; End of level results screen with Knuckles' continue icon (Knuckles in Sonic 2's)
+;---------------------------------------------------------------------------------------
+PlrList_ResultsKnuckles: plrlistheader
+	plreq ArtTile_ArtNem_TitleCard, ArtNem_TitleCard
+	plreq ArtTile_ArtNem_ResultsText, ArtNem_ResultsText
+	plreq ArtTile_ArtNem_MiniCharacter, ArtNem_MiniKnuckles
+	plreq ArtTile_ArtNem_Perfect, ArtNem_Perfect
+PlrList_ResultsKnuckles_End
 	endif
 ;---------------------------------------------------------------------------------------
 ; PATTERN LOAD REQUEST LIST

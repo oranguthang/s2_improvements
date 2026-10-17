@@ -668,6 +668,7 @@ PLCID_KnucklesLife =	id(PLCptr_KnucklesLife) ; 43
 PLCID_SignpostKnuckles = id(PLCptr_SignpostKnuckles) ; 44
 PLCID_SonicLife2P =	id(PLCptr_SonicLife2P)
 PLCID_KnucklesLife2P =	id(PLCptr_KnucklesLife2P)
+PLCID_ResultsKnuckles =	id(PLCptr_ResultsKnuckles)
 	endif
 	if FeatureHTZVS
 PLCID_Htz1_2P =		id(PLCptr_Htz1_2P)
