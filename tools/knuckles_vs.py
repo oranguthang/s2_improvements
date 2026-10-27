@@ -18,9 +18,9 @@ mappings/spriteDPLC/Knuckles VS.asm.
 Sonic and Knuckles share colours 2-5 of the first palette line, so a game of
 Sonic against Knuckles uses a copy of the art (Knuckles VS Sonic.bin) with
 Knuckles' colours moved off Sonic's: his two reds to the shoe reds C and D,
-his green and light red to E and F, which that game's palette (Sonic and
-Knuckles VS.bin) sets to them, and his own yellow and orange (E, F) to the
-skin tones A and B. The copy shares the mappings and DPLCs.
+his green socks to the yellow E, his light red to F, which that game's
+palette (Sonic and Knuckles VS.bin) sets to it instead of Tails' orange, and
+his own orange (F) to the yellow E. The copy shares the mappings and DPLCs.
 """
 import argparse, re
 from pathlib import Path
@@ -33,7 +33,7 @@ SCRIPTS = ROOT / 'code' / 'Knuckles.asm'
 SLOT_TILES = 32
 PALETTES = ROOT / 'art' / 'palettes'
 # Knuckles' colour indices in the copy for Sonic against Knuckles
-SONIC_GAME_REMAP = {2: 0xD, 3: 0xC, 4: 0xE, 5: 0xF, 0xE: 0xA, 0xF: 0xB}
+SONIC_GAME_REMAP = {2: 0xD, 3: 0xC, 4: 0xE, 5: 0xF, 0xF: 0xE}
 
 # Frames set by code rather than by animation scripts (code/Knuckles.asm,
 # code/KnucklesGlide.asm, code/LightDash.asm): walking and running in four
@@ -182,7 +182,7 @@ def generate():
     art = b''.join(out_art)
     remap = bytes(SONIC_GAME_REMAP.get(b >> 4, b >> 4) << 4 | SONIC_GAME_REMAP.get(b & 15, b & 15) for b in range(256))
     sonic, knuckles = (PALETTES / 'SonicAndTails.bin').read_bytes(), (PALETTES / 'Knuckles and Tails.bin').read_bytes()
-    palette = sonic[:0xE * 2] + knuckles[4 * 2:6 * 2]  # E, F = Knuckles' green (4) and light red (5)
+    palette = sonic[:0xF * 2] + knuckles[5 * 2:6 * 2]  # F = Knuckles' light red (5)
     return {
         ROOT / 'art' / 'uncompressed' / 'Knuckles VS.bin': art,
         ROOT / 'art' / 'uncompressed' / 'Knuckles VS Sonic.bin': art.translate(remap),
