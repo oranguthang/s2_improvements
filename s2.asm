@@ -96,6 +96,8 @@ FeatureInvincibilityFlash = 1
 ;	| The invincibility stars blink during the last two seconds
 FeatureFastSoundTest = 1
 ;	| Sound tests: B+A steps back by $10 (A already steps ahead by $10)
+FeatureSpecialStageSelect = 1
+;	| Left/Right on SPECIAL STAGE in the Level Select choose the stage (1-7)
 FeatureLightDash = 1
 ;	| In the air, A next to a chain of 3+ rings dashes along it (Sonic, Tails Alone)
 FeaturePeelOut = 1
@@ -137,8 +139,6 @@ FeatureInfiniteLives = 0
 FeatureCDDrowning = 0
 ;	| If 1, the music keeps playing below 12 seconds of air and a warning sounds every
 ;	| second, as in Sonic CD; the countdown numbers still appear
-FeatureSpecialStageSelect = 0
-;	| If 1, Left/Right on SPECIAL STAGE in the Level Select choose the stage (1-7)
 FeatureActMusic = 0
 ;	| If 1, act 2 of EHZ, MCZ and CNZ plays the track from 2P mode; the music table
 ;	| (MusicList) can give any act its own song

@@ -168,6 +168,7 @@ features. The default build is unchanged by these switches.
 | `FeatureExtraLives` | Rings give lives only at 100 and 200, as in the original game. |
 | `FeatureInvincibilityFlash` | The invincibility stars stay steady until they vanish. |
 | `FeatureFastSoundTest` | B+A no longer steps the sound tests back by $10 (A still steps ahead by $10). |
+| `FeatureSpecialStageSelect` | SPECIAL STAGE in the Level Select plays the game's next stage again, with no stage number. |
 | `FeatureTitleMenu` | The title menu keeps its three entries; A + Start on 1 PLAYER opens the Level Select, whose list has a CHEATS item below the player option. |
 | `FeatureLightDash` | A in the air never starts a Light Dash; it does the normal air move. |
 | `FeaturePeelOut` | Up + A/B/C while standing jumps, as in the original game. |
@@ -179,14 +180,13 @@ features. The default build is unchanged by these switches.
 | `FeatureS3KDrums` | With Flamedriver, Sonic 2 songs play Sonic 2's own kick, snare and timpani samples. |
 | `FeatureImprovedMusic` | With Flamedriver, seven songs keep their original note data (see Sound driver). |
 
-Five optional alternatives are off by default; 1 enables them:
+Four optional alternatives are off by default; 1 enables them:
 
 | Option | When 1 |
 |---|---|
 | `FeatureCentiseconds` | The 1P clock also shows hundredths of a second (`0:00:00`), as in Sonic CD. |
 | `FeatureInfiniteLives` | 1P games hide the lives counter and never end: dying (Time Over too) restarts the act without using a life, rings, score and 1-ups give no lives, and 1-up monitors give 10 rings. 2P VS games keep their lives. |
 | `FeatureCDDrowning` | As in Sonic CD, the music keeps playing below 12 seconds of air and the water warning sounds every second; the countdown numbers still appear. The invincibility music is no longer held back while air is low. |
-| `FeatureSpecialStageSelect` | Left/Right on SPECIAL STAGE in the Level Select choose the stage, shown as 1-7 after the name; an emerald that was already earned is not counted again. |
 | `FeatureActMusic` | Act 2 of EHZ, MCZ and CNZ plays the track from 2P mode. `MusicList` has an entry per act, so any act can get its own song. |
 
 With `FeatureCentiseconds` the clock reads `0:00:00` (after Selbi's
