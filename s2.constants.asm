@@ -589,6 +589,7 @@ PalID_HPZ_U_Knuckles =	id(PalPtr_HPZ_U_Knuckles) ; 29
 PalID_CPZ_U_Knuckles =	id(PalPtr_CPZ_U_Knuckles) ; 30
 PalID_ARZ_U_Knuckles =	id(PalPtr_ARZ_U_Knuckles) ; 31
 PalID_SS_Knuckles =	id(PalPtr_SS_Knuckles) ; 32
+PalID_BGND_SonicKnuckles =	id(PalPtr_BGND_SonicKnuckles) ; 33
 	endif
 
 ; PLC IDs
@@ -669,6 +670,8 @@ PLCID_SignpostKnuckles = id(PLCptr_SignpostKnuckles) ; 44
 PLCID_SonicLife2P =	id(PLCptr_SonicLife2P)
 PLCID_KnucklesLife2P =	id(PLCptr_KnucklesLife2P)
 PLCID_ResultsKnuckles =	id(PLCptr_ResultsKnuckles)
+PLCID_KnucklesLifeSonic = id(PLCptr_KnucklesLifeSonic)
+PLCID_KnucklesLife2PSonic = id(PLCptr_KnucklesLife2PSonic)
 	endif
 	if FeatureHTZVS
 PLCID_Htz1_2P =		id(PLCptr_Htz1_2P)

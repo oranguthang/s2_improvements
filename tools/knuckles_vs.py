@@ -14,6 +14,13 @@ VRAM slot.
 
 Writes art/uncompressed/Knuckles VS.bin, mappings/sprite/Knuckles VS.asm and
 mappings/spriteDPLC/Knuckles VS.asm.
+
+Sonic and Knuckles share colours 2-5 of the first palette line, so a game of
+Sonic against Knuckles uses a copy of the art (Knuckles VS Sonic.bin) with
+Knuckles' colours moved off Sonic's: his two reds to the shoe reds C and D,
+his green and light red to E and F, which that game's palette (Sonic and
+Knuckles VS.bin) sets to them, and his own yellow and orange (E, F) to the
+skin tones A and B. The copy shares the mappings and DPLCs.
 """
 import argparse, re
 from pathlib import Path
@@ -24,6 +31,9 @@ DPLCS = ROOT / 'mappings' / 'spriteDPLC' / 'Knuckles.asm'
 ART = ROOT / 'art' / 'uncompressed' / "Knuckles' art.bin"
 SCRIPTS = ROOT / 'code' / 'Knuckles.asm'
 SLOT_TILES = 32
+PALETTES = ROOT / 'art' / 'palettes'
+# Knuckles' colour indices in the copy for Sonic against Knuckles
+SONIC_GAME_REMAP = {2: 0xD, 3: 0xC, 4: 0xE, 5: 0xF, 0xE: 0xA, 0xF: 0xB}
 
 # Frames set by code rather than by animation scripts (code/Knuckles.asm,
 # code/KnucklesGlide.asm, code/LightDash.asm): walking and running in four
@@ -169,8 +179,14 @@ def generate():
                 count -= n
         plc_bodies += body + [f'DPLC_{name}_End', '']
     assert len(out_art) <= 0x1000, 'the DPLC tile index is 12 bits'
+    art = b''.join(out_art)
+    remap = bytes(SONIC_GAME_REMAP.get(b >> 4, b >> 4) << 4 | SONIC_GAME_REMAP.get(b & 15, b & 15) for b in range(256))
+    sonic, knuckles = (PALETTES / 'SonicAndTails.bin').read_bytes(), (PALETTES / 'Knuckles and Tails.bin').read_bytes()
+    palette = sonic[:0xE * 2] + knuckles[4 * 2:6 * 2]  # E, F = Knuckles' green (4) and light red (5)
     return {
-        ROOT / 'art' / 'uncompressed' / 'Knuckles VS.bin': b''.join(out_art),
+        ROOT / 'art' / 'uncompressed' / 'Knuckles VS.bin': art,
+        ROOT / 'art' / 'uncompressed' / 'Knuckles VS Sonic.bin': art.translate(remap),
+        PALETTES / 'Sonic and Knuckles VS.bin': palette,
         ROOT / 'mappings' / 'sprite' / 'Knuckles VS.asm': ('\n'.join(map_lines + [''] + map_bodies) + '\teven\n').encode(),
         ROOT / 'mappings' / 'spriteDPLC' / 'Knuckles VS.asm': ('\n'.join(plc_lines + [''] + plc_bodies) + '\teven\n').encode(),
     }

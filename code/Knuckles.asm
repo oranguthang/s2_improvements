@@ -44,9 +44,17 @@ PlayerOption_Modes_End:
 ; Level and Special Stage palettes with Knuckles' colours:
 ; d0 = PalID_BGND or an underwater PalID -> d0 = the Knuckles version if
 ; Knuckles plays: as player 1, or in 2P VS as player 2 against Tails, where
-; nobody needs Sonic's blue. Other registers are kept.
+; nobody needs Sonic's blue. Sonic against Knuckles keeps Sonic's line with
+; Knuckles' green and light red in it. Other registers are kept.
 ; ---------------------------------------------------------------------------
 Knuckles_PalID:
+	bsr.s	VS_SonicAgainstKnuckles
+	beq.s	.notSonicGame
+	cmpi.b	#PalID_BGND,d0
+	bne.s	.return
+	moveq	#PalID_BGND_SonicKnuckles,d0
+	rts
+.notSonicGame:
 	tst.b	(Main_character).w
 	bne.s	.knuckles
 	tst.w	(Two_player_mode).w
@@ -83,6 +91,32 @@ Knuckles_PalID:
 	rts
 
 ; ---------------------------------------------------------------------------
+; Z=0 in a 2P VS game of Sonic against Knuckles, either way round. Sonic and
+; Knuckles share colours 2-5 of the first line, so there Knuckles draws from
+; a copy of his art with his colours elsewhere (tools/knuckles_vs.py). Reads
+; the player select and VS_player2, which VS_SwapPlayerContext leaves alone;
+; keeps all registers.
+; ---------------------------------------------------------------------------
+VS_SonicAgainstKnuckles:
+	tst.w	(Two_player_mode).w
+	beq.s	.no
+	cmpi.w	#PlayerOption_TailsAlone,(Player_option).w
+	beq.s	.no				; player 1 Tails
+	bhi.s	.player1Knuckles
+	cmpi.b	#VSPlayer2_Knuckles,(VS_player2).w	; player 1 Sonic
+	beq.s	.yes
+	bra.s	.no
+.player1Knuckles:
+	cmpi.b	#VSPlayer2_Sonic,(VS_player2).w
+	beq.s	.yes
+.no:
+	ori	#4,ccr				; Z=1
+	rts
+.yes:
+	andi	#~4,ccr				; Z=0
+	rts
+
+; ---------------------------------------------------------------------------
 ; Knuckles' mappings and DPLCs: in 2P VS the split screen draws 8x16 cells,
 ; so Knuckles uses tools/knuckles_vs.py's frames there.
 ; ---------------------------------------------------------------------------
@@ -103,6 +137,9 @@ Knuckles_DPLC:		; -> a2 = DPLC table, d6 = art
 	beq.s	.return
 	lea	(MapRUnc_KnucklesVS).l,a2
 	move.l	#ArtUnc_KnucklesVS,d6
+	bsr.s	VS_SonicAgainstKnuckles
+	beq.s	.return
+	move.l	#ArtUnc_KnucklesVS_Sonic,d6	; against Sonic: the recoloured copy
 .return:
 	rts
 
@@ -114,6 +151,10 @@ Knuckles_LevelPLC:
 	tst.b	(Main_character).w
 	beq.s	.return
 	moveq	#PLCID_KnucklesLife,d0
+	bsr.w	VS_SonicAgainstKnuckles
+	beq.s	+
+	moveq	#PLCID_KnucklesLifeSonic,d0	; against Sonic: his colours off Sonic's
++
 	jmp	(LoadPLC).l
 .return:
 	rts
@@ -663,13 +704,25 @@ ArtUnc_Knuckles_End:
 ArtUnc_KnucklesVS:	BINCLUDE	"art/uncompressed/Knuckles VS.bin"
 ArtUnc_KnucklesVS_End:
 	include	"mappings/sprite/Knuckles VS.asm"	; MapUnc_KnucklesVS
+; The copy for Sonic against Knuckles (VS_SonicAgainstKnuckles), with the
+; same tiles, mappings and DPLCs, in a bank of its own too
+	align	$20000
+ArtUnc_KnucklesVS_Sonic:	BINCLUDE	"art/uncompressed/Knuckles VS Sonic.bin"
+ArtUnc_KnucklesVS_Sonic_End:
 	include	"mappings/spriteDPLC/Knuckles VS.asm"	; MapRUnc_KnucklesVS
 ArtUnc_SignpostKnuckles:	BINCLUDE	"art/uncompressed/Signpost Knuckles.bin"	; 2P VS signpost
+ArtUnc_SignpostKnucklesSonic:	BINCLUDE	"art/uncompressed/Signpost Knuckles Sonic.bin"	; against Sonic
+ArtUnc_SignpostKnucklesSonic_End:
+	if (ArtUnc_SignpostKnuckles>>17)<>((ArtUnc_SignpostKnucklesSonic_End-1)>>17)
+		fatal "Knuckles' VS signposts must not cross a 128 KiB boundary (DMA)"
+	endif
 
 ; ---------------------------------------------------------------------------
 ; Knuckles' HUD, monitor, signpost and slot machine art (tools/import_kis2.py)
 ; ---------------------------------------------------------------------------
 ArtNem_KnucklesLife:		BINCLUDE	"art/nemesis/Knuckles lives counter.nem"
+	even
+ArtNem_KnucklesLifeSonic:	BINCLUDE	"art/nemesis/Knuckles lives counter Sonic.nem"	; tools/vs_faces.py
 	even
 ArtNem_MiniKnuckles:		BINCLUDE	"art/nemesis/Knuckles continue.nem"
 	even

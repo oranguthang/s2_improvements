@@ -152,6 +152,9 @@ VS_Player2LifePLC:
 	cmpi.b	#VSPlayer2_Knuckles,d1
 	bne.s	.done
 	moveq	#PLCID_KnucklesLife2P,d0
+	jsr	(VS_SonicAgainstKnuckles).l
+	beq.s	.done
+	moveq	#PLCID_KnucklesLife2PSonic,d0	; against Sonic: his colours off Sonic's
 .done:
 	movem.l	(sp)+,d1
 .return:
@@ -407,4 +410,6 @@ VS_SignpostKnucklesFace:
 ArtNem_VSFaceSonic:	BINCLUDE	"art/nemesis/VS face Sonic.nem"
 	even
 ArtNem_VSFaceKnuckles:	BINCLUDE	"art/nemesis/VS face Knuckles.nem"
+	even
+ArtNem_VSFaceKnucklesSonic:	BINCLUDE	"art/nemesis/VS face Knuckles Sonic.nem"	; against Sonic
 	even

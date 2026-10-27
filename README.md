@@ -399,9 +399,17 @@ into Sonic's position buffer and keeps player 1's star post, lives and rings
 
 Sonic and Knuckles use the same palette entries (2-5 of line 0). Games
 without Sonic load Knuckles' colours there, also when player 1 is Tails and
-player 2 Knuckles (`Knuckles_PalID`). Limits: in a Sonic against Knuckles
-game player 2 takes player 1's colours (a blue Knuckles or a red Sonic, as
-with the grey shield and stars, which follow player 1). The tiebreak Special Stage keeps Sonic 2's pair: player 1 plays
+player 2 Knuckles (`Knuckles_PalID`). In a game of Sonic against Knuckles,
+either way round (`VS_SonicAgainstKnuckles`), the line keeps Sonic's blue
+and Knuckles draws from a copy of his VS art with his colours elsewhere
+(`tools/knuckles_vs.py`): his two reds on the shoe reds C and D (slightly
+different shades), his green and light red on E and F, which that game's
+palette (`Sonic and Knuckles VS.bin`) sets to them instead of Tails' yellow
+and orange, and his own yellow and orange on the skin tones A and B. His
+life counter face, player 2's HUD face and his signpost face have the same
+copies (`tools/vs_faces.py`). E and F also colour Emerald Hill's Buzzers and
+a few of Sonic's pixels, which change with them in that game. The grey
+shield and stars follow player 1. The tiebreak Special Stage keeps Sonic 2's pair: player 1 plays
 it as Sonic (or Knuckles) and player 2 as Tails.
 
 ## Music and sound IDs

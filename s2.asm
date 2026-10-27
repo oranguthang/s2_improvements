@@ -3748,6 +3748,7 @@ PalPtr_HPZ_U_Knuckles:	palptr Pal_HPZ_U_Knuckles, 0
 PalPtr_CPZ_U_Knuckles:	palptr Pal_CPZ_U_Knuckles, 0
 PalPtr_ARZ_U_Knuckles:	palptr Pal_ARZ_U_Knuckles, 0
 PalPtr_SS_Knuckles:	palptr Pal_SS_Knuckles, 0
+PalPtr_BGND_SonicKnuckles:	palptr Pal_BGND_SonicKnuckles, 0	; 2P VS Sonic against Knuckles
 	endif
 
 ; ----------------------------------------------------------------------------
@@ -3802,6 +3803,8 @@ Pal_HPZ_U_Knuckles: palette HPZ underwater Knuckles.bin
 Pal_CPZ_U_Knuckles: palette CPZ underwater Knuckles.bin
 Pal_ARZ_U_Knuckles: palette ARZ underwater Knuckles.bin
 Pal_SS_Knuckles:    palette Special Stage Main Knuckles.bin	; Knuckles in Sonic 2's
+; Sonic's line with Knuckles' green and light red in E and F (tools/knuckles_vs.py)
+Pal_BGND_SonicKnuckles: palette Sonic and Knuckles VS.bin,SonicAndTails2.bin
 	endif
 Pal_SS1_2p:palette Special Stage 1 2p.bin ; Special Stage 1 2p palette
 Pal_SS2_2p:palette Special Stage 2 2p.bin ; Special Stage 2 2p palette
@@ -36202,6 +36205,9 @@ loc_19564:
 	jsr	(VS_SignpostKnucklesFace).l	; Knuckles' face (2P VS, either player)?
 	beq.s	+
 	addi.l	#ArtUnc_SignpostKnuckles-ArtUnc_Signpost,d1
+	jsr	(VS_SonicAgainstKnuckles).l	; against Sonic: his colours off Sonic's
+	beq.s	+
+	addi.l	#ArtUnc_SignpostKnucklesSonic-ArtUnc_SignpostKnuckles,d1
 +
 	endif
 	move.w	d4,d2
@@ -91999,6 +92005,8 @@ PLCptr_SignpostKnuckles: offsetTableEntry.w PlrList_SignpostKnuckles
 PLCptr_SonicLife2P:	offsetTableEntry.w PlrList_SonicLife2P
 PLCptr_KnucklesLife2P:	offsetTableEntry.w PlrList_KnucklesLife2P
 PLCptr_ResultsKnuckles:	offsetTableEntry.w PlrList_ResultsKnuckles
+PLCptr_KnucklesLifeSonic: offsetTableEntry.w PlrList_KnucklesLifeSonic
+PLCptr_KnucklesLife2PSonic: offsetTableEntry.w PlrList_KnucklesLife2PSonic
 	endif
 	if FeatureHTZVS
 PLCptr_Htz1_2P:		offsetTableEntry.w PlrList_Htz1_2P
@@ -92117,6 +92125,17 @@ PlrList_KnucklesLife2P: plrlistheader
 	plreq ArtTile_ArtNem_2p_life_counter, ArtNem_KnucklesLife
 	plreq ArtTile_ArtNem_Powerups+$1C, ArtNem_VSFaceKnuckles
 PlrList_KnucklesLife2P_End
+; Sonic against Knuckles: Knuckles' faces with his colours off Sonic's
+; (VS_SonicAgainstKnuckles, tools/vs_faces.py), as player 1 or player 2
+PlrList_KnucklesLifeSonic: plrlistheader
+	plreq ArtTile_ArtNem_life_counter, ArtNem_KnucklesLifeSonic
+	plreq ArtTile_ArtNem_Powerups+44, ArtNem_PowerupsKnucklesPatch
+	plreq ArtTile_ArtNem_Invincible_stars, ArtNem_Invincible_stars_Knuckles
+PlrList_KnucklesLifeSonic_End
+PlrList_KnucklesLife2PSonic: plrlistheader
+	plreq ArtTile_ArtNem_2p_life_counter, ArtNem_KnucklesLifeSonic
+	plreq ArtTile_ArtNem_Powerups+$1C, ArtNem_VSFaceKnucklesSonic
+PlrList_KnucklesLife2PSonic_End
 ;---------------------------------------------------------------------------------------
 ; PATTERN LOAD REQUEST LIST
 ; Knuckles (code/Knuckles.asm): his life icon, and the shield and invincibility
