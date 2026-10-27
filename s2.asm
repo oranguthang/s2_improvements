@@ -1798,7 +1798,7 @@ Pause_Loop:
 	beq.s	Pause_ChkStart		; if not, branch
 	btst	#button_A,(Ctrl_1_Press).w	; is button A pressed?
 	beq.s	Pause_ChkBC		; if not, branch
-	move.b	#GameModeID_LevelSelect,(Game_Mode).w ; return from paused testing to Level Select
+	move.b	#GameModeID_TitleScreen,(Game_Mode).w ; => TitleScreen (as in Sonic 1; the title menu has LEVEL SELECT)
 	nop
 	bra.s	Pause_Resume
 ; ===========================================================================
