@@ -1801,6 +1801,14 @@ Pause_Loop:
 	move.b	#GameModeID_TitleScreen,(Game_Mode).w ; => TitleScreen (as in Sonic 1; the title menu has LEVEL SELECT)
 	if FeatureTitleMenu
 	st.b	(Title_skip_intro).w	; straight to the title, as in Sonic 1
+	tst.w	(Two_player_mode).w	; the split screen skews while the title fades it out,
+	beq.s	+
+	move.w	#$8004,(VDP_control_port).l	; so stop its H-INT (which turns the display back on)
+	move.w	(VDP_Reg1_val).w,d0
+	andi.b	#~$40,d0		; and blank the display at once (the title turns it back on)
+	move.w	d0,(VDP_Reg1_val).w
+	move.w	d0,(VDP_control_port).l
++
 	else
 	nop
 	endif

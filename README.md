@@ -219,7 +219,8 @@ Select list).
 The other original codes still work (debug 1, 9, 9, 2, 1, 1, 2, 4 and the
 emeralds 4, 1, 2, 6 in the Level Select sound test, continues 1, 1, 2, 4).
 With the unlock, **A** while paused returns to the title screen; that and
-leaving CHEATS skip the 'Sonic and Miles 'Tails' Prower in' text.
+leaving CHEATS skip the 'Sonic and Miles 'Tails' Prower in' text. From 2P VS
+the screen goes blank at once, as the split screen would skew while fading.
 
 **CHEATS** (title menu) has Up/Down to select, Left/Right/A/B/C to change, and
 Start to return to the title.
