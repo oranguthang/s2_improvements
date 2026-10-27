@@ -89,8 +89,19 @@ SoundS3K_Slot:
 .music:
 	tst.b	d2				; the driver reads one song or command per frame
 	bne.s	.return
+	cmpi.b	#MusID_ExtraLife,d1
+	bne.s	.sendMusic
+	; The driver saves the song over its sound effect tracks. A sound effect
+	; it starts in the same update would overwrite the saved song, so the
+	; ones still waiting are dropped, and so are later ones this frame
+	; (d2 = -1).
+	moveq	#-1,d2
+	clr.b	(Z80_RAM+zSFXNumber0).l
+	clr.b	(Z80_RAM+zSFXNumber1).l
+	bra.s	.writeMusic
 .sendMusic:
 	moveq	#1,d2
+.writeMusic:
 	move.b	d1,(Z80_RAM+zMusicNumber).l
 .handled:
 	clr.b	(a1)
@@ -98,6 +109,8 @@ SoundS3K_Slot:
 	rts
 ; ---------------------------------------------------------------------------
 .soundEffect:
+	tst.b	d2				; a 1-up sent this frame?
+	bmi.s	.handled			; then the sound effect is dropped
 	subi.b	#SndID__First-zsfx__First,d1
 	cmp.b	(Z80_RAM+zSFXNumber0).l,d1	; already requested this frame?
 	beq.s	.handled

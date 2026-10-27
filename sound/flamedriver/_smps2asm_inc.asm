@@ -406,11 +406,20 @@ smpsDetune macro val
 	endm
 
 ; E2xx - Used for setting a variable which can be read by the game, for synchronisation. Ristar does this.
+; Sonic 1 and 2 songs use it as a marker no game reads ($E2 $01), but $E2 is
+; "fade to previous" in Sonic 3 & Knuckles' driver: in the 1-up song, any
+; value but the 1-up's own ends its lock on sound effects, and a sound effect
+; then overwrites the saved song (the music stays broken after the 1-up).
+; Such songs leave it out.
 smpsNop macro val
+	if (SonicDriverVer>=3) && (SourceDriver<3)
+		; nothing
+	else
 	if (SonicDriverVer>=3) && ((val==$FF) || (val==$29))
 		warning "Values $FF and $29 are reserved in S3K's driver; use a different value or remove this command."
 	endif
 	dc.b	$E2,val
+	endif
 	endm
 
 ; Return (used after smpsCall)

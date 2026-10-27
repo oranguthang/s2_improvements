@@ -443,7 +443,11 @@ code fill `Sound_Queue`, and `sndDriverInput` (V-Int, Z80 stopped) jumps to
 `SoundS3K_Input` in `sound/S3K Driver.asm`, which passes one song or command
 per frame and up to two sound effects to the driver. Speed shoes use the
 Sonic 3 & Knuckles tempo step of 8, the driver resumes the song under a 1-up
-by itself, Ring and RingLeft alternate as in Sonic 2 (they must stay next to
+by itself (it saves the song over its sound effect tracks, so no effect may
+start until the 1-up ends: the driver ignores them meanwhile,
+`SoundS3K_Input` drops the ones queued in the 1-up's frame, and `smpsNop`,
+`$E2` or fade-to-previous in this driver, assembles to nothing in Sonic 2
+songs), Ring and RingLeft alternate as in Sonic 2 (they must stay next to
 each other in `Gen_Sound_Table`), and repeated Spin Dash revs rise in pitch as
 in Sonic 3 & Knuckles. The SEGA chant is Sonic 2's own sample, resampled by
 `tools/flamedriver_sega.py` to the driver's rate of about 14.4 kHz
