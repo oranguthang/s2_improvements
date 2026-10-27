@@ -37949,8 +37949,11 @@ AirRoll:
 	rts				; Air Roll disabled
 	endif
 	if FeatureKnuckles
-	tst.b	(Main_character).w	; Knuckles glides instead
+	tst.b	(Main_character).w	; Knuckles curls up too, as in s1_improvements,
+	beq.s	+
+	btst	#status.player.rolling,status(a0)	; but in a ball (a jump) the press glides instead
 	bne.w	.return
++
 	endif
 	moveq	#button_A_mask|button_B_mask|button_C_mask,d0
 	and.b	(Ctrl_1_Press_Logical).w,d0	; is A, B, or C pressed?
