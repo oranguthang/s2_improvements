@@ -43,11 +43,19 @@ PlayerOption_Modes_End:
 ; ---------------------------------------------------------------------------
 ; Level and Special Stage palettes with Knuckles' colours:
 ; d0 = PalID_BGND or an underwater PalID -> d0 = the Knuckles version if
-; Knuckles plays. Other registers are kept.
+; Knuckles plays: as player 1, or in 2P VS as player 2 against Tails, where
+; nobody needs Sonic's blue. Other registers are kept.
 ; ---------------------------------------------------------------------------
 Knuckles_PalID:
 	tst.b	(Main_character).w
+	bne.s	.knuckles
+	tst.w	(Two_player_mode).w
 	beq.s	.return
+	cmpi.b	#VSPlayer2_Knuckles,(VS_player2).w
+	bne.s	.return
+	cmpi.w	#PlayerOption_TailsAlone,(Player_option).w	; player 1 Tails?
+	bne.s	.return
+.knuckles:
 	cmpi.b	#PalID_BGND,d0
 	bne.s	+
 	moveq	#PalID_BGND_Knuckles,d0

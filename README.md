@@ -397,10 +397,11 @@ a reserved slot (`VS_Tails_Tails_P1`, with its own DPLC frame), he records
 into Sonic's position buffer and keeps player 1's star post, lives and rings
 (`VS_Obj02Player1GameOver`). Tails against Tails works too.
 
-Limits: Sonic and Knuckles use the same palette entries (2-5 of line 0), so
-in a Sonic against Knuckles game player 2 takes player 1's colours (a blue
-Knuckles or a red Sonic, as with the grey shield and stars, which follow
-player 1). The tiebreak Special Stage keeps Sonic 2's pair: player 1 plays
+Sonic and Knuckles use the same palette entries (2-5 of line 0). Games
+without Sonic load Knuckles' colours there, also when player 1 is Tails and
+player 2 Knuckles (`Knuckles_PalID`). Limits: in a Sonic against Knuckles
+game player 2 takes player 1's colours (a blue Knuckles or a red Sonic, as
+with the grey shield and stars, which follow player 1). The tiebreak Special Stage keeps Sonic 2's pair: player 1 plays
 it as Sonic (or Knuckles) and player 2 as Tails.
 
 ## Music and sound IDs
