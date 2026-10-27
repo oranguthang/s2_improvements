@@ -75,6 +75,7 @@ LevelSelect_Cheats:
 	tst.b	(Cheats_from_title).w		; opened from the title menu?
 	beq.s	.levelList
 	clr.b	(Cheats_from_title).w
+	st.b	(Title_skip_intro).w		; without the intro text
 	move.b	#GameModeID_TitleScreen,(Game_Mode).w	; back to the title
 	rts
 .levelList:

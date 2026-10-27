@@ -120,8 +120,9 @@ All existing debug lists include the individual monitor types. In Level Select,
 **C** cycles Sonic and Tails / Sonic Alone / Tails Alone except on Sound Test;
 the current choice is shown below the level list. With the slow-motion cheat
 enabled, **A** while paused returns to the title screen, as in Sonic 1 (its
-menu has LEVEL SELECT); water/checkpoint state is reset and standard HUD
-graphics reloaded on starting a level.
+menu has LEVEL SELECT), without the 'Sonic and Miles 'Tails' Prower in'
+text; water/checkpoint state is reset and standard HUD graphics reloaded on
+starting a level.
 
 For testing builds, set `debugTesting = 1` at the top of `s2.asm`: Level Select,
 slow motion and Debug mode are then unlocked on boot without entering cheats.
@@ -217,7 +218,8 @@ off, hold **A** and press Start on 1 PLAYER, and CHEATS is an item in the Level
 Select list).
 The other original codes still work (debug 1, 9, 9, 2, 1, 1, 2, 4 and the
 emeralds 4, 1, 2, 6 in the Level Select sound test, continues 1, 1, 2, 4).
-With the unlock, **A** while paused returns to the title screen.
+With the unlock, **A** while paused returns to the title screen; that and
+leaving CHEATS skip the 'Sonic and Miles 'Tails' Prower in' text.
 
 **CHEATS** (title menu) has Up/Down to select, Left/Right/A/B/C to change, and
 Start to return to the title.

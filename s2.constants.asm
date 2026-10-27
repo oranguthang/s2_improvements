@@ -2012,7 +2012,8 @@ Main_character:			ds.b	1	; CharID_*: who plays in the Sonic slot (set with Playe
 VS_player2:			ds.b	1	; VSPlayer2_*: player 2's character in 2P VS (FeatureKnuckles)
 Player2_character:		ds.b	1	; CharID_* of player 2's Obj01 in 2P VS (VS_player2 Sonic/Knuckles)
 Cheats_from_title:		ds.b	1	; CHEATS chosen on the title menu (FeatureTitleMenu)
-				ds.b	4	; $FFFFFF6C-$FFFFFF6F ; seems unused
+Title_skip_intro:		ds.b	1	; back to the title from a game or CHEATS: no intro text (FeatureTitleMenu)
+				ds.b	3	; $FFFFFF6D-$FFFFFF6F ; seems unused
 
 Player_mode:			ds.w	1	; 0 = Sonic and Tails, 1 = Sonic, 2 = Tails
 Player_option:			ds.w	1	; PlayerOption_*

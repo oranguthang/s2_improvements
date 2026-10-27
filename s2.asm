@@ -1799,7 +1799,11 @@ Pause_Loop:
 	btst	#button_A,(Ctrl_1_Press).w	; is button A pressed?
 	beq.s	Pause_ChkBC		; if not, branch
 	move.b	#GameModeID_TitleScreen,(Game_Mode).w ; => TitleScreen (as in Sonic 1; the title menu has LEVEL SELECT)
+	if FeatureTitleMenu
+	st.b	(Title_skip_intro).w	; straight to the title, as in Sonic 1
+	else
 	nop
+	endif
 	bra.s	Pause_Resume
 ; ===========================================================================
 ; loc_13D4:
@@ -4147,6 +4151,14 @@ TitleScreen:
 	clearRAM Misc_Variables,Misc_Variables_End ; clear CPU player RAM and following variables
 	clearRAM Camera_RAM,Camera_RAM_End ; clear camera RAM and following variables
 
+	if FeatureTitleMenu
+	; Back from a game (Pause + A) or the CHEATS page: no 'Sonic and Miles
+	; 'Tails' Prower in' text, the title is built on a black screen.
+	tst.b	(Title_skip_intro).w
+	sf.b	(Title_skip_intro).w
+	bne.s	.noIntroText
+	endif
+
 	; Load the credit font for the following text.
 	move.l	#vdpComm(tiles_to_bytes(ArtTile_ArtNem_CreditText),VRAM,WRITE),(VDP_control_port).l
 	lea	(ArtNem_CreditText).l,a0
@@ -4166,6 +4178,7 @@ TitleScreen:
 	; so that we have exclusive access to the VDP for the following calls
 	; to the Nemesis decompressor.
 	move	#$2700,sr
+.noIntroText:
 
 	; Load assets while the above text is being displayed.
 	move.l	#vdpComm(tiles_to_bytes(ArtTile_ArtNem_Title),VRAM,WRITE),(VDP_control_port).l
