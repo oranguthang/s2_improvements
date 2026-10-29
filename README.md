@@ -210,14 +210,15 @@ options (VS countdown, VS items) have no switch.
 
 ## Cheats and settings
 
-**Unlocking.** Either the original sound test code 19, 65, 9, 17 (in Options)
-or the Sonic 1 code Up, Down, Down, Down, Left, Right on the title unlocks the
-Level Select and the CHEATS page: as in s1_improvements, the title menu then
-goes on below OPTIONS with LEVEL SELECT and CHEATS (`FeatureTitleMenu`; with it
-off, hold **A** and press Start on 1 PLAYER, and CHEATS is an item in the Level
-Select list).
-The other original codes still work (debug 1, 9, 9, 2, 1, 1, 2, 4 and the
-emeralds 4, 1, 2, 6 in the Level Select sound test, continues 1, 1, 2, 4).
+**Unlocking.** The Sonic 1 code Up, Down, Down, Down, Left, Right on the title
+unlocks the Level Select and the CHEATS page: as in s1_improvements, the title
+menu then goes on below OPTIONS with LEVEL SELECT and CHEATS
+(`FeatureTitleMenu`). The sound test codes for the level select (19, 65, 9, 17),
+debug (1, 9, 9, 2, 1, 1, 2, 4) and the emeralds (4, 1, 2, 6) are off with it,
+as the title code and CHEATS do their work; only the continues code 1, 1, 2, 4
+in Options is left. With `FeatureTitleMenu` off all four codes work as in the
+original, and CHEATS is an item in the Level Select list (hold **A** and press
+Start on 1 PLAYER).
 With the unlock, **A** while paused returns to the title screen; that and
 leaving CHEATS skip the 'Sonic and Miles 'Tails' Prower in' text. From 2P VS
 the pause fades the split screen out itself (`VS_PauseFadeOut`), as the
@@ -229,7 +230,7 @@ Start to return to the title.
 | Setting | Values | Default | Effect |
 |---|---|---|---|
 | ALL EMERALDS | OFF / ON | OFF | Counts as seven emeralds for Super Sonic, the Super ending and the star post stars. The real emeralds are kept. Not in 2P games or demos. |
-| DEBUG | OFF / ON | OFF | Debug mode in every level (B enters object placement) without holding A. Same flag as the debug sound test code. |
+| DEBUG | OFF / ON | OFF | Debug mode in every level (B enters object placement) without holding A. |
 | SUPER RINGS | 0 / 10 / 50 | 50 | Rings needed to turn Super. 0 turns RING DRAIN off. |
 | RING DRAIN | OFF / ON | ON | OFF keeps Super Sonic until the act ends. Turning it on at 0 rings sets SUPER RINGS to 10. |
 | GOD MODE | OFF / ON | OFF | Nothing hurts or kills the players, the air never runs out, the clock stops at 9:59 and a pit bounces the player back up. Not in 2P VS games or demos. |

@@ -13558,6 +13558,13 @@ LevelSelect_MarkTable_End:
 ; ===========================================================================
 ; loc_9746:
 CheckCheats:	; This is called from 2 places: the options screen and the level select screen
+	if FeatureTitleMenu
+	; The title code and CHEATS replace the level select, debug and emerald
+	; codes; only the continues code (Options) is left.
+	tst.w	d2
+	bne.s	CheckCheats_Return
+	bra.s	CheckCheats_Continues
+	endif
 	move.w	(Correct_cheat_entries).w,d0	; Get the number of correct sound IDs entered so far
 	adda.w	d0,a0				; Skip to the next entry
 	move.w	(Sound_test_sound).w,d0		; Get the current sound test sound
@@ -13573,6 +13580,7 @@ CheckCheats:	; This is called from 2 places: the options screen and the level se
 +
 	move.w	#0,(Correct_cheat_entries).w	; Clear the number of correct entries
 +
+CheckCheats_Continues:
 	move.w	(Correct_cheat_entries_2).w,d0	; Do the same procedure with the other cheat
 	adda.w	d0,a2
 	move.w	(Sound_test_sound).w,d0
@@ -13603,6 +13611,7 @@ CheckCheats:	; This is called from 2 places: the options screen and the level se
 +
 	move.w	#0,(Correct_cheat_entries_2).w	; Clear the number of correct entries
 +
+CheckCheats_Return:
 	rts
 ; ===========================================================================
 level_select_cheat:

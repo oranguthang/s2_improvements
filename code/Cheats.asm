@@ -5,7 +5,8 @@
 
 ; ---------------------------------------------------------------------------
 ; Title code Up, Down, Down, Down, Left, Right (as in s1_improvements) unlocks
-; the Level Select and its CHEATS page, like the sound test code 19, 65, 9, 17.
+; the Level Select and its CHEATS page. With FeatureTitleMenu it replaces the
+; sound test code 19, 65, 9, 17 (see CheckCheats).
 ; ---------------------------------------------------------------------------
 TitleUnlockCheat:
 	move.b	(Ctrl_1_Press).w,d1
