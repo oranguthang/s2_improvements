@@ -46,21 +46,32 @@ def font(text):
 def game_results():
     source = (ROOT / 'mappings/misc/2P Game Results.eni').read_bytes()
     words = enigma.decode(source)
+    out = [0] * len(words)
 
     def row(r):
         return words[r * WIDTH:(r + 1) * WIDTH]
 
-    def put(r, col, cells):
-        words[r * WIDTH + col:r * WIDTH + col + len(cells)] = cells
+    def put(r, cells, col=0):
+        out[r * WIDTH + col:r * WIDTH + col + len(cells)] = cells
 
-    # rows 18-20: "SPECIAL STAGE 1, 2, 3" -> "HILL TOP 1, 2, S.S", laid out like
-    # the Casino Night rows above them (14-16)
     assert row(18)[3:16] == font('SPECIAL STAGE')
     assert row(14)[4:16] == font('CASINO NIGHT')
-    put(18, 3, font('     HILL TOP'))
-    put(20, 17, row(16)[17:20])   # S.S
-    packed = enigma.encode(words)
-    assert enigma.decode(packed) == words
+    assert row(25)[25:28] == font('THE')
+    # five zones of three rows (act 1, act 2 and the tiebreak S.S, or the
+    # three Special Stages) need the whole screen: the title and WINS move up
+    # a row, the blocks keep one blank row between them, TOTAL and THE GAME
+    # follow (Setup2PResults_Game and Obj21_PositionTable match these rows)
+    for new, old in ((1, 2), (2, 3), (3, 4),
+                     (4, 6), (5, 7), (6, 8),          # EMERALD HILL
+                     (8, 10), (9, 11), (10, 12),      # MYSTIC CAVE
+                     (12, 14), (13, 15), (14, 16),    # CASINO NIGHT
+                     (16, 18), (17, 19), (18, 16),    # HILL TOP 1, 2 and S.S
+                     (20, 18), (21, 19), (22, 20),    # SPECIAL STAGE 1, 2, 3
+                     (24, 22), (26, 25)):             # TOTAL, THE GAME
+        put(new, row(old))
+    put(16, font('     HILL TOP'), 3)
+    packed = enigma.encode(out)
+    assert enigma.decode(packed) == out
     return {ROOT / 'mappings/misc/2P Game Results HTZ.eni': packed}
 
 

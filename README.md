@@ -177,7 +177,7 @@ features. The default build is unchanged by these switches.
 | `FeatureSuperTails` | Tails cannot turn Super. |
 | `FeatureKnuckles` | The player select has no Knuckles entries, and VS is always Sonic against Tails. |
 | `FeatureSuperKnuckles` | Knuckles cannot turn Super. |
-| `FeatureHTZVS` | The VS menu's fourth entry is the Special Stage series again and Hill Top Zone is not playable in VS (only one of the two fits in the menu). |
+| `FeatureHTZVS` | Hill Top Zone is not playable in VS, and the VS menu is Sonic 2's four boxes again (EMERALD HILL, MYSTIC CAVE, CASINO NIGHT, SPECIAL STAGE). |
 | `FeatureS3KDrums` | With Flamedriver, Sonic 2 songs play Sonic 2's own kick, snare and timpani samples. |
 | `FeatureImprovedMusic` | With Flamedriver, seven songs keep their original note data (see Sound driver). |
 
@@ -332,11 +332,22 @@ need a frame per mode.
 
 ## Hill Top Zone in 2P VS
 
-With `FeatureHTZVS` (the default) Hill Top Zone takes the VS menu's fourth
-entry, which was the Special Stage series, after E-122-Psi's
+With `FeatureHTZVS` (the default) Hill Top Zone is a fifth VS zone, after
+E-122-Psi's
 [Add Hill Top Zone to 2 Player VS Mode](https://info.sonicretro.org/SCHG_How-to:Add_Hill_Top_Zone_to_2_Player_VS_Mode):
-two acts and the usual tiebreak Special Stage, with HILL TOP 1, 2 and S.S rows
-on the game results screen. Compared with one player:
+two acts and a tiebreak Special Stage, with HILL TOP 1, 2 and S.S rows on the
+game results screen. Sonic 2's four boxes only fit four zones, so the VS menu
+is a list like the Level Select (`code/VSMenu.asm`): EMERALD HILL, MYSTIC
+CAVE, CASINO NIGHT, HILL TOP and SPECIAL STAGE in the middle, Up/Down to
+choose, and the zone's icon in the Level Select emblem at the bottom right (the
+X once a zone has been played, where Start gives the error sound as before).
+`Current_Zone_2P` is the index in that list, so the Special Stage series is
+zone 4 and `HTZ_Results_2P` (in the 6 unused bytes after the results) comes
+before `SS_Results_2P`. Hill Top's tiebreak is Special Stage 1, which VS
+otherwise never plays (the other zones' tiebreaks are stages 2-4 and the
+series 5-7). With five zones the game results screen
+(`2P Game Results HTZ.eni`, from `tools/htz_vs.py`) moves its title up a row
+and keeps one blank row between the zones. Compared with one player:
 
 - No earthquake and no boss (`LevEvents_HTZ_2P`, `LevEvents_HTZ2_2P`): act 1
   ends at its signpost and act 2's camera stops at $2D80, with a signpost

@@ -11137,6 +11137,12 @@ TwoPlayerResults:
 +	; There's a tie, play a special stage
 	move.b	(Current_Zone_2P).w,d0
 	addq.b	#1,d0
+	if FeatureHTZVS
+	cmpi.b	#4,d0			; Hill Top's tiebreak is the first stage: 4-6 are the Special Stage series
+	blo.s	.tiebreakStage
+	moveq	#0,d0
+.tiebreakStage:
+	endif
 	move.b	d0,(Current_Special_Stage).w
 	move.w	#VsRSID_SS,(Results_Screen_2P).w
 	move.b	#1,(f_bigring).w
@@ -11179,7 +11185,7 @@ TwoPlayerResultsDone_ZoneOrSpecialStages:
 	lea	(Results_Data_2P).w,a4
 	moveq	#0,d0
 	moveq	#0,d1
-    rept 3
+    rept 3+FeatureHTZVS	; the zones before the Special Stages
 	move.w	(a4)+,d0
 	add.l	d0,d1
 	move.w	(a4)+,d0
@@ -11223,10 +11229,8 @@ TwoPlayerResultsDone_Game:
 TwoPlayerResultsDone_SpecialStage:
 	subq.w	#1,d0			; were we at the special stage results screen? (VsRSID_SS)
 	bne.w	TwoPlayerResultsDone_SpecialStages ; if not, branch
-	if FeatureHTZVS=0		; (with Hill Top in its place, every Special Stage is a tiebreak)
-	cmpi.b	#3,(Current_Zone_2P).w	; do we come from the special stage "zone"?
+	cmpi.b	#3+FeatureHTZVS,(Current_Zone_2P).w	; do we come from the special stage "zone"? (the fifth with Hill Top)
 	beq.s	+			; if yes, branch
-	endif
 	move.w	#VsRSID_Zone,(Results_Screen_2P).w ; show zone results after tiebreaker special stage
 	move.b	#GameModeID_2PResults,(Game_Mode).w ; => TwoPlayerResults
 	rts
@@ -11310,7 +11314,7 @@ Obj21_PositionTable:
 	;                     x, y
 	obj21_make_position -48,88
 	obj21_make_position -48,64
-	obj21_make_position -64,88
+	obj21_make_position -64,88+8*FeatureHTZVS	; THE GAME is a row lower with five zones
 	obj21_make_position -48,88
 	obj21_make_position -48,88
 ; ===========================================================================
@@ -11478,6 +11482,24 @@ Setup2PResults_Game:
 	lea	(Results_Data_2P).w,a5
 	lea	(SS_Total_Won).w,a4
 	clr.w	(a4)
+	if FeatureHTZVS
+	; five zones of three rows (tools/htz_vs.py): rows 4-6, 8-10, 12-14,
+	; 16-18 and 20-22, the TOTAL row 24
+    irp resultsRow, 4,5,6, 8,9,10, 12,13,14, 16,17,18, 20,21,22
+	move.w	#resultsRow*$50+$28,d6
+	bsr.w	sub_84C4
+    endm
+	move.w	#24*$50+$2A,d2
+	moveq	#0,d0
+	moveq	#0,d1
+	move.b	(a4),d1
+	bsr.w	sub_86B0
+	move.w	#24*$50+$30,d2
+	moveq	#0,d1
+	move.b	1(a4),d1
+	bsr.w	sub_86B0
+	rts
+	else
 	move.w	#$208,d6
 	bsr.w	sub_84C4
 	move.w	#$258,d6
@@ -11512,6 +11534,7 @@ Setup2PResults_Game:
 	move.b	1(a4),d1
 	bsr.w	sub_86B0
 	rts
+	endif
 ; ===========================================================================
 ; loc_83B0:
 Setup2PResults_SpecialAct:
@@ -11587,6 +11610,11 @@ sub_8476:
 	lea	(CNZ_Results_2P).w,a4
 	subq.b	#1,d0
 	beq.s	+
+	if FeatureHTZVS
+	lea	(HTZ_Results_2P).w,a4
+	subq.b	#1,d0
+	beq.s	+
+	endif
 	lea	(SS_Results_2P).w,a4
 +
 	moveq	#0,d0
@@ -11611,6 +11639,11 @@ sub_84A4:
 	lea	(CNZ_Results_2P).w,a5
 	subq.b	#1,d0
 	beq.s	+	; rts
+	if FeatureHTZVS
+	lea	(HTZ_Results_2P).w,a5
+	subq.b	#1,d0
+	beq.s	+	; rts
+	endif
 	lea	(SS_Results_2P).w,a5
 +
 	rts
@@ -11947,7 +11980,6 @@ Text2P_CasinoNight:	menutxt	"CASINO NIGHT"	; byte_8764:
 Text2P_SpecialStage:	menutxt	"SPECIAL STAGE"	; byte_8771:
 Text2P_Special:		menutxt	"   SPECIAL  "	; byte_877F:
 	if FeatureHTZVS
-Text2P_HillTop:		menutxt	"  HILL TOP  "
 Text2P_HillTopZone:	menutxt	"    HILL TOP"
 	endif
 Text2P_Zone:		menutxt	"ZONE "		; byte_878C:
@@ -12026,11 +12058,7 @@ MenuScreen:
 	move.w	(VDP_Reg1_val).w,d0
 	andi.b	#$BF,d0
 	move.w	d0,(VDP_control_port).l
-    if FeatureHTZVS
-	jsr	(ClearScreen).l	; out of bsr range with the 2P Hill Top data
-    else
-	bsr.w	ClearScreen
-    endif
+	jsr	(ClearScreen).l	; out of bsr range
 	lea	(VDP_control_port).l,a6
 	move.w	#$8004,(a6)		; H-INT disabled
 	move.w	#$8200|(VRAM_Menu_Plane_A_Name_Table/$400),(a6)		; PNT A base: $C000
@@ -12071,6 +12099,9 @@ MenuScreen:
 	beq.w	MenuScreen_LevelSelect	; if yes, branch
 
 ;MenuScreen_LevSel2P:
+	if FeatureHTZVS
+	jsr	(VSMenu_Draw).l		; five zones in a list (code/VSMenu.asm)
+	else
 	lea	(Chunk_Table).l,a1
 	lea	(MapEng_LevSel2P).l,a0
 	move.w	#make_art_tile(ArtTile_ArtNem_MenuBox,0,0),d0
@@ -12101,6 +12132,7 @@ MenuScreen:
 	bsr.w	ClearOld2PLevSelSelection
 	addq.b	#1,(Current_Zone_2P).w
 	andi.b	#3,(Current_Zone_2P).w
+	endif
 	clr.w	(Player_mode).w
 	clr.b	(Current_Act_2P).w
 	clr.w	(Results_Screen_2P).w	; VsRSID_Act
@@ -12140,9 +12172,13 @@ LevelSelect2P_Main:
 	move.b	#VintID_Menu,(Vint_routine).w
 	bsr.w	WaitForVint
 	move	#$2700,sr
+	if FeatureHTZVS
+	jsr	(VSMenu_Update).l
+	else
 	bsr.w	ClearOld2PLevSelSelection
 	bsr.w	LevelSelect2P_Controls
 	bsr.w	Update2PLevSelSelection
+	endif
 	move	#$2300,sr
 	lea	(Anim_SonicMilesBG).l,a2
 	jsrto	JmpTo2_Dynamic_Normal
@@ -12194,10 +12230,9 @@ LevelSelect2P_LevelOrder:
 	dc.w	mystic_cave_zone_act_1
 	dc.w	casino_night_zone_act_1
 	if FeatureHTZVS
-	dc.w	hill_top_zone_act_1	; instead of the Special Stages
-	else
-	dc.w	$FFFF
+	dc.w	hill_top_zone_act_1
 	endif
+	dc.w	$FFFF			; the Special Stages
 
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 
@@ -12344,11 +12379,7 @@ iconData macro txtlabel,txtlabel2,vramAddr,iconPal,iconAddr
 	iconData	Text2P_EmeraldHill,Text2P_Zone, VRAM_Plane_A_Name_Table+planeLoc(64,2,2),   0,Chunk_Table+$330
 	iconData	Text2P_MysticCave, Text2P_Zone, VRAM_Plane_A_Name_Table+planeLoc(64,22,2),  5,Chunk_Table+$3A8
 	iconData	Text2P_CasinoNight,Text2P_Zone, VRAM_Plane_A_Name_Table+planeLoc(64,2,15),  6,Chunk_Table+$3C0
-	if FeatureHTZVS
-	iconData	Text2P_HillTop,    Text2P_Zone, VRAM_Plane_A_Name_Table+planeLoc(64,22,15), 2,Chunk_Table+$360
-	else
-	iconData	Text2P_Special,    Text2P_Stage,VRAM_Plane_A_Name_Table+planeLoc(64,22,15),12,Chunk_Table+$450
-	endif
+	iconData	Text2P_Special,    Text2P_Stage,VRAM_Plane_A_Name_Table+planeLoc(64,22,15),12,Chunk_Table+$450	; (the boxes are not used with FeatureHTZVS, code/VSMenu.asm)
 
 ; ---------------------------------------------------------------------------
 ; Common menu screen subroutine for transferring text to RAM
@@ -12874,11 +12905,7 @@ MenuScreen_LevelSelect:
 	lea	(Chunk_Table+planeLoc(40,0,28)).l,a1
 	lea	(MapEng_LevSelIcon).l,a0
 	move.w	#make_art_tile(ArtTile_ArtNem_LevelSelectPics,0,0),d0
-    if FeatureHTZVS
-	jsr	(EniDec).l	; out of bsr range with the 2P Hill Top data
-    else
-	bsr.w	EniDec
-    endif
+	jsr	(EniDec).l	; out of bsr range
 
 	; Load and draw the current page (sans zone icon)
 	if FeatureTitleMenu
@@ -94739,6 +94766,9 @@ Sound70:	include "sound/sfx/F0 - Oil Slide.asm"
 	if FeatureKnuckles
 	include "code/KnucklesGlide.asm"
 	include "code/VSPlayers.asm"
+	if FeatureHTZVS
+	include "code/VSMenu.asm"
+	endif
 	endif
 	if FeatureSoundDriver=SoundDriver_S3K
 	include "sound/S3K Driver.asm"

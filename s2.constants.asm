@@ -1972,15 +1972,20 @@ Loser_Time_Left:				; 2 bytes
 Results_Screen_2P:		ds.w	1	; 0 = act, 1 = zone, 2 = game, 3 = SS, 4 = SS all
 				ds.b	$E	; $FFFFFF12-$FFFFFF1F ; seems unused
 
-Results_Data_2P:				; $18 (24) bytes
+Results_Data_2P:				; $18 (24) bytes, $1E (30) with FeatureHTZVS
 EHZ_Results_2P:			ds.b	6	; 6 bytes
 MCZ_Results_2P:			ds.b	6	; 6 bytes
 CNZ_Results_2P:			ds.b	6	; 6 bytes
+	if FeatureHTZVS
+HTZ_Results_2P:			ds.b	6	; 6 bytes (Hill Top, the fourth of five VS zones)
+	endif
 SS_Results_2P:			ds.b	6	; 6 bytes
 Results_Data_2P_End:
 
 SS_Total_Won:			ds.b	2	; 2 bytes (player 1 then player 2)
-				ds.b	6	; $FFFFFF3A-$FFFFFF3F ; seems unused
+	if FeatureHTZVS=0
+				ds.b	6	; $FFFFFF3A-$FFFFFF3F ; seems unused (Hill Top's results with FeatureHTZVS)
+	endif
 Perfect_rings_left:		ds.w	1
 Perfect_rings_flag:		ds.w	1
 SS_saved_perfect_rings:		ds.w	1
