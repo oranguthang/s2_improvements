@@ -21,6 +21,8 @@ Knuckles' colours moved off Sonic's: his two reds to the shoe reds C and D,
 his green socks to the yellow E, his light red to F, which that game's
 palette (Sonic and Knuckles VS.bin) sets to it instead of Tails' orange, and
 his own orange (F) to the yellow E. The copy shares the mappings and DPLCs.
+So that Knuckles looks the same in every VS game, his socks are yellow in the
+normal VS art too (VS_SOCKS).
 """
 import argparse, re
 from pathlib import Path
@@ -34,6 +36,8 @@ SLOT_TILES = 32
 PALETTES = ROOT / 'art' / 'palettes'
 # Knuckles' colour indices in the copy for Sonic against Knuckles
 SONIC_GAME_REMAP = {2: 0xD, 3: 0xC, 4: 0xE, 5: 0xF, 0xF: 0xE}
+# ... and in the normal VS art: his green socks on the yellow E as well
+VS_SOCKS = {4: 0xE}
 
 # Frames set by code rather than by animation scripts (code/Knuckles.asm,
 # code/KnucklesGlide.asm, code/LightDash.asm): walking and running in four
@@ -180,11 +184,13 @@ def generate():
         plc_bodies += body + [f'DPLC_{name}_End', '']
     assert len(out_art) <= 0x1000, 'the DPLC tile index is 12 bits'
     art = b''.join(out_art)
-    remap = bytes(SONIC_GAME_REMAP.get(b >> 4, b >> 4) << 4 | SONIC_GAME_REMAP.get(b & 15, b & 15) for b in range(256))
+    def table(mapping):
+        return bytes(mapping.get(b >> 4, b >> 4) << 4 | mapping.get(b & 15, b & 15) for b in range(256))
+    remap = table(SONIC_GAME_REMAP)
     sonic, knuckles = (PALETTES / 'SonicAndTails.bin').read_bytes(), (PALETTES / 'Knuckles and Tails.bin').read_bytes()
     palette = sonic[:0xF * 2] + knuckles[5 * 2:6 * 2]  # F = Knuckles' light red (5)
     return {
-        ROOT / 'art' / 'uncompressed' / 'Knuckles VS.bin': art,
+        ROOT / 'art' / 'uncompressed' / 'Knuckles VS.bin': art.translate(table(VS_SOCKS)),
         ROOT / 'art' / 'uncompressed' / 'Knuckles VS Sonic.bin': art.translate(remap),
         PALETTES / 'Sonic and Knuckles VS.bin': palette,
         ROOT / 'mappings' / 'sprite' / 'Knuckles VS.asm': ('\n'.join(map_lines + [''] + map_bodies) + '\teven\n').encode(),
