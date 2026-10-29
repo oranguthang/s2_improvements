@@ -13801,10 +13801,22 @@ EndingSequence:
 	move.w	#$8ADF,(Hint_counter_reserve).w	; H-INT every 224th scanline
 	move.w	(Hint_counter_reserve).w,(a6)
 	clr.b	(Super_Sonic_flag).w
+	clr.b	(Super_Sonic_palette).w	; no cycle left over from the last act
 	jsr	(HasAllEmeralds).l	; the ending is Super with the ALL EMERALDS cheat too
 	bne.s	+
 	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
+	if FeatureSuperTails
+	bne.s	.notTails
+	; Super Tails glows on the plane (PalCycle_SuperTails); his ending stays
+	; Tails' one, which Super_Sonic_flag would make Super Sonic's
+	move.b	#-1,(Super_Sonic_palette).w
+	move.b	#$F,(Palette_timer).w
+	move.w	#$30,(Palette_frame).w
+	bra.s	+
+.notTails:
+	else
 	beq.s	+
+	endif
 	if FeatureKnuckles&(SuperKnucklesOn=0)
 	tst.b	(Main_character).w	; Knuckles cannot turn Super
 	bne.s	+
