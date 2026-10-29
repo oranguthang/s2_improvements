@@ -119,9 +119,32 @@ def greys():
     assert bytes(signpost) == (ROOT / 'art/uncompressed/Signpost.bin').read_bytes()
     patch = nemesis.decode(kis2('art/nemesis/Signpost (Knuckles patch).nem'))
     signpost[34 * 32:34 * 32 + len(patch)] = patch
+    # The grey shield is everyone's: its monitor icon too, the first four tiles
+    # of KiS2's monitor patch (the other four are the invincibility icon)
+    monitor = nemesis.decode(kis2('art/nemesis/Monitor and contents (Knuckles patch).nem'))[:4 * 32]
+    shield_icon = nemesis.encode_with_table((4).to_bytes(2, 'big') + b'\xff\x00', monitor)
+    assert nemesis.decode(shield_icon) == monitor
     return {ROOT / 'art/uncompressed/Shield Knuckles.bin': recolour(shield, SHIELD_GREY),
+            ROOT / 'art/nemesis/Monitor grey shield patch.nem': shield_icon,
             ROOT / 'art/nemesis/Invincibility stars Knuckles.nem': packed,
             ROOT / 'art/uncompressed/Signpost Knuckles.bin': bytes(signpost)}
+
+
+# The name in Knuckles' life counter (K.T.E) is filled with colour E, which
+# Emerald Hill's waterfalls cycle in Sonic 2; Sonic 2's own names use C.
+LIFE_FACE_TILES = 4
+LIFE_NAME = {0xE: 0xC}
+
+
+def life_counter_name(packed):
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import nemesis
+    raw = nemesis.decode(packed)
+    split = LIFE_FACE_TILES * 32
+    raw = raw[:split] + recolour(raw[split:], LIFE_NAME)
+    repacked = nemesis.encode_with_table(packed, raw)
+    assert nemesis.decode(repacked) == raw
+    return {ROOT / 'art/nemesis/Knuckles lives counter.nem': repacked}
 
 
 def generate():
@@ -135,6 +158,7 @@ def generate():
         outputs[ROOT / dst] = data
     outputs.update(palettes())
     outputs.update(greys())
+    outputs.update(life_counter_name(outputs[ROOT / 'art/nemesis/Knuckles lives counter.nem']))
     for act in KNUCKLES_LAYOUTS:
         outputs[ROOT / 'level' / 'objects' / 'Knuckles' / f'{act}.bin'] = kis2(f'level/objects/{act}.bin')
     return outputs
