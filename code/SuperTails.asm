@@ -107,6 +107,7 @@ Tails_ToggleSuper:
 	move.b	#AniIDTailsAni_Transform,anim(a0)
 	move.w	#0,invincibility_time(a0)
 	bset	#status_secondary.invincible,status_secondary(a0)
+	jsr	(Super_DropSpeedShoes).l
 	lea	(Tails_top_speed).w,a2
 	jsr	(ApplySpeedSettings).l
 	move.w	#SndID_SuperTransform,d0
@@ -187,6 +188,20 @@ Super_RevertMusic:
 	jsr	(BossFightActive).l
 	beq.s	.return
 	move.w	#MusID_Boss,d0
+	jmp	(PlayMusic_IfChanged).l
+.return:
+	rts
+
+; ---------------------------------------------------------------------------
+; Speed shoes do not work on a Super player (Sonic, Tails, Knuckles): turning
+; Super ends them and their faster tempo, and the monitor gives him none
+; (super_shoes). a0 = the player.
+; ---------------------------------------------------------------------------
+Super_DropSpeedShoes:
+	bclr	#status_secondary.speed_shoes,status_secondary(a0)
+	beq.s	.return
+	clr.w	speedshoes_time(a0)
+	move.w	#MusID_SlowDown,d0
 	jmp	(PlayMusic).l
 .return:
 	rts

@@ -1717,6 +1717,7 @@ JmpTo_SoundDriverLoad ; JmpTo
 ; The original source code called this 'bgmset'.
 ; sub_135E:
 PlayMusic:
+	bsr.s	Music_Track
 	tst.b	(Sound_Queue.Music0).w
 	bne.s	+
 	move.b	d0,(Sound_Queue.Music0).w
@@ -1726,6 +1727,34 @@ PlayMusic:
 	rts
 ; End of function PlayMusic
 
+; Plays the song in d0 unless it is the one playing already: after Super, the
+; invincibility or the countdown the song comes back without restarting.
+PlayMusic_IfChanged:
+	cmp.b	(Music_playing).w,d0
+	bne.s	PlayMusic
+	rts
+
+; Remembers the song a sound request starts (Music_playing): the extra life
+; jingle returns to the song before it, and a fade or stop ends it.
+Music_Track:
+	cmpi.b	#MusID__First,d0
+	blo.s	.return
+	cmpi.b	#MusID__End,d0
+	bhs.s	.command
+	cmpi.b	#MusID_ExtraLife,d0
+	beq.s	.return
+	move.b	d0,(Music_playing).w
+	rts
+.command:
+	cmpi.b	#MusID_FadeOut,d0
+	beq.s	.none
+	cmpi.b	#MusID_Stop,d0
+	bne.s	.return
+.none:
+	clr.b	(Music_playing).w
+.return:
+	rts
+
 
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 ; Despite the name, this can actually be used for playing music.
@@ -1733,6 +1762,7 @@ PlayMusic:
 ; sub_1370
 PlaySound:
 	; Curiously, none of these functions write to 'Sound_Queue.Queue2'...
+	bsr.s	Music_Track		; (the fades and a few jingles come this way)
 	move.b	d0,(Sound_Queue.SFX0).w
 	rts
 ; End of function PlaySound
@@ -1743,6 +1773,7 @@ PlaySound:
 ; Unfortunately, the original name for this is not known.
 ; sub_1376: PlaySoundStereo:
 PlaySound2:
+	bsr.s	Music_Track
 	move.b	d0,(Sound_Queue.SFX1).w
 	rts
 ; End of function PlaySound2
@@ -26911,6 +26942,11 @@ ChkPlayer_1up:
 ; ---------------------------------------------------------------------------
 super_shoes:
 	addq.w	#1,(a2)
+	cmpa.w	#MainCharacter,a1
+	bne.s	+
+	tst.b	(Super_Sonic_flag).w	; speed shoes do nothing for a Super player
+	bne.s	super_shoes_Return
++
 	bset	#status_secondary.speed_shoes,status_secondary(a1)	; give super sneakers status
 	move.w	#20*60,speedshoes_time(a1)
     if fixBugs
@@ -26950,8 +26986,12 @@ super_shoes_NotTwoP:
 	move.w	#$80,(Tails_deceleration).w
     endif
 +
+	tst.b	(Super_Sonic_flag).w	; (the sidekick's shoes:) the Super music keeps its tempo
+	bne.s	super_shoes_Return
 	move.w	#MusID_SpeedUp,d0
 	jmp	(PlayMusic).l	; Speed up tempo
+super_shoes_Return:
+	rts
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Shield Monitor
@@ -37758,7 +37798,7 @@ Obj01_ChkInvin:
 	blo.s	Obj01_RmvInvin				; if yes, branch
 	endif
 	move.w	(Level_Music).w,d0			; load normal level music
-	jsr	(PlayMusic).l					; play normal level music
+	jsr	(PlayMusic_IfChanged).l				; play normal level music (unless it is playing: after a boss)
 ;loc_1A106:
 Obj01_RmvInvin:
 	bclr	#status_secondary.invincible,status_secondary(a0)	; remove invincibility
@@ -39430,6 +39470,7 @@ Sonic_TurnSuper:	; Knuckles_JumpHeight comes here for Super Knuckles
 	move.b	#$81,obj_control(a0)
 	move.b	#AniIDSupSonAni_Transform,anim(a0)			; use transformation animation
 	move.b	#ObjID_SuperSonicStars,(SuperSonicStars+id).w ; load Obj7E (Super Sonic stars object) at $FFFFD040
+	jsr	(Super_DropSpeedShoes).l
     if fixBugs
 	lea	(Sonic_top_speed).w,a2
 	bsr.w	ApplySpeedSettings
@@ -41220,7 +41261,7 @@ Obj02_ChkInvinc:	; Checks if invincibility has expired and disables it if it has
 	blo.s	Obj02_RmvInvin
 	endif
 	move.w	(Level_Music).w,d0
-	jsr	(PlayMusic).l
+	jsr	(PlayMusic_IfChanged).l
 ; loc_1BA96:
 Obj02_RmvInvin:
 	bclr	#status_secondary.invincible,status_secondary(a0)
@@ -44798,7 +44839,7 @@ ResumeMusic:
 	beq.s	+		; branch if not in a boss fight
 	move.w	#MusID_Boss,d0	; prepare to play boss music
 +
-	jsr	(PlayMusic).l
+	jsr	(PlayMusic_IfChanged).l
 ; return_1D858:
 ResumeMusic_Done:
 	move.b	#30,air_left(a1)	; reset air to full

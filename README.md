@@ -576,6 +576,15 @@ the four original demos play through without a death.
 ## Custom fixes
 
 - Prevent Tails from losing rings in Special Stage during co-op
+- Turning back from Super, the end of invincibility and the end of the
+  drowning countdown no longer restart the song when it is already playing
+  (after a beaten boss the level song is back already): `Music_Track` notes
+  the song each music request starts (`Music_playing`) and
+  `PlayMusic_IfChanged` skips the same one.
+- Speed shoes do nothing for a Super player (Sonic, Tails, Knuckles): the
+  monitor gives him none and leaves the Super music's tempo alone, and turning
+  Super ends shoes he already had (`Super_DropSpeedShoes`). A sidekick Tails
+  still gets them, without speeding the Super music up.
 
 ## Disclaimer
 
