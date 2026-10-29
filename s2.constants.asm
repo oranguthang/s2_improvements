@@ -672,6 +672,7 @@ PLCID_KnucklesLife2P =	id(PLCptr_KnucklesLife2P)
 PLCID_ResultsKnuckles =	id(PLCptr_ResultsKnuckles)
 PLCID_KnucklesLifeSonic = id(PLCptr_KnucklesLifeSonic)
 PLCID_KnucklesLife2PSonic = id(PLCptr_KnucklesLife2PSonic)
+PLCID_ShieldGrey =	id(PLCptr_ShieldGrey)
 	endif
 	if FeatureHTZVS
 PLCID_Htz1_2P =		id(PLCptr_Htz1_2P)
