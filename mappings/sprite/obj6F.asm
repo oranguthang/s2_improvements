@@ -28,6 +28,10 @@ Map_obj6F:	mappingsTable
 	mappingsTableEntry.w	Map_obj6F_05B6
 	mappingsTableEntry.w	Map_obj6F_0610
 	mappingsTableEntry.w	Map_obj6F_0662
+	mappingsTableEntry.w	Map_obj6F_NowTails
+	mappingsTableEntry.w	Map_obj6F_SuperTails
+	mappingsTableEntry.w	Map_obj6F_NowMiles
+	mappingsTableEntry.w	Map_obj6F_SuperMiles
 
 Map_obj6F_003A:	spriteHeader
 	spritePiece	-$60, 0, 2, 2, $2A, 0, 0, 0, 1
@@ -315,5 +319,59 @@ Map_obj6F_0662:	spriteHeader
 	spritePiece	$38, 0, 1, 2, $16, 0, 0, 0, 1
 	spritePiece	$40, 0, 2, 2, 6, 0, 0, 0, 1
 Map_obj6F_0662_End
+
+Map_obj6F_NowTails:	spriteHeader
+	spritePiece	-$60, 0, 2, 2, $584, 0, 0, 0, 1
+	spritePiece	-$50, 0, 2, 2, $588, 0, 0, 0, 1
+	spritePiece	-$40, 0, 3, 2, $36, 0, 0, 0, 1
+	spritePiece	-$20, 0, 2, 2, $2E, 0, 0, 0, 1
+	spritePiece	-$10, 0, 2, 2, 2, 0, 0, 0, 1
+	spritePiece	0, 0, 1, 2, $16, 0, 0, 0, 1
+	spritePiece	8, 0, 2, 2, $18, 0, 0, 0, 1
+	spritePiece	$18, 0, 2, 2, $2A, 0, 0, 0, 1
+	spritePiece	$30, 0, 2, 2, 6, 0, 0, 0, 1
+	spritePiece	$40, 0, 2, 2, 2, 0, 0, 0, 1
+	spritePiece	$50, 0, 2, 2, $584, 0, 0, 0, 1
+Map_obj6F_NowTails_End
+
+Map_obj6F_SuperTails:	spriteHeader
+	spritePiece	-$50, 0, 2, 2, $2A, 0, 0, 0, 1
+	spritePiece	-$40, 0, 2, 2, $32, 0, 0, 0, 1
+	spritePiece	-$30, 0, 2, 2, $22, 0, 0, 0, 1
+	spritePiece	-$20, 0, 2, 2, $580, 0, 0, 0, 1
+	spritePiece	-$10, 0, 2, 2, $26, 0, 0, 0, 1
+	spritePiece	8, 0, 2, 2, $2E, 0, 0, 0, 1
+	spritePiece	$18, 0, 2, 2, 2, 0, 0, 0, 1
+	spritePiece	$28, 0, 1, 2, $16, 0, 0, 0, 1
+	spritePiece	$30, 0, 2, 2, $18, 0, 0, 0, 1
+	spritePiece	$40, 0, 2, 2, $2A, 0, 0, 0, 1
+Map_obj6F_SuperTails_End
+
+Map_obj6F_NowMiles:	spriteHeader
+	spritePiece	-$64, 0, 2, 2, $584, 0, 0, 0, 1
+	spritePiece	-$54, 0, 2, 2, $588, 0, 0, 0, 1
+	spritePiece	-$44, 0, 3, 2, $36, 0, 0, 0, 1
+	spritePiece	-$24, 0, 3, 2, $1C, 0, 0, 0, 1
+	spritePiece	-$C, 0, 1, 2, $16, 0, 0, 0, 1
+	spritePiece	-$4, 0, 2, 2, $18, 0, 0, 0, 1
+	spritePiece	$C, 0, 2, 2, $580, 0, 0, 0, 1
+	spritePiece	$1C, 0, 2, 2, $2A, 0, 0, 0, 1
+	spritePiece	$34, 0, 2, 2, 6, 0, 0, 0, 1
+	spritePiece	$44, 0, 2, 2, 2, 0, 0, 0, 1
+	spritePiece	$54, 0, 2, 2, $584, 0, 0, 0, 1
+Map_obj6F_NowMiles_End
+
+Map_obj6F_SuperMiles:	spriteHeader
+	spritePiece	-$54, 0, 2, 2, $2A, 0, 0, 0, 1
+	spritePiece	-$44, 0, 2, 2, $32, 0, 0, 0, 1
+	spritePiece	-$34, 0, 2, 2, $22, 0, 0, 0, 1
+	spritePiece	-$24, 0, 2, 2, $580, 0, 0, 0, 1
+	spritePiece	-$14, 0, 2, 2, $26, 0, 0, 0, 1
+	spritePiece	4, 0, 3, 2, $1C, 0, 0, 0, 1
+	spritePiece	$1C, 0, 1, 2, $16, 0, 0, 0, 1
+	spritePiece	$24, 0, 2, 2, $18, 0, 0, 0, 1
+	spritePiece	$34, 0, 2, 2, $580, 0, 0, 0, 1
+	spritePiece	$44, 0, 2, 2, $2A, 0, 0, 0, 1
+Map_obj6F_SuperMiles_End
 
 	even

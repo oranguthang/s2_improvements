@@ -192,6 +192,30 @@ Super_RevertMusic:
 	rts
 
 ; ---------------------------------------------------------------------------
+; The end of WFZ: the Tornado's jumps are timed for Sonic and Super Sonic, so
+; Super Tails and Super Knuckles turn back before the cutscene (Super Tails
+; would fly over the plane). a1 = the player.
+; ---------------------------------------------------------------------------
+Super_RevertForCutscene:
+	tst.b	(Super_Sonic_flag).w
+	beq.s	.return
+	move.l	a0,-(sp)
+	movea.l	a1,a0
+	bsr.w	SuperTails_Player
+	beq.s	.notTails
+	bsr.w	Tails_RevertToNormal
+	bra.s	.done
+.notTails:
+	tst.b	(Main_character).w
+	beq.s	.done				; Super Sonic stays, as in the original
+	jsr	(Sonic_RevertToNormal).l
+.done:
+	movea.l	a0,a1
+	movea.l	(sp)+,a0
+.return:
+	rts
+
+; ---------------------------------------------------------------------------
 ; Palette: called by PalCycle_SuperSonic when Tails is the player. Same states
 ; as Super Sonic's (1 = fade in, -1 = cycle, 2 = fade out); Tails' fur is in
 ; colours 11, 15 and 14 of the first palette line.

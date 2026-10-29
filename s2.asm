@@ -22831,7 +22831,7 @@ Obj11_Init:
 	move.l	#Obj11_MapUnc_FC28,mappings(a0)
 	move.w	#make_art_tile(ArtTile_ArtNem_HPZ_Bridge,3,0),art_tile(a0)
 +
-	bsr.w	Adjust2PArtPointer
+	jsr	(Adjust2PArtPointer).l
 	move.b	#1<<render_flags.level_fg,render_flags(a0)
 	move.b	#$80,width_pixels(a0)
 	move.w	y_pos(a0),d2
@@ -29474,8 +29474,10 @@ Obj6F_TallyScore:
 	move.w	#$78,anim_frame_duration(a0)
 	tst.w	(Perfect_rings_flag).w
 	bne.s	+
+	if FeatureSuperTails=0
 	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	beq.s	++		; rts
+	endif
 	tst.b	(Got_Emerald).w
 	beq.s	++		; rts
 	cmpi.b	#7,(Emerald_count).w
@@ -29526,8 +29528,10 @@ Obj6F_TallyPerfect:
 	jsr	(PlaySound).l
 	addq.b	#4,routine(a0)
 	move.w	#$78,anim_frame_duration(a0)
+	if FeatureSuperTails=0
 	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	beq.s	+		; rts
+	endif
 	tst.b	(Got_Emerald).w
 	beq.s	+		; rts
 	cmpi.b	#7,(Emerald_count).w
@@ -29551,7 +29555,7 @@ Obj6F_InitAndMoveSuperMsg:
 	move.b	#$32,next_object+routine(a0)			; => Obj6F_MoveTowardsSourcePosition
 	move.w	x_pixel(a0),d0
 	cmp.w	titlecard_x_source(a0),d0
-	bne.s	Obj6F_MoveTowardsSourcePosition
+	bne.w	Obj6F_MoveTowardsSourcePosition
 	move.b	#$14,next_object+routine(a0)			; => BranchTo3_Obj34_MoveTowardsTargetPosition
 	subq.w	#8,next_object+y_pixel(a0)
 	move.b	#$1A,next_object+mapping_frame(a0)		; "Now Sonic can"
@@ -29571,13 +29575,29 @@ Obj6F_InitAndMoveSuperMsg:
 	if FeatureKnuckles
 	tst.b	(Main_character).w
 	beq.s	+
-	move.w	#-80,x_pixel(a1)
+	; "Super Knuckles" is wider than "Super Sonic": from x 0 its left letters
+	; would wrap round to the right of the screen, and Obj34's unsigned
+	; compare can't start it at a negative x. It comes in from the right.
+	move.w	#spriteScreenPositionX(screen_width+128),x_pixel(a1)
 +
 	endif
 	move.w	#spriteScreenPositionXCentered(0),titlecard_x_target(a1)
 	move.w	#spriteScreenPositionYCentered(-60),y_pixel(a1)
 	move.b	#$14,routine(a1)						; => BranchTo3_Obj34_MoveTowardsTargetPosition
 	move.b	#$1C,mapping_frame(a1)					; "Super Sonic"
+	if FeatureSuperTails
+	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
+	bne.s	.notTails
+	moveq	#$1F,d0							; "Now Miles can", then "Super Miles"
+	btst	#7,(Graphics_Flags).w
+	beq.s	.miles
+	moveq	#$1D,d0							; "Now Tails can", then "Super Tails"
+.miles:
+	move.b	d0,next_object+mapping_frame(a0)
+	addq.b	#1,d0
+	move.b	d0,mapping_frame(a1)
+.notTails:
+	endif
 	move.l	mappings(a0),mappings(a1)		; (Knuckles' set for Knuckles)
 	move.b	#$78,width_pixels(a1)
 	move.b	#0,render_flags(a1)
@@ -81477,6 +81497,7 @@ ObjB2_Move_Leader_edge:
 ; ===========================================================================
 + ; loc_3AA22:
 	addq.b	#2,routine_secondary(a0)
+	jsr	(Super_RevertForCutscene).l
 	clr.w	(Ctrl_1_Logical).w
 	clr.w	x_vel(a1)
 	clr.w	y_vel(a1)
