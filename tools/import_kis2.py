@@ -119,13 +119,7 @@ def greys():
     assert bytes(signpost) == (ROOT / 'art/uncompressed/Signpost.bin').read_bytes()
     patch = nemesis.decode(kis2('art/nemesis/Signpost (Knuckles patch).nem'))
     signpost[34 * 32:34 * 32 + len(patch)] = patch
-    # The grey shield is everyone's: its monitor icon too, the first four tiles
-    # of KiS2's monitor patch (the other four are the invincibility icon)
-    monitor = nemesis.decode(kis2('art/nemesis/Monitor and contents (Knuckles patch).nem'))[:4 * 32]
-    shield_icon = nemesis.encode_with_table((4).to_bytes(2, 'big') + b'\xff\x00', monitor)
-    assert nemesis.decode(shield_icon) == monitor
     return {ROOT / 'art/uncompressed/Shield Knuckles.bin': recolour(shield, SHIELD_GREY),
-            ROOT / 'art/nemesis/Monitor grey shield patch.nem': shield_icon,
             ROOT / 'art/nemesis/Invincibility stars Knuckles.nem': packed,
             ROOT / 'art/uncompressed/Signpost Knuckles.bin': bytes(signpost)}
 

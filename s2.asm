@@ -92044,7 +92044,7 @@ PLCptr_KnucklesLife2P:	offsetTableEntry.w PlrList_KnucklesLife2P
 PLCptr_ResultsKnuckles:	offsetTableEntry.w PlrList_ResultsKnuckles
 PLCptr_KnucklesLifeSonic: offsetTableEntry.w PlrList_KnucklesLifeSonic
 PLCptr_KnucklesLife2PSonic: offsetTableEntry.w PlrList_KnucklesLife2PSonic
-PLCptr_ShieldGrey:	offsetTableEntry.w PlrList_ShieldGrey
+PLCptr_GreyPowerups:	offsetTableEntry.w PlrList_GreyPowerups
 	endif
 	if FeatureHTZVS
 PLCptr_Htz1_2P:		offsetTableEntry.w PlrList_Htz1_2P
@@ -92174,11 +92174,13 @@ PlrList_KnucklesLife2PSonic: plrlistheader
 	plreq ArtTile_ArtNem_2p_life_counter, ArtNem_KnucklesLifeSonic
 	plreq ArtTile_ArtNem_Powerups+$1C, ArtNem_VSFaceKnucklesSonic
 PlrList_KnucklesLife2PSonic_End
-; The shield is grey for every player: its monitor icon for Sonic and Tails
-; (Knuckles' own patch greys it with the invincibility icon)
-PlrList_ShieldGrey: plrlistheader
-	plreq ArtTile_ArtNem_Powerups+44, ArtNem_PowerupsShieldGrey
-PlrList_ShieldGrey_End
+; The shield and the invincibility stars are grey for every player: for
+; Sonic and Tails too, their monitor icons and the stars (Knuckles' list
+; above loads them with his life icon)
+PlrList_GreyPowerups: plrlistheader
+	plreq ArtTile_ArtNem_Powerups+44, ArtNem_PowerupsKnucklesPatch
+	plreq ArtTile_ArtNem_Invincible_stars, ArtNem_Invincible_stars_Knuckles
+PlrList_GreyPowerups_End
 ;---------------------------------------------------------------------------------------
 ; PATTERN LOAD REQUEST LIST
 ; Knuckles (code/Knuckles.asm): his life icon, and the shield and invincibility

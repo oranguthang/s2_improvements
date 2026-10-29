@@ -146,19 +146,20 @@ Knuckles_DPLC:		; -> a2 = DPLC table, d6 = art
 ; ---------------------------------------------------------------------------
 ; Level start (Level_ClrRam): Knuckles' life icon, and grey shield and
 ; invincibility monitors and stars, since Sonic's blue is his red and green.
-; Sonic and Tails get the grey shield monitor, as their shield is grey too.
+; Sonic and Tails get the grey monitors and stars too: the shield and the
+; invincibility stars are grey for every player.
 ; ---------------------------------------------------------------------------
 Knuckles_LevelPLC:
 	tst.b	(Main_character).w
-	beq.s	.greyShield
+	beq.s	.greyPowerups
 	moveq	#PLCID_KnucklesLife,d0
 	bsr.w	VS_SonicAgainstKnuckles
 	beq.s	+
 	moveq	#PLCID_KnucklesLifeSonic,d0	; against Sonic: his colours off Sonic's
 +
 	jmp	(LoadPLC).l
-.greyShield:
-	moveq	#PLCID_ShieldGrey,d0
+.greyPowerups:
+	moveq	#PLCID_GreyPowerups,d0
 	jmp	(LoadPLC).l
 
 ; ---------------------------------------------------------------------------
@@ -733,8 +734,7 @@ ArtNem_EndingKnuckles:		BINCLUDE	"art/nemesis/Final image of Knuckles.nem"
 ArtNem_SpecialKnuckles:		BINCLUDE	"art/nemesis/Knuckles animation frames in special stage.nem"
 	even
 ArtNem_PowerupsKnucklesPatch:	BINCLUDE	"art/nemesis/Monitor Knuckles patch.nem"
-	even
-ArtNem_PowerupsShieldGrey:	BINCLUDE	"art/nemesis/Monitor grey shield patch.nem"	; tools/import_kis2.py
+
 	even
 ArtNem_Invincible_stars_Knuckles:	BINCLUDE	"art/nemesis/Invincibility stars Knuckles.nem"
 	even
