@@ -22744,9 +22744,25 @@ LevEvents_SCZ2:
 ; ===========================================================================
 
 ; loc_F626:
-PlayLevelMusic:
+PlayLevelMusic:	; only the bosses call this, once beaten
+	st.b	(Boss_music_over).w
 	move.w	(Level_Music).w,d0
 	jmpto	JmpTo3_PlayMusic
+
+; Z=0 while a boss fight is on: the boss has come (Current_Boss_ID, which
+; stays set until the act ends) and is not beaten yet. Every boss plays the
+; level music again when it is beaten (PlayLevelMusic), which ends the fight
+; for the music: turning back from Super, the end of invincibility and the
+; end of drowning then play the level's song instead of keeping or
+; restarting the boss's.
+BossFightActive:
+	tst.b	(Boss_music_over).w
+	bne.s	.over
+	tst.b	(Current_Boss_ID).w
+	rts
+.over:
+	ori	#4,ccr			; Z=1
+	rts
 ; ===========================================================================
 
 ; loc_F62E:
@@ -28582,7 +28598,7 @@ loc_13EC4:
 Obj34_BackgroundOutInit:	; the background, going out
 	move.l	a0,-(sp)
 	move.l	d7,-(sp)
-	bsr.w	DeformBgLayer
+	jsr	(DeformBgLayer).l
 	move.l	(sp)+,d7
 	movea.l	(sp)+,a0 ; load 0bj address
 	addi_.b	#2,routine(a0)
@@ -37679,7 +37695,7 @@ Obj01_ChkInvin:
 	beq.s	Obj01_ChkShoes				; if not, branch
 	subq.w	#1,invincibility_time(a0)	; subtract 1 from time
 	bne.s	Obj01_ChkShoes				; if time remains, branch
-	tst.b	(Current_Boss_ID).w			; is a boss fight active?
+	jsr	(BossFightActive).l			; is a boss fight active?
 	bne.s	Obj01_RmvInvin				; if yes, branch
 	if FeatureCDDrowning=0
 	cmpi.b	#12,air_left(a0)			; is drowning countdown active?
@@ -39428,6 +39444,7 @@ Sonic_RevertToNormal:
 	if FeatureSuperToggle
 	move.b	#0,(MainCharacter+obj_control).w	; restore Sonic's movement
 	endif
+	jsr	(Super_RevertMusic).l
 	move.b	#2,(Super_Sonic_palette).w	; Remove rotating palette
 	move.w	#$28,(Palette_frame).w
 	move.b	#0,(Super_Sonic_flag).w
@@ -41140,7 +41157,7 @@ Obj02_ChkInvinc:	; Checks if invincibility has expired and disables it if it has
 	beq.s	Obj02_ChkShoes
 	subq.w	#1,invincibility_time(a0)
 	bne.s	Obj02_ChkShoes
-	tst.b	(Current_Boss_ID).w	; Don't change music if in a boss fight
+	jsr	(BossFightActive).l	; Don't change music if in a boss fight
 	bne.s	Obj02_RmvInvin
 	if FeatureCDDrowning=0
 	cmpi.b	#12,air_left(a0)	; Don't change music if drowning
@@ -44721,7 +44738,7 @@ ResumeMusic:
 	beq.w	+		; branch if it isn't Super Sonic
 	move.w	#MusID_SuperSonic,d0	; prepare to play Super Sonic music
 +
-	tst.b	(Current_Boss_ID).w
+	jsr	(BossFightActive).l
 	beq.s	+		; branch if not in a boss fight
 	move.w	#MusID_Boss,d0	; prepare to play boss music
 +

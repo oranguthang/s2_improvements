@@ -168,6 +168,7 @@ Tails_Super:
 
 Tails_RevertToNormal:
 	move.b	#0,obj_control(a0)
+	jsr	(Super_RevertMusic).l
 	move.b	#2,(Super_Sonic_palette).w	; fade the fur back
 	move.w	#$28,(Palette_frame).w
 	move.b	#0,(Super_Sonic_flag).w
@@ -175,6 +176,20 @@ Tails_RevertToNormal:
 	move.w	#1,invincibility_time(a0)	; Obj02 ends the invincibility and resumes the music
 	lea	(Tails_top_speed).w,a2
 	jmp	(ApplySpeedSettings).l
+
+; ---------------------------------------------------------------------------
+; Turning back from Super: in a boss fight the boss's music plays again (the
+; end of the invincibility, a frame later, leaves the music alone there).
+; Elsewhere that end of invincibility plays the level's song. Used by Sonic,
+; Knuckles and Tails.
+; ---------------------------------------------------------------------------
+Super_RevertMusic:
+	jsr	(BossFightActive).l
+	beq.s	.return
+	move.w	#MusID_Boss,d0
+	jmp	(PlayMusic).l
+.return:
+	rts
 
 ; ---------------------------------------------------------------------------
 ; Palette: called by PalCycle_SuperSonic when Tails is the player. Same states

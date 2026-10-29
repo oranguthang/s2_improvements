@@ -1766,7 +1766,8 @@ PalChangeSpeed:			ds.w	1
 Collision_addr:			ds.l	1
 				ds.b	$D	; $FFFFF79A-$FFFFF7A6 ; seems unused
 Boss_defeated_flag:		ds.b	1
-				ds.b	2	; $FFFFF7A8-$FFFFF7A9 ; seems unused
+Boss_music_over:		ds.b	1	; set by PlayLevelMusic: the boss is beaten (see BossFightActive)
+				ds.b	1	; $FFFFF7A9 ; seems unused
 Current_Boss_ID:		ds.b	1
 				ds.b	5	; $FFFFF7AB-$FFFFF7AF ; seems unused
 MTZ_Platform_Cog_X:		ds.w	1	; X position of moving MTZ platform for cog animation.
