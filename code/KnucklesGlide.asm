@@ -166,13 +166,16 @@ Knuckles_WFZJumpButtons:
 	rts
 
 ; Cutscenes that set Sonic's standing frame directly: restart Knuckles'
-; waiting animation instead (a1 = the player).
+; waiting animation instead (a1 = the player). They run after the player,
+; so his standing frame is put back too: frame 1 would be drawn this frame
+; with the art of the frame his animation chose.
 Knuckles_RestartWait:
 	tst.b	(Main_character).w
 	beq.s	.return
 	cmpa.w	#MainCharacter,a1
 	bne.s	.return
 	move.w	#(AniIDSonAni_Wait<<8)|AniIDSonAni_Walk,anim(a1)	; prev_anim differs: restart
+	move.b	#$56,mapping_frame(a1)
 .return:
 	rts
 
@@ -181,6 +184,7 @@ Knuckles_WFZWaitPose:
 	tst.b	(Main_character).w
 	beq.s	.return
 	move.w	#(AniIDSonAni_Wait<<8)|AniIDSonAni_Walk,anim(a1)	; prev_anim differs: restart
+	move.b	#$56,mapping_frame(a1)
 	clr.w	x_vel(a1)
 	clr.w	y_vel(a1)
 .return:
