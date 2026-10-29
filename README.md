@@ -338,9 +338,10 @@ E-122-Psi's
 two acts and a tiebreak Special Stage, with HILL TOP 1, 2 and S.S rows on the
 game results screen. Sonic 2's four boxes only fit four zones, so the VS menu
 is a list like the Level Select (`code/VSMenu.asm`): EMERALD HILL, MYSTIC
-CAVE, CASINO NIGHT, HILL TOP and SPECIAL STAGE in the middle, Up/Down to
-choose, and the zone's icon in the Level Select emblem at the bottom right (the
-X once a zone has been played, where Start gives the error sound as before).
+CAVE, CASINO NIGHT, HILL TOP and SPECIAL STAGE on the left, Up/Down to
+choose, and the zone's icon in the Level Select emblem on the right, beside the
+middle of the list (the X once a zone has been played, where Start gives the
+error sound as before).
 `Current_Zone_2P` is the index in that list, so the Special Stage series is
 zone 4 and `HTZ_Results_2P` (in the 6 unused bytes after the results) comes
 before `SS_Results_2P`. Hill Top's tiebreak is Special Stage 1, which VS

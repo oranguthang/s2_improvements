@@ -2,14 +2,16 @@
 ; 2P VS zone menu with five zones (FeatureHTZVS)
 ;
 ; Instead of Sonic 2's four boxes, a list like the Level Select's:
-; EMERALD HILL, MYSTIC CAVE, CASINO NIGHT, HILL TOP and SPECIAL STAGE in the
-; middle (Up/Down), the zone's icon in the Level Select's emblem at the bottom
-; right, and the X icon once a zone has been played (Start then gives the
-; error sound, as before). Current_Zone_2P is the index in that list.
+; EMERALD HILL, MYSTIC CAVE, CASINO NIGHT, HILL TOP and SPECIAL STAGE on the
+; left (Up/Down), the zone's icon in the Level Select's emblem on the right,
+; and the X icon once a zone has been played (Start then gives the error
+; sound, as before). Current_Zone_2P is the index in that list.
 ; ---------------------------------------------------------------------------
 VSMenu_Zones = 5
-vsmenu_col = 13			; the list's left column (SPECIAL STAGE ends at 25)
+vsmenu_col = 5			; the list's left column (SPECIAL STAGE ends at 17)
 vsmenu_first_line = 6		; one zone every three lines, down to line 18
+vsmenu_emblem_col = 26		; the emblem (10x7 cells) beside the middle of the list
+vsmenu_emblem_line = 9
 vsmenu_icons = Chunk_Table+planeLoc(40,0,28)	; Level Select icons (4x3 cells each)
 
 ; MenuScreen, display off: plane A and the selection
@@ -18,24 +20,34 @@ VSMenu_Draw:
 	blo.s	+
 	clr.b	(Current_Zone_2P).w
 +
-	; the Level Select page, of which only the emblem is kept (lines 20-26,
-	; columns 24-33)
+	; the Level Select page, of which only the emblem (lines 20-26, columns
+	; 24-33) is kept, moved up to the right of the list
 	lea	(Chunk_Table).l,a1
 	lea	(MapEng_LevSel).l,a0
 	move.w	#make_art_tile(ArtTile_VRAM_Start,0,0),d0
 	jsr	(EniDec).l
+	lea	(Chunk_Table+planeLoc(40,24,20)).l,a0
+	lea	(Chunk_Table+planeLoc(40,vsmenu_emblem_col,vsmenu_emblem_line)).l,a1
+	moveq	#7-1,d1
+.emblemLine:
+	moveq	#10-1,d2
+-	move.w	(a0)+,(a1)+
+	dbf	d2,-
+	lea	(40-10)*2(a0),a0
+	lea	(40-10)*2(a1),a1
+	dbf	d1,.emblemLine
 	lea	(Chunk_Table).l,a1
 	moveq	#0,d1			; line
 .line:
 	moveq	#0,d2			; column
 .cell:
-	cmpi.w	#20,d1
+	cmpi.w	#vsmenu_emblem_line,d1
 	blo.s	.clear
-	cmpi.w	#26,d1
+	cmpi.w	#vsmenu_emblem_line+6,d1
 	bhi.s	.clear
-	cmpi.w	#24,d2
+	cmpi.w	#vsmenu_emblem_col,d2
 	blo.s	.clear
-	cmpi.w	#33,d2
+	cmpi.w	#vsmenu_emblem_col+9,d2
 	bls.s	.keep
 .clear:
 	clr.w	(a1)
@@ -116,7 +128,7 @@ VSMenu_Redraw:
 	mulu.w	#4*3*2,d2
 	lea	(vsmenu_icons).l,a1
 	adda.w	d2,a1
-	move.l	#vdpComm(VRAM_Plane_A_Name_Table+planeLoc(64,27,22),VRAM,WRITE),d0
+	move.l	#vdpComm(VRAM_Plane_A_Name_Table+planeLoc(64,vsmenu_emblem_col+3,vsmenu_emblem_line+2),VRAM,WRITE),d0
 	moveq	#4-1,d1
 	moveq	#3-1,d2
 	jsr	(PlaneMapToVRAM_H40).l
