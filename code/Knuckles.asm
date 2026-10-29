@@ -25,6 +25,31 @@ ApplyPlayerOption:
 	move.b	PlayerOption_Modes+1(pc,d0.w),(Main_character).w
 	rts
 
+; ---------------------------------------------------------------------------
+; The demos play with Sonic 2's own players, Sonic and Tails, also the 2P one:
+; TitleScreen_Demo puts the player select and player 2's VS character aside,
+; and the SEGA and title screens give them back.
+; ---------------------------------------------------------------------------
+Demo_SetPlayers:
+	tst.b	(Demo_players_saved).w
+	bne.s	+
+	st.b	(Demo_players_saved).w
+	move.w	(Player_option).w,(Demo_saved_player_option).w
+	move.b	(VS_player2).w,(Demo_saved_vs_player2).w
++
+	move.w	#PlayerOption_SonicTails,(Player_option).w
+	move.b	#VSPlayer2_Tails,(VS_player2).w
+	rts
+
+Demo_RestorePlayers:
+	tst.b	(Demo_players_saved).w
+	beq.s	+
+	sf.b	(Demo_players_saved).w
+	move.w	(Demo_saved_player_option).w,(Player_option).w
+	move.b	(Demo_saved_vs_player2).w,(VS_player2).w
++
+	rts
+
 ; Player_mode and Main_character of each PlayerOption_*
 PlayerOption_Modes:
 	dc.b	PlayerMode_SonicTails, CharID_Sonic	; PlayerOption_SonicTails

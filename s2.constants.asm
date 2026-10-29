@@ -2024,14 +2024,18 @@ Player2_character:		ds.b	1	; CharID_* of player 2's Obj01 in 2P VS (VS_player2 S
 Cheats_from_title:		ds.b	1	; CHEATS chosen on the title menu (FeatureTitleMenu)
 Title_skip_intro:		ds.b	1	; back to the title from a game or CHEATS: no intro text (FeatureTitleMenu)
 Music_playing:			ds.b	1	; the song the last music request started, 0 after a fade or stop (Music_Track)
-				ds.b	2	; $FFFFFF6E-$FFFFFF6F ; seems unused
+Boss_explosion_sound_time:	ds.b	1	; Vint_runcount's low byte when Obj58 last played its sound
+				ds.b	1	; $FFFFFF6F ; seems unused
 
 Player_mode:			ds.w	1	; 0 = Sonic and Tails, 1 = Sonic, 2 = Tails
 Player_option:			ds.w	1	; PlayerOption_*
 
 Two_player_items:		ds.w	1
 VS_countdown_option:		ds.w	1	; 0 = 60 seconds, 1 = 90 seconds, 2 = off
-				ds.b	8	; $FFFFFF78-$FFFFFF7F
+Demo_saved_player_option:	ds.w	1	; the player's Player_option while a demo plays (Demo_SetPlayers)
+Demo_saved_vs_player2:		ds.b	1	; and their VS_player2
+Demo_players_saved:		ds.b	1	; nonzero while those two are put aside
+				ds.b	4	; $FFFFFF7C-$FFFFFF7F
 
 LevSel_HoldTimer:		ds.w	1
 Level_select_zone:		ds.w	1

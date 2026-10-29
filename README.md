@@ -585,6 +585,13 @@ the four original demos play through without a death.
   monitor gives him none and leaves the Super music's tempo alone, and turning
   Super ends shoes he already had (`Super_DropSpeedShoes`). A sidekick Tails
   still gets them, without speeding the Super music up.
+- The demos play Sonic and Tails whatever the player select says (the 2P
+  demo showed Knuckles' colours on Sonic after a Knuckles game):
+  `Demo_SetPlayers` puts `Player_option` and `VS_player2` aside for the demo,
+  and the SEGA and title screens give them back.
+- One boss explosion sound every 8 frames at most (`Obj58_Init`), the bosses'
+  own pace: running out of the Death Egg makes an explosion every frame, and
+  Flamedriver restarting the sound that often made it click.
 
 ## Disclaimer
 

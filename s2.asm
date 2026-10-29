@@ -4025,6 +4025,7 @@ Angle_Data:	BINCLUDE	"misc/angles.bin"
 
 ; loc_37B8:
 SegaScreen:
+	jsr	(Demo_RestorePlayers).l	; the player's own player select after a demo
 	move.b	#MusID_Stop,d0
 	bsr.w	PlayMusic ; stop music
 	bsr.w	ClearPLC
@@ -4171,6 +4172,7 @@ PlaneMapToVRAM_H80_Sega:
 ; ===========================================================================
 ; loc_3998:
 TitleScreen:
+	jsr	(Demo_RestorePlayers).l	; the player's own player select after a demo
 	clr.b	(SS_keep_level_state).w
 	; Stop music.
 	move.b	#MusID_Stop,d0
@@ -4543,6 +4545,7 @@ TitleScreen_ChoseOptions:
 ; ===========================================================================
 ; loc_3D2E:
 TitleScreen_Demo:
+	jsr	(Demo_SetPlayers).l	; Sonic and Tails, whatever the player select says
 	move.b	#MusID_FadeOut,d0
 	bsr.w	PlaySound
 
@@ -64076,9 +64079,18 @@ Obj58_Init:
 	move.b	#$C,width_pixels(a0)
 	move.b	#7,anim_frame_duration(a0)
 	move.b	#0,mapping_frame(a0)
+	; One explosion sound every 8 frames at most, the bosses' own pace: the
+	; Death Egg's end makes an explosion every frame, and restarting the
+	; sound every frame (Flamedriver does) turns it into clicks.
+	move.b	(Vint_runcount+3).w,d0
+	sub.b	(Boss_explosion_sound_time).w,d0
+	cmpi.b	#8,d0
+	blo.s	Obj58_Quiet
+	move.b	(Vint_runcount+3).w,(Boss_explosion_sound_time).w
 	move.w	#SndID_BossExplosion,d0
 	jmp	(PlaySound).l
 ; ===========================================================================
+Obj58_Quiet:
 	rts
 ; ===========================================================================
 ; loc_2D4EC:
