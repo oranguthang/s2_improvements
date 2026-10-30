@@ -4,7 +4,7 @@ Sonic 2 disassembly mod (68000 asm, AS assembler), meant as a platform for futur
 The user writes in Russian; answer in Russian.
 
 ## Workflow
-- Work on the current branch `codex/upstream-2026-10-03`. Commit locally, **never push**.
+- Work on `master`. Commit locally; push only when the user explicitly requests it.
 - Build: `build_tools/lua/lua.exe build.lua` (or `build.bat`, options pass through). Output `s2built.bin` + `s2.lst`.
   Every build includes the MD Debugger and a ConvSym symbol table and is padded with $FF to 2 MiB
   (`--no-symbols`, `debug` options; see `_debug/md-debugger/README.md`). `ErrorHandler.asm` must stay the

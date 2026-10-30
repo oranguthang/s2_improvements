@@ -39,7 +39,7 @@ count and first offset.
 
 ## Current improvement plan
 
-Work continues on the current branch with separate local commits and no pushes.
+Work continues on `master` with separate commits.
 
 | Improvement | Progress | Validation |
 | --- | --- | --- |
