@@ -378,11 +378,24 @@ Cheat_SetDebugMode:
 +
 	rts
 
-; Debug mode: B enters object placement, except when it is part of a Super
-; combo (A+B or B+C) while Sonic is airborne and rolling, as in s1_improvements.
-; Returns Z=0 to enter placement. a0 = Sonic.
-Sonic_ChkDebugToggle:
+; Z=0 when physical player 1 presses B with DEBUG enabled, outside Special Stage.
+Player_DebugInput:
+	cmpa.w	#MainCharacter,a0	; placement belongs to the physical player 1 slot
+	bne.s	.off
+	cmpi.b	#GameModeID_SpecialStage,(Game_Mode).w
+	beq.s	.off
+	tst.w	(Debug_mode_flag).w
+	beq.s	.off
 	btst	#button_B,(Ctrl_1_Press).w
+	rts
+.off:
+	moveq	#0,d0			; Z=1: not player 1, no cheat, or Special Stage
+	rts
+
+; Sonic's airborne Super combo takes precedence over entering placement.
+; Returns Z=0 to enter placement. a0 = Sonic or Knuckles.
+Sonic_ChkDebugToggle:
+	bsr.w	Player_DebugInput
 	beq.s	.return				; Z=1: no B
 	if FeatureSuperToggle
 	tst.b	(Control_Locked).w

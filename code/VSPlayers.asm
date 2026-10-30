@@ -27,6 +27,16 @@ VS_Obj01Player2:
 
 ; Obj02 in the MainCharacter slot in 2P VS (a0 = MainCharacter)
 VS_Obj02Player1:
+	; Debug uses physical P1 input, camera and DPLC state, before any exchange.
+	tst.w	(Debug_placement_mode).w
+	beq.s	.notPlacing
+	jmp	(DebugMode).l
+.notPlacing:
+	jsr	(Tails_TryEnterDebug).l
+	tst.b	d0
+	beq.s	.normal
+	rts
+.normal:
 	move.w	(Camera_Max_Y_pos_target).w,(VS_Max_Y_pos_target).w	; (not his: keep it)
 	bsr.s	VS_SwapPlayerContext
 	st.b	(P2_context_active).w

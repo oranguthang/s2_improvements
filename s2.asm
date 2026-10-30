@@ -40252,9 +40252,7 @@ return_1B11E:
 ; ---------------------------------------------------------------------------
 ; loc_1B120: Obj_01_Sub_4:
 Obj01_Hurt:
-	tst.w	(Debug_mode_flag).w
-	beq.s	Obj01_Hurt_Normal
-	btst	#button_B,(Ctrl_1_Press).w
+	jsr	(Player_DebugInput).l
 	beq.s	Obj01_Hurt_Normal
 	move.w	#1,(Debug_placement_mode).w
 	clr.b	(Control_Locked).w
@@ -40344,9 +40342,7 @@ Sonic_HurtInstantRecover:
 
 ; loc_1B1E6: Obj_01_Sub_6:
 Obj01_Dead:
-	tst.w	(Debug_mode_flag).w
-	beq.s	+
-	btst	#button_B,(Ctrl_1_Press).w
+	jsr	(Player_DebugInput).l
 	beq.s	+
 	move.w	#1,(Debug_placement_mode).w
 	clr.b	(Control_Locked).w
@@ -43558,11 +43554,7 @@ JmpTo2_KillCharacter ; JmpTo
 ; loc_1CC50:
 ; Debug placement always belongs to the main character, never the AI sidekick.
 Tails_TryEnterDebug:
-	cmpa.w	#MainCharacter,a0
-	bne.s	.noEntry
-	tst.w	(Debug_mode_flag).w
-	beq.s	.noEntry
-	btst	#button_B,(Ctrl_1_Press).w
+	jsr	(Player_DebugInput).l
 	beq.s	.noEntry
 	move.w	#1,(Debug_placement_mode).w
 	clr.b	(Control_Locked).w
@@ -91514,6 +91506,17 @@ Debug_ExitDebugMode:
 	move.l	#MapUnc_Tails,mappings(a1)
 	move.w	#make_art_tile(ArtTile_ArtUnc_Tails,0,0),art_tile(a1)
 	move.b	#$F,y_radius(a1)
+	clr.b	flying(a1)
+	clr.b	flying_timer(a1)
+	if FeatureKnuckles
+	tst.w	(Two_player_mode).w
+	beq.s	.tailsAloneArt
+	move.w	#make_art_tile(ArtTile_ArtUnc_Sonic,0,0),art_tile(a1)
+	move.b	#-1,(Sonic_LastLoadedDPLC).w	; P1's body cache before the VS exchange
+	move.b	#-1,(VS_TailsTails_P1_DPLC).w
+	bra.s	.characterReady
+.tailsAloneArt:
+	endif
 	move.b	#-1,(Tails_LastLoadedDPLC).w
 	bra.s	.characterReady
 .sonic:
@@ -91563,6 +91566,10 @@ Debug_PreparePlayer:
 	lea	(Sonic_top_speed).w,a2
 	cmpi.b	#ObjID_Tails,id(a0)
 	bne.s	.apply
+	if FeatureKnuckles
+	tst.w	(Two_player_mode).w	; P1 Tails runs debug before exchanging player RAM
+	bne.s	.apply
+	endif
 	lea	(Tails_top_speed).w,a2
 .apply:
 	jsr	(ApplySpeedSettings).l

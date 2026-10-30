@@ -238,6 +238,14 @@ Start to return to the title.
 As in s1_improvements, B does not enter object placement while it is part of
 an airborne A+B, A+C or B+C Super combo.
 
+Object placement belongs to player 1, for Sonic, Tails and Knuckles in both
+1P and 2P VS. B enters and leaves the cursor; player 2 cannot toggle it.
+Tails' body and tails return to player 1's graphics slots on exit. Special
+Stages keep their normal controls and do not support object placement.
+`python tests/check_debug_toggle.py` checks repeated toggles, cursor movement,
+restored graphics, all nine VS character pairs and Special Stage exclusion
+using the Genesis Plus GX harness described by `tests/check_demo_cycle.py`.
+
 **Debug coordinates.** While debug mode is available in a 1P game, the upper
 right corner shows the camera X/Y (top row) and the player X/Y (second row) in
 hex, then SPR and the number of sprites drawn; SCORE and TIME keep their
