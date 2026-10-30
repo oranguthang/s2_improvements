@@ -14446,6 +14446,16 @@ loc_A4B6:
 	move.l	#ObjCF_MapUnc_Knuckles,mappings(a0)	; Knuckles in Sonic 2's
 +
 	endif
+	if SuperKnucklesOn
+	; The zoomed ending art uses normal Tails colours. Match that for Knuckles
+	; when the standing player is replaced by the plane's composite animation.
+	tst.b	(Main_character).w
+	beq.s	.normalEndingColours
+	clr.b	(Super_Sonic_palette).w
+	move.l	(Pal_EndingKnuckles+2*2).l,(Normal_palette+2*2).w
+	move.w	(Pal_EndingKnuckles+5*2).l,(Normal_palette+5*2).w
+.normalEndingColours:
+	endif
 	move.w	#make_art_tile(ArtTile_ArtKos_LevelArt,0,0),art_tile(a0)
 	jsr	(Adjust2PArtPointer).l
 	subi.w	#$14,x_pos(a0)
@@ -64079,12 +64089,11 @@ Obj58_Init:
 	move.b	#$C,width_pixels(a0)
 	move.b	#7,anim_frame_duration(a0)
 	move.b	#0,mapping_frame(a0)
-	; One explosion sound every 8 frames at most, the bosses' own pace: the
-	; Death Egg's end makes an explosion every frame, and restarting the
-	; sound every frame (Flamedriver does) turns it into clicks.
+	; One explosion sound every 4 frames at most: a denser Death Egg escape,
+	; while avoiding the clicks caused by restarting the sound every frame.
 	move.b	(Vint_runcount+3).w,d0
 	sub.b	(Boss_explosion_sound_time).w,d0
-	cmpi.b	#8,d0
+	cmpi.b	#4,d0
 	blo.s	Obj58_Quiet
 	move.b	(Vint_runcount+3).w,(Boss_explosion_sound_time).w
 	move.w	#SndID_BossExplosion,d0
