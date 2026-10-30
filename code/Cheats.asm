@@ -423,11 +423,8 @@ Sonic_ChkDebugToggle:
 .return:
 	rts
 
-; Z=0 while GOD MODE protects the players: the cheat is on, outside 2P VS
-; games and title demos. Only the flags change.
+; Global GOD MODE setting, outside title demos. Only the flags change.
 Cheat_GodModeActive:
-	tst.w	(Two_player_mode).w
-	bne.s	.off
 	tst.w	(Demo_mode_flag).w
 	bne.s	.off
 	tst.b	(Cheat_god_mode).w
@@ -436,15 +433,41 @@ Cheat_GodModeActive:
 	ori	#4,ccr				; Z=1
 	rts
 
+; Z=0 if GOD MODE protects a0: both players in 1P, only physical P1 in VS.
+Cheat_GodModePlayer:
+	tst.w	(Two_player_mode).w
+	beq.s	Cheat_GodModeActive
+	cmpa.w	#MainCharacter,a0
+	beq.s	Cheat_GodModeActive
+	ori	#4,ccr
+	rts
+
+; The breathing object keeps its player in a2, not a0. Preserve both pointers.
+Cheat_GodModeAir:
+	tst.w	(Two_player_mode).w
+	beq.s	Cheat_GodModeActive
+	cmpa.w	#MainCharacter,a2
+	beq.s	Cheat_GodModeActive
+	ori	#4,ccr
+	rts
+
 ; Called by KillCharacter (a0 = player). Returns Z=1 to let the player die.
 ; With GOD MODE nothing kills; a player below the bottom boundary (a pit)
 ; is put back on it and bounced up as an airborne, non-jumping player, so
 ; Left/Right can steer back to solid ground (as in s1_improvements).
 Cheat_GodModeKill:
-	bsr.s	Cheat_GodModeActive
+	bsr.s	Cheat_GodModePlayer
 	beq.s	.return
 	move.l	d1,-(sp)
 	move.w	(Camera_Max_Y_pos).w,d0
+	if FeatureKnuckles
+	tst.w	(Two_player_mode).w
+	beq.s	.cameraReady
+	tst.b	(P2_context_active).w	; P1 Tails runs with the camera bounds exchanged
+	beq.s	.cameraReady
+	move.w	(Tails_Max_Y_pos).w,d0
+.cameraReady:
+	endif
 	move.w	(Camera_Max_Y_pos_target).w,d1	; the boundary may still be moving down
 	cmp.w	d0,d1
 	blo.s	+

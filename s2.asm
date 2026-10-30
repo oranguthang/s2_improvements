@@ -44629,7 +44629,7 @@ Obj0A_Countdown:
 	andi.w	#1,d0
 	move.b	d0,obj0a_total_bubbles_to_spawn(a0)
 
-	jsr	(Cheat_GodModeActive).l	; GOD MODE: the air never runs out
+	jsr	(Cheat_GodModeAir).l	; GOD MODE: only the protected player keeps his air
 	beq.s	+
 	move.b	#30,air_left(a2)
 	bra.w	Obj0A_MakeBubbleMaybe
@@ -88175,7 +88175,7 @@ HurtCharacter:
 	if FeatureLightDash|FeaturePeelOut
 	jsr	(LightDash_PlayerHit).l	; a hit ends the Light Dash
 	endif
-	jsr	(Cheat_GodModeActive).l	; GOD MODE: no damage
+	jsr	(Cheat_GodModePlayer).l	; GOD MODE: no damage to the protected player
 	bne.w	Touch_NoHurt
 	move.w	(Ring_count).w,d0
 	cmpa.w	#MainCharacter,a0
@@ -90737,7 +90737,11 @@ loc_40F50:
 	beq.s	loc_40F90
 	lea	(Timer).w,a1
 	cmpi.l	#(9<<(8*2))|(59<<(8*1))|(59<<(8*0)),(a1)+
-	beq.w	TimeOver
+	bne.s	.tickPlayer1
+	jsr	(Cheat_GodModeActive).l
+	bne.s	loc_40F90		; P1's clock stays at 9:59; P2's still runs
+	bra.w	TimeOver
+.tickPlayer1:
 	addq.b	#1,-(a1)
 	cmpi.b	#60,(a1)
 	blo.s	loc_40F90
@@ -90821,11 +90825,14 @@ TimeOver0:
 ; ===========================================================================
 ; loc_4102A:
 TimeOver:
+	jsr	(Cheat_GodModeActive).l
+	bne.s	.player2		; a VS countdown cannot time out protected P1
 	clr.b	(Update_HUD_timer).w
 	lea	(MainCharacter).w,a0 ; a0=character
 	movea.l	a0,a2
 	bsr.w	KillCharacter
 	move.b	#1,(Time_Over_flag).w
+.player2:
 	tst.b	(Update_HUD_timer_2P).w
 	beq.s	+	; rts
 ; loc_41044:

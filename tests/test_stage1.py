@@ -667,13 +667,17 @@ def settings_sram(repo):
     return {'cold_defaults':True,'round_trip':True,'checksum_rejects_damage':True,'values_clamped':True}
 
 def god_mode(repo):
-    """GOD MODE: no damage, no death, pits bounce; not in 2P VS games."""
-    def cpu(god=1,two_player=0):
-        c=CPU(repo); obj=c.s['MainCharacter']
-        c.write(obj+c.s['id'],c.s['ObjID_Sonic']); c.write(obj+c.s['routine'],2)
+    """GOD MODE: normal 1P protection, with only physical P1 protected in VS."""
+    def cpu(god=1,two_player=0,slot='MainCharacter',character='sonic'):
+        c=CPU(repo); obj=c.s[slot]
+        c.write(obj+c.s['id'],c.s['ObjID_Tails' if character=='tails' else 'ObjID_Sonic'])
+        c.write(obj+c.s['routine'],2)
+        if character=='knuckles':
+            c.write('Main_character' if slot=='MainCharacter' else 'Player2_character',1)
         c.write(obj+c.s['x_pos'],0x200,2); c.write(obj+c.s['y_pos'],0x100,2)
         c.write('Cheat_god_mode',god); c.write('Two_player_mode',two_player,2)
-        c.write('Ring_count',5,2); c.write('Camera_Max_Y_pos',0x300,2); c.write('Camera_Max_Y_pos_target',0x300,2)
+        c.write('Ring_count',5,2); c.write('Ring_count_2P',5,2)
+        c.write('Camera_Max_Y_pos',0x300,2); c.write('Camera_Max_Y_pos_target',0x300,2)
         hazard=c.s['Sidekick']+0x80
         c.write(hazard+c.s['x_pos'],0x210,2); c.uc.reg_write(UC_M68K_REG_A2,hazard)
         for name in ('PlaySound','PlayMusic'):
@@ -690,9 +694,58 @@ def god_mode(repo):
     c.call('KillCharacter',obj)
     assert c.read(obj+c.s['y_pos'],2)==0x300+224 and sw(c.read(obj+c.s['y_vel'],2))==-0xA00,'no pit bounce'
     assert c.read(obj+c.s['routine'])==2 and c.read(obj+c.s['status'])&2,'pit bounce must leave the player airborne in control'
-    c,obj=cpu(two_player=1); c.call('KillCharacter',obj)
-    assert c.read(obj+c.s['routine'])==6,'GOD MODE must not apply to 2P VS'
-    return {'no_damage':True,'no_death':True,'pit_bounce':True,'not_in_vs':True}
+    vs_cases=0
+    for character in ('sonic','tails','knuckles'):
+        for slot in ('MainCharacter','Sidekick'):
+            for action in ('HurtCharacter','KillCharacter'):
+                c,obj=cpu(two_player=1,slot=slot,character=character)
+                c.call(action,obj)
+                expected=2 if slot=='MainCharacter' else (4 if action=='HurtCharacter' else 6)
+                assert c.read(obj+c.s['routine'])==expected,(character,slot,action)
+                if slot=='MainCharacter':
+                    assert c.read('Ring_count',2)==5
+                vs_cases+=1
+    # P1 Tails' VS wrapper has exchanged the two sets of camera bounds.
+    c,obj=cpu(two_player=1,character='tails')
+    c.write('P2_context_active',1); c.write('Camera_Max_Y_pos',0x900,2)
+    c.write('Tails_Max_Y_pos',0x300,2); c.write(obj+c.s['y_pos'],0x300+224+20,2)
+    c.call('KillCharacter',obj)
+    assert c.read(obj+c.s['y_pos'],2)==0x300+224
+    assert sw(c.read(obj+c.s['y_vel'],2))==-0xA00 and c.read(obj+c.s['routine'])==2
+    # Breathing has the character in a2 while a0 is the separate bubble object.
+    for slot in ('MainCharacter','Sidekick'):
+        c,obj=cpu(two_player=1,slot=slot)
+        bubble=c.s['Sonic_BreathingBubbles' if slot=='MainCharacter' else 'Tails_BreathingBubbles']
+        c.write(bubble+c.s['obj0a_character'],obj,4)
+        c.write(obj+c.s['status'],1<<c.s['status.player.underwater'])
+        c.write(obj+c.s['air_left'],20)
+        c.skip('Obj0A_MakeBubbleMaybe')
+        c.call('Obj0A_Countdown',bubble)
+        assert c.read(obj+c.s['air_left'])==(30 if slot=='MainCharacter' else 19),slot
+    # P1's capped timer must not also time out player 2, whose clock still runs.
+    for p2_expired in (False,True):
+        c,obj=cpu(two_player=1)
+        side=c.s['Sidekick']; c.write(side+c.s['id'],c.s['ObjID_Tails'])
+        c.write(side+c.s['routine'],2)
+        c.write('Update_HUD_timer',1); c.write('Update_HUD_timer_2P',1)
+        c.write('Timer',0x00093B3B,4)
+        c.write('Timer_2P',0x00093B3B if p2_expired else 0x00000100,4)
+        c.call('HudUpdate')
+        assert c.read('Timer',4)==0x00093B3B and c.read('Time_Over_flag')==0
+        assert c.read(obj+c.s['routine'])==2
+        assert c.read(side+c.s['routine'])==(6 if p2_expired else 2)
+        assert c.read('Time_Over_flag_2P')==int(p2_expired)
+        if not p2_expired:
+            assert c.read('Timer_2P',4)==0x00000101
+    c,obj=cpu(two_player=1); c.write('Update_HUD_timer',1)
+    c.call('TimeOver0')
+    assert c.read('Update_HUD_timer')==1 and c.read('Time_Over_flag')==0
+    c,obj=cpu(two_player=1); c.write('Demo_mode_flag',1,2)
+    c.call('KillCharacter',obj)
+    assert c.read(obj+c.s['routine'])==6,'GOD MODE enabled in a title demo'
+    return {'no_damage':True,'no_death':True,'pit_bounce':True,'vs_damage_death_cases':vs_cases,
+            'vs_player2_unprotected':True,'vs_tails_camera_context':True,
+            'vs_air_is_player_specific':True,'vs_timers_are_independent':True,'disabled_in_demos':True}
 
 def extra_lives(repo):
     """Rings award a life at every 100 (FeatureExtraLives) or only at 100 and 200 (original)."""

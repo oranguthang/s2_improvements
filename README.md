@@ -233,7 +233,7 @@ Start to return to the title.
 | DEBUG | OFF / ON | OFF | Debug mode in every level (B enters object placement) without holding A. |
 | SUPER RINGS | 0 / 10 / 50 | 50 | Rings needed to turn Super. 0 turns RING DRAIN off. |
 | RING DRAIN | OFF / ON | ON | OFF keeps Super Sonic until the act ends. Turning it on at 0 rings sets SUPER RINGS to 10. |
-| GOD MODE | OFF / ON | OFF | Nothing hurts or kills the players, the air never runs out, the clock stops at 9:59 and a pit bounces the player back up. Not in 2P VS games or demos. |
+| GOD MODE | OFF / ON | OFF | No damage or death, unlimited air, the clock stops at 9:59 and pits bounce the player back up. In 2P VS only player 1 is protected; player 2 keeps normal damage, air and time limits. Disabled in demos. |
 
 As in s1_improvements, B does not enter object placement while it is part of
 an airborne A+B, A+C or B+C Super combo.
