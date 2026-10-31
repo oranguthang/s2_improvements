@@ -1676,6 +1676,11 @@ ClearScreen:
 
     if fixBugs
 	clearRAM Sprite_Table,Sprite_Table_End
+	; A VS H-int can upload either page before the next BuildSprites call.
+	; Clear both players' front and back buffers so no old frame can flash.
+	clearRAM Sprite_Table_Alternate,Sprite_Table_P2_Alternate+$280
+	clearRAM Sprite_Table_P2,Sprite_Table_P2+$280
+	clr.w	(Current_sprite_table_page).w	; and Sprite_table_page_flip_pending
 	clearRAM Horiz_Scroll_Buf,Horiz_Scroll_Buf+HorizontalScrollBuffer.len
     else
 	; These '+4's shouldn't be here; clearRAM accidentally clears an additional 4 bytes
