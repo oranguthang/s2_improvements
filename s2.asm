@@ -1212,6 +1212,11 @@ Vint_UnusedE:
 ;VintSub12
 Vint_Fade:
 	bsr.w	Do_ControllerPal
+	; A demo can enter the title screen just after its objects queue new art.
+	; Drain those requests: the level V-int that would normally run them is over.
+	stopZ80
+	bsr.w	ProcessDMAQueue
+	startZ80
 	move.w	(Hint_counter_reserve).w,(a5)
 	bra.w	ProcessDPLC
 ; ===========================================================================
