@@ -6291,7 +6291,10 @@ CheckLoadSignpostArt:
 	tst.w	(Level_Has_Signpost).w
 	beq.s	+	; rts
 	tst.w	(Debug_placement_mode).w
-	bne.s	+	; rts
+	beq.s	.normal
+	tst.w	(Two_player_mode).w
+	bne.s	+	; VS uses its own signpost art loader
+.normal:
 	move.w	(Camera_X_pos).w,d0
 	move.w	(Camera_Max_X_pos).w,d1
 	subi.w	#$100,d1
