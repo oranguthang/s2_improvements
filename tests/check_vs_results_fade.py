@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 
 from unicorn import UC_HOOK_CODE
+from unicorn.m68k_const import UC_M68K_REG_PC
 
 from test_stage1 import CPU
 
@@ -25,6 +26,25 @@ def selected_fade(repo, two_player, results_screen):
     return calls
 
 
+def selected_title_fade(repo, two_player):
+    cpu = CPU(repo)
+    calls = []
+    for name in ('Demo_RestorePlayers', 'PlayMusic', 'ClearPLC'):
+        cpu.skip(name)
+
+    def stop_at_fade(name):
+        def hook(uc, address, size, user_data):
+            calls.append(name)
+            uc.reg_write(UC_M68K_REG_PC, cpu.stop)
+        return hook
+
+    for name in ('VS_FadeOut', 'Pal_FadeToBlack'):
+        cpu.uc.hook_add(UC_HOOK_CODE, stop_at_fade(name), begin=cpu.s[name], end=cpu.s[name])
+    cpu.write('Two_player_mode', two_player, 2)
+    cpu.call('TitleScreen')
+    return calls
+
+
 def main():
     repo = Path(__file__).resolve().parents[1]
     cases = 0
@@ -36,6 +56,11 @@ def main():
         expected = 'VS_FadeOut' if results_screen <= 2 else 'Pal_FadeToBlack'
         calls = selected_fade(repo, 1, results_screen)
         assert calls == [expected], ('active VS', results_screen, calls)
+        cases += 1
+
+    for two_player, expected in ((0, 'Pal_FadeToBlack'), (1, 'VS_FadeOut')):
+        calls = selected_title_fade(repo, two_player)
+        assert calls == [expected], ('title fade', two_player, calls)
         cases += 1
 
     cpu = CPU(repo)
@@ -63,6 +88,7 @@ def main():
 
     print(json.dumps({
         'fade_selection_cases': cases,
+        'title_vs_fade_passed': True,
         'split_screen_vint_frames': len(waits),
         'colour_updates': len(colour_updates),
         'passed': True,

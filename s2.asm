@@ -4182,8 +4182,14 @@ TitleScreen:
 	; Clear the PLC queue, preventing any PLCs from before loading after this point.
 	bsr.w	ClearPLC
 
-	; Fade out.
+	; Fade out. Keep the level's H-int while a VS demo is still on screen.
+	tst.w	(Two_player_mode).w
+	beq.s	.fade
+	bsr.w	VS_FadeOut
+	bra.s	.faded
+.fade:
 	bsr.w	Pal_FadeToBlack
+.faded:
 
 	; Disable interrupts, so that we can have exclusive access to the VDP.
 	move	#$2700,sr
