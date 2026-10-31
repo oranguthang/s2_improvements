@@ -1834,7 +1834,7 @@ Pause_Loop:
 	st.b	(Title_skip_intro).w	; straight to the title, as in Sonic 1
 	tst.w	(Two_player_mode).w	; the title's fade-out skews the split screen,
 	beq.s	+
-	bsr.w	VS_PauseFadeOut		; so fade it out here, with the level's V-int
+	bsr.w	VS_FadeOut		; so fade it out here, with the level's V-int
 +
 	else
 	nop
@@ -1863,12 +1863,9 @@ Unpause:
 Pause_DoNothing:
 	rts
 ; ===========================================================================
-	if FeatureTitleMenu
-; Pause + A in 2P VS: Pal_FadeToBlack's V-int (VintID_Fade) does not keep the
-; split screen, so the picture skewed while the title faded it out. The fade
-; runs here instead, with the pause's V-int (the level's); the title then only
-; fades a black palette.
-VS_PauseFadeOut:
+; Pal_FadeToBlack's V-int (VintID_Fade) does not keep the 2P split screen.
+; Fade with VintID_Pause instead when leaving VS for the title or results.
+VS_FadeOut:
 	move.w	#$3F,(Palette_fade_range).w
 	moveq	#7,d4
 	moveq	#0,d6
@@ -1880,7 +1877,6 @@ VS_PauseFadeOut:
 	bsr.w	Pal_FadeToBlack.UpdateAllColours
 	dbf	d4,.frame
 	rts
-	endif
 ; ===========================================================================
 ; loc_1400:
 Pause_SlowMo:
@@ -11034,9 +11030,18 @@ ObjDA_MapUnc_7CB6:	include	"mappings/sprite/objDA.asm"
 
 
 ; ===========================================================================
+TwoPlayerResults_FadeOut:
+	tst.w	(Two_player_mode).w
+	beq.s	.normal
+	cmpi.w	#VsRSID_Game,(Results_Screen_2P).w
+	bhi.s	.normal		; Special Stage results are not split-screen
+	bra.w	VS_FadeOut
+.normal:
+	bra.w	Pal_FadeToBlack
+; ===========================================================================
 ; loc_7D50:
 TwoPlayerResults:
-	bsr.w	Pal_FadeToBlack
+	bsr.w	TwoPlayerResults_FadeOut
 	move	#$2700,sr
 	move.w	(VDP_Reg1_val).w,d0
 	andi.b	#$BF,d0
