@@ -1625,7 +1625,13 @@ zSFXTrackInitLoop:
 
 		ld	(ix+zTrack.VoicesLow), l		; Low byte of voice pointer
 		ld	(ix+zTrack.VoicesHigh), h		; High byte of voice pointer
-		call	zKeyOffIfActive				; Kill channel notes
+		; S2 does not key off while initialising an SFX: it does so only
+		; when reading the note, after the instrument upload. The early S3
+		; key-off cuts a repeatedly requested boss explosion into clicks.
+		; Keep S2's timing for that effect; other SFX retain S3's behaviour.
+		ld	a, (zNextSound)
+		cp	zsfx_BossExplosion
+		call	nz, zKeyOffIfActive
 		bit	bitIsPSG, (ix+zTrack.VoiceControl)	; Is this a PSG track?
 		call	z, zFMClearSSGEGOps			; Clear SSG-EG operators for track's channels if not
 		call	zSilencePSGChannel			; Silence PSG channel

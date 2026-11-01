@@ -842,6 +842,26 @@ def title_palette(repo):
     assert palette(c)==before and c.read('TitleScreenPaletteChanger3')!=0
     return {'start_timing_cases':66,'palette_corruption_cases':0,'ordinary_fade_and_no_start_passed':True}
 
+def death_egg_escape(repo):
+    """The final escape creates one visual explosion per frame and preserves the original sound request cadence."""
+    c=CPU(repo);obj=c.s['MainCharacter']+0x100
+    c.write(c.s['Vint_runcount']+3,1)
+    c.write(c.s['MainCharacter']+c.s['x_pos'],0x100,2)
+    allocations=[]
+    c.uc.hook_add(UC_HOOK_CODE,lambda uc,pc,size,user:allocations.append(pc),
+                  begin=c.s['AllocateObject'],end=c.s['AllocateObject'])
+    c.call('ObjC7_SetupEnding',obj)
+    assert len(allocations)==1,allocations
+    c=CPU(repo);obj=c.s['MainCharacter']+0x100;sounds=[]
+    c.uc.hook_add(UC_HOOK_CODE,lambda uc,pc,size,user:sounds.append(uc.reg_read(UC_M68K_REG_D0)&0xFFFF),
+                  begin=c.s['PlaySound'],end=c.s['PlaySound'])
+    c.skip('PlaySound')
+    for frame in range(4):
+        c.write(c.s['Vint_runcount']+3,frame)
+        c.call('Obj58_Init',obj)
+    assert sounds==[c.s['SndID_BossExplosion']]*4,sounds
+    return {'explosions_per_frame':1,'sound_requests_per_4_frames':4}
+
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('repo',type=Path)
@@ -850,6 +870,7 @@ def main():
     args=parser.parse_args()
     results={'sega':sega(args.repo,args.baseline)}
     results['title_palette']=title_palette(args.repo)
+    results['death_egg_escape']=death_egg_escape(args.repo)
     if 'KillCharacter_SetBurntAnimation' in symbols(args.repo/'s2.lst'):
         results['burnt_death']=burnt(args.repo)
     if 'Ctrl_1_Held_6B' in symbols(args.repo/'s2.lst'):

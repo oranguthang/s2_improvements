@@ -64105,13 +64105,7 @@ Obj58_Init:
 	move.b	#$C,width_pixels(a0)
 	move.b	#7,anim_frame_duration(a0)
 	move.b	#0,mapping_frame(a0)
-	; One explosion sound every 4 frames at most: a denser Death Egg escape,
-	; while avoiding the clicks caused by restarting the sound every frame.
-	move.b	(Vint_runcount+3).w,d0
-	sub.b	(Boss_explosion_sound_time).w,d0
-	cmpi.b	#4,d0
-	blo.s	Obj58_Quiet
-	move.b	(Vint_runcount+3).w,(Boss_explosion_sound_time).w
+	; Repeat requests as in S2; the S3 driver preserves the explosion envelope.
 	move.w	#SndID_BossExplosion,d0
 	jmp	(PlaySound).l
 ; ===========================================================================

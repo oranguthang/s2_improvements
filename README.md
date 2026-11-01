@@ -597,9 +597,11 @@ the four original demos play through without a death.
   demo showed Knuckles' colours on Sonic after a Knuckles game):
   `Demo_SetPlayers` puts `Player_option` and `VS_player2` aside for the demo,
   and the SEGA and title screens give them back.
-- One boss explosion sound every 4 frames at most (`Obj58_Init`): the Death
-  Egg escape sounds denser while avoiding the clicks caused by restarting
-  the sound every frame. Ordinary bosses still spawn explosions every 8 frames.
+- Boss explosions keep their original sound data and request cadence, including
+  one request per frame in the Death Egg escape. Flamedriver skips its extra
+  SFX-initialisation key-off for this effect, matching Sonic 2's key-off timing
+  after the instrument upload. This preserves the repeated explosion envelope
+  without shortening the effect or throttling the game's sound requests.
 - Super Tails and Knuckles use normal colours in the zoomed ending animation
   after glowing on the Tornado. Knuckles' palette cycle stops when that
   animation replaces the standing player; his Super ending timing is unchanged.
