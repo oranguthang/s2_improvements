@@ -61904,6 +61904,7 @@ ObjD6:
 ObjD6_Index:	offsetTable
 		offsetTableEntry.w ObjD6_Init	; 0
 		offsetTableEntry.w ObjD6_Main	; 2
+		offsetTableEntry.w CNZPortrait_Draw ; 4
 ; ===========================================================================
 ; loc_2BB7E:
 ObjD6_Init:
@@ -61914,6 +61915,7 @@ ObjD6_Init:
 	move.b	#1<<render_flags.level_fg,render_flags(a0)
 	move.b	#$18,width_pixels(a0)
 	move.b	#1,priority(a0)
+	jsr	(CNZPortrait_Spawn).l
 ; loc_2BBA6:
 ObjD6_Main:
 	move.w	#$23,d1
@@ -62516,13 +62518,27 @@ SlotMachine_Subroutine2:
 	rts
 ; ---------------------------------------------------------------------------
 +
-	bsr.w	SlotMachine_GetPixelRow	; Get pointer to pixel row
+	move.l	a5,-(sp)
+	bsr.w	SlotMachine_GetPixelRow	; Get both pointers to the pixel row
 	lea	(Block_Table+$1000).w,a1	; Destination for pixel rows
 
 	move.w	#4*8-1,d1			; Slot picture is 4 tiles
 -	move.l	$80(a2),$80(a1)			; Copy pixel row for second column
 	move.l	$100(a2),$100(a1)		; Copy pixel row for third column
 	move.l	$180(a2),$180(a1)		; Copy pixel row for fourth column
+	move.l	a5,d0
+	beq.s	.blankPortrait
+	move.l	$80(a5),$280(a1)
+	move.l	$100(a5),$300(a1)
+	move.l	$180(a5),$380(a1)
+	move.l	(a5)+,$200(a1)
+	bra.s	.nextRow
+.blankPortrait:
+	clr.l	$200(a1)
+	clr.l	$280(a1)
+	clr.l	$300(a1)
+	clr.l	$380(a1)
+.nextRow:
 	move.l	(a2)+,(a1)+			; Copy pixel row for first column, advance destination to next line
 	addq.b	#8,d3				; Increase offset by 8 (byte operation)
 	bne.s	+				; If the result is not zero, branch
@@ -62532,14 +62548,24 @@ SlotMachine_Subroutine2:
 +
 	dbf	d1,-				; Loop for aoo pixel rows
 
-	move.l	#(Block_Table+$1000)&$FFFFFF,d1	; Source
+	movea.l	(sp)+,a5
+	move.w	d2,-(sp)
+	move.l	#(Block_Table+$1000)&$FFFFFF,d1
 	tst.w	(Two_player_mode).w
 	beq.s	+
 	addi.w	#tiles_to_bytes(ArtTile_ArtUnc_CNZSlotPics_1_2p-ArtTile_ArtUnc_CNZSlotPics_1),d2
 +
-	move.w	#tiles_to_words(16),d3		; DMA transfer length (in words)
+	move.w	#tiles_to_words(16),d3
 	jsr	(QueueDMATransfer).l
-	rts
+	move.w	(sp)+,d2
+	move.l	#(Block_Table+$1200)&$FFFFFF,d1
+	addi.w	#tiles_to_bytes(CNZPortraitTile-ArtTile_ArtUnc_CNZSlotPics_1),d2
+	tst.w	(Two_player_mode).w
+	beq.s	+
+	addi.w	#tiles_to_bytes(CNZPortraitTile2P-CNZPortraitTile),d2
++
+	move.w	#tiles_to_words(16),d3
+	jmp	(QueueDMATransfer).l
 ; ===========================================================================
 ; loc_2C2B8
 SlotMachine_GetPixelRow:
@@ -62547,26 +62573,36 @@ SlotMachine_GetPixelRow:
 	lsr.w	#8,d0				; Convert offset into index
 	andi.w	#7,d0				; Limit each sequence to 8 pictures
 	move.b	(a3,d0.w),d0			; Get slot pic id
-	andi.w	#7,d0				; Get only lower 3 bits; leaves space for 2 more images
+	andi.w	#7,d0
+	bne.s	.otherPicture
+	lea	(CNZPortrait_Sonic).l,a5
+	lea	(ArtUnc_CNZSlotPics).l,a2
 	if FeatureKnuckles
-	bne.s	.notSonic
-	tst.b	(Main_character).w		; Knuckles' face instead of Sonic's (Knuckles in Sonic 2)
-	beq.s	.notSonic
+	tst.b	(Main_character).w
+	beq.s	.portrait
+	lea	(CNZPortrait_Knuckles).l,a5
 	lea	(ArtUnc_CNZSlotPicKnuckles).l,a2
+	endif
+.portrait:
+	bsr.s	.rowOffset
+	adda.w	d0,a5
+	rts
+.otherPicture:
+	suba.l	a5,a5
+	cmpi.w	#3,d0				; Jackpot
+	bne.s	+
+	lea	(CNZPortrait_Jackpot).l,a5
++
+	ror.w	#7,d0				; multiply the symbol index by 512
+	lea	(ArtUnc_CNZSlotPics).l,a2
+	adda.w	d0,a2
+	cmpa.w	#0,a5
+	bne.s	.portrait
+.rowOffset:
 	move.w	d3,d0
 	andi.w	#$F8,d0
 	lsr.w	#1,d0
 	adda.w	d0,a2
-	rts
-.notSonic:
-	endif
-	ror.w	#7,d0				; Equal to shifting left 9 places, or multiplying by 4*4 tiles, in bytes
-	lea	(ArtUnc_CNZSlotPics).l,a2	; Load slot pictures
-	adda.w	d0,a2				; a2 = pointer to first tile of slot picture
-	move.w	d3,d0				; d0 = d3
-	andi.w	#$F8,d0				; Strip high word (picture index)
-	lsr.w	#1,d0				; Convert into bytes
-	adda.w	d0,a2				; a2 = pointer to desired pixel row
 	rts
 ; ==========================================================================
 ; loc_2C2DE:
@@ -62712,6 +62748,7 @@ SlotSequence2:	dc.b   3,  0,  1,  4,  2,  5,  0,  2
 ;byte_2C411
 SlotSequence3:	dc.b   3,  0,  1,  4,  2,  5,  4,  1
 	even
+	include "code/CNZSlotPortrait.asm"
 ; ===========================================================================
 
 	jmpTos JmpTo10_AllocateObject,JmpTo29_MarkObjGone,JmpTo10_AnimateSprite,JmpTo6_Adjust2PArtPointer2,JmpTo54_Adjust2PArtPointer,JmpTo12_CalcSine,JmpTo7_SolidObject_Always_SingleCharacter
