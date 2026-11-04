@@ -304,8 +304,8 @@ PalCycle_SuperKnuckles:
 	move.w	4(a0,d0.w),2(a1)
 	tst.b	(Water_flag).w
 	beq.w	.return
-	; below the water line: the zone's tinted cycle (tools/super_water.py),
-	; written every frame so going in or out of the water changes nothing
+	; Chemical Plant and Aquatic Ruin have their own underwater ramps.
+	; Hidden Palace uses the dry Super cycle (tools/super_water.py).
 	lea	(CyclingPal_SKCycle_CPZ).l,a0
 	cmpi.b	#chemical_plant_zone,(Current_Zone).w
 	beq.s	.water

@@ -1,20 +1,13 @@
-"""Make the underwater palette cycles of Super Tails and Super Knuckles.
+"""Generate Super Tails/Knuckles underwater tables for CPZ, ARZ and HPZ.
+
+Use hand-tuned water ramps in Chemical Plant, and for Knuckles in
+Aquatic Ruin. The other cycles keep S3K's shared dry and wet colours.
+Tails keeps each zone's real normal fur colours during the transformation
+pose/reversion. Knuckles' reversion already restores its real water palette
+in code/Knuckles.asm. Source order stays 11/15/14 for Tails and 2/3/5 for
+Knuckles; Super Tails gameplay writes those values to 4/3/2.
 
 Usage: python tools/super_water.py [--check]
-
-Below the water line the game shows Underwater_palette, so a Super form's
-palette cycle has to write tinted colours there too (as Super Sonic does with
-CPZWater/ARZWater SS transformation.bin, and Sonic 1 with its own LZ and SBZ3
-cycles). Sonic 2's underwater palettes are drawn by hand rather than made
-with one formula, so each zone's tint is taken from its own examples: every
-colour moves like the nearest colour in the zone's pairs of dry and
-underwater colours (Sonic and Tails' first palette line, Knuckles' colours,
-and Super Sonic's transformation where the zone has one).
-
-Writes art/palettes/Super Knuckles cycle <zone> underwater.bin (colours 2, 3
-and 5 per frame, as Super Knuckles cycle.bin) and Super Tails <zone>
-underwater.bin (colours 11, 15 and 14 and a pad word per frame, as
-PalCycle_SuperTails_Colours in code/SuperTails.asm) for CPZ, ARZ and HPZ.
 """
 import argparse, re
 from pathlib import Path
@@ -22,8 +15,36 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PAL = ROOT / 'art' / 'palettes'
 ZONES = ('CPZ', 'ARZ', 'HPZ')
-SUPER_SONIC = {'CPZ': 'CPZWater SS transformation.bin', 'ARZ': 'ARZWater SS transformation.bin'}
 TAILS_COLOURS = (11, 15, 14)   # PalCycle_SuperTails' order
+
+# Chemical Plant tints the bright colours magenta. Preserve a distinct
+# shadow, body and highlight throughout the pulse.
+CPZ_TAILS_PULSE = (
+    (0xA4A, 0xC6E, 0xE8E),
+    (0xA6C, 0xC8E, 0xEAE),
+    (0xC8C, 0xEAE, 0xECE),
+)
+
+# Five steps towards the peak, followed by the dim hold frame. Chemical
+# Plant has purple shadows; Aquatic Ruin uses a cooler blue-lilac ramp.
+KNUCKLES_WATER_RAMPS = {
+    'CPZ': (
+        (0xC26, 0xE2C, 0xE4E),
+        (0xC48, 0xE4C, 0xE6E),
+        (0xC6A, 0xE6E, 0xE8E),
+        (0xC6C, 0xE8E, 0xEAE),
+        (0xE8C, 0xEAE, 0xECE),
+        (0xA04, 0xE0A, 0xE2A),
+    ),
+    'ARZ': (
+        (0xA26, 0xC4A, 0xE6C),
+        (0xA48, 0xC6C, 0xE8C),
+        (0xC68, 0xE8C, 0xEAC),
+        (0xC8A, 0xEAC, 0xECC),
+        (0xEAA, 0xECC, 0xEEE),
+        (0x804, 0xA0A, 0xA2C),
+    ),
+}
 
 
 def words(data):
@@ -32,40 +53,6 @@ def words(data):
 
 def pack(ws):
     return b''.join(w.to_bytes(2, 'big') for w in ws)
-
-
-def rgb(c):
-    return ((c >> 1) & 7, (c >> 5) & 7, (c >> 9) & 7)
-
-
-def colour(r, g, b):
-    return r << 1 | g << 5 | b << 9
-
-
-def references(zone):
-    pairs = []
-    dry = words((PAL / 'SonicAndTails.bin').read_bytes())[2:16]
-    wet = words((PAL / f'{zone} underwater.bin').read_bytes())[2:16]
-    pairs += zip(dry, wet)
-    dry = words((PAL / 'Knuckles and Tails.bin').read_bytes())[2:6]
-    wet = words((PAL / f'{zone} underwater Knuckles.bin').read_bytes())[2:6]
-    pairs += zip(dry, wet)
-    if zone in SUPER_SONIC:
-        pairs += zip(words((PAL / 'Super Sonic transformation.bin').read_bytes()),
-                     words((PAL / SUPER_SONIC[zone]).read_bytes()))
-    return [(rgb(d), rgb(w)) for d, w in pairs]
-
-
-def tint(c, refs):
-    """Move c like the nearest dry reference colour(s) moved under water."""
-    if c == 0:
-        return 0
-    r = rgb(c)
-    dist = lambda d: sum((a - b) ** 2 for a, b in zip(d, r))
-    best = min(dist(d) for d, _ in refs)
-    near = [(d, w) for d, w in refs if dist(d) == best]
-    shift = [sum(w[k] - d[k] for d, w in near) / len(near) for k in range(3)]
-    return colour(*(min(7, max(0, round(v + s))) for v, s in zip(r, shift)))
 
 
 def super_tails_dry():
@@ -92,21 +79,28 @@ def super_tails_dry():
 
 def generate():
     outputs = {}
-    knuckles = words((PAL / 'Super Knuckles cycle.bin').read_bytes())
+    knuckles = (PAL / 'Super Knuckles cycle.bin').read_bytes()
     tails = super_tails_dry()
+    assert len(tails) == 12
     for zone in ZONES:
-        refs = references(zone)
-        outputs[PAL / f'Super Knuckles cycle {zone} underwater.bin'] = pack(tint(c, refs) for c in knuckles)
-        # his own colours (the fade's first frames) use the zone's real
-        # underwater ones, so turning back ends exactly on them
+        knuckles_cycle = knuckles
+        if zone in KNUCKLES_WATER_RAMPS:
+            ramp = KNUCKLES_WATER_RAMPS[zone]
+            frames = ramp[:5] + ramp[3::-1] + ramp[5:]
+            knuckles_cycle = pack(colour for frame in frames for colour in frame)
+            assert len(knuckles_cycle) == len(knuckles)
+        outputs[PAL / f'Super Knuckles cycle {zone} underwater.bin'] = knuckles_cycle
+
         wet = words((PAL / f'{zone} underwater.bin').read_bytes())
-        dry = words((PAL / 'SonicAndTails.bin').read_bytes())
-        out = []
-        for frame in tails:
-            for c, index in zip(frame[:3], TAILS_COLOURS):
-                out.append(wet[index] if c == dry[index] else tint(c, refs))
-            out.append(0)
-        outputs[PAL / f'Super Tails {zone} underwater.bin'] = pack(out)
+        normal_fur = tuple(wet[i] for i in TAILS_COLOURS)
+        cycle = [tuple(frame[:3]) for frame in tails[6:]]
+        if zone == 'CPZ':
+            low, middle, peak = CPZ_TAILS_PULSE
+            cycle = [normal_fur, low, middle, peak, middle, low]
+        frames = [normal_fur] * 6 + cycle
+        outputs[PAL / f'Super Tails {zone} underwater.bin'] = pack(
+            colour for frame in frames for colour in (*frame, 0)
+        )
     return outputs
 
 
@@ -119,8 +113,8 @@ def main():
     if args.check:
         print('up to date' if not stale else 'stale: ' + ', '.join(str(p.relative_to(ROOT)) for p in stale))
         raise SystemExit(1 if stale else 0)
-    for p, data in outputs.items():
-        p.write_bytes(data)
+    for p in stale:
+        p.write_bytes(outputs[p])
         print('wrote', p.relative_to(ROOT))
 
 
