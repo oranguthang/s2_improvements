@@ -1030,7 +1030,7 @@ Knuckles_DoGlidingAnimation:
 
 Knuckles_GlideSpeedControl:
 	cmpi.b	#1,glide_mode(a0)
-	bne.w	.doNotKillspeed
+	bne.w	.cameraBias
 
 	move.w	inertia(a0),d0
 	cmpi.w	#$400,d0
@@ -1114,28 +1114,13 @@ Knuckles_GlideSpeedControl:
 	cmpi.w	#$80,y_vel(a0)
 	blt.s	.fallingSlow
 	subi.w	#$20,y_vel(a0)
-	bra.s	.fallingFast
+	bra.s	.cameraBias
 ; ---------------------------------------------------------------------------
 ; loc_315D62:
 .fallingSlow:
 	; Apply gravity.
 	addi.w	#$20,y_vel(a0)
-; loc_315D68:
-.fallingFast:
-	; If Knuckles is above the level's top boundary, then kill his
-	; horizontal speed.
-	move.w	(Camera_Min_Y_pos).w,d0
-	cmpi.w	#-$100,d0
-	beq.w	.doNotKillspeed
-
-	addi.w	#$10,d0
-	cmp.w	y_pos(a0),d0
-	ble.w	.doNotKillspeed
-
-	asr.w	x_vel(a0)
-	asr.w	inertia(a0)
-; loc_315D88:
-.doNotKillspeed:
+.cameraBias:
 	cmpi.w	#$60,(Camera_Y_pos_bias).w
 	beq.s	.doNotModifyBias
 	bhs.s	+

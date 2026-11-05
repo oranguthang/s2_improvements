@@ -43,7 +43,7 @@ cheats_row_debug = 1
 cheats_row_rings = 2
 cheats_row_drain = 3
 cheats_row_god = 4
-cheats_rows = 5
+cheats_rows = 6
 
 cheats_header_line = 4
 cheats_first_line = 8			; rows are two lines apart
@@ -193,6 +193,7 @@ CheatsPage_Vars:
 	dc.w	Cheat_super_rings&$FFFF
 	dc.w	Cheat_ring_drain&$FFFF
 	dc.w	Cheat_god_mode&$FFFF
+	dc.w	Cheat_super_music&$FFFF
 CheatsPage_Vars_End:
 
 CheatsPage_RingSteps:
@@ -299,6 +300,7 @@ CheatsPage_Labels:
 	dc.b	"SUPER RINGS          "
 	dc.b	"RING DRAIN           "
 	dc.b	"GOD MODE             "
+	dc.b	"SUPER MUSIC          "
 CheatsPage_Labels_End:
 CheatsPage_Hint:
 	dc.b	"START: BACK"
@@ -433,10 +435,8 @@ Cheat_GodModeActive:
 	ori	#4,ccr				; Z=1
 	rts
 
-; Z=0 if GOD MODE protects a0: both players in 1P, only physical P1 in VS.
+; Z=0 if GOD MODE protects the physical P1 slot, even with a sidekick.
 Cheat_GodModePlayer:
-	tst.w	(Two_player_mode).w
-	beq.s	Cheat_GodModeActive
 	cmpa.w	#MainCharacter,a0
 	beq.s	Cheat_GodModeActive
 	ori	#4,ccr
@@ -444,8 +444,6 @@ Cheat_GodModePlayer:
 
 ; The breathing object keeps its player in a2, not a0. Preserve both pointers.
 Cheat_GodModeAir:
-	tst.w	(Two_player_mode).w
-	beq.s	Cheat_GodModeActive
 	cmpa.w	#MainCharacter,a2
 	beq.s	Cheat_GodModeActive
 	ori	#4,ccr

@@ -145,16 +145,16 @@ DPLC_Tails:	mappingsTable
 	mappingsTableEntry.w	DPLC_Tails_Extra_8F
 	mappingsTableEntry.w	DPLC_Tails_Extra_90
 	mappingsTableEntry.w	DPLC_Tails_Extra_91
-	mappingsTableEntry.w	DPLC_Tails_Extra_92
-	mappingsTableEntry.w	DPLC_Tails_Extra_93
-	mappingsTableEntry.w	DPLC_Tails_Extra_94
-	mappingsTableEntry.w	DPLC_Tails_Extra_95
-	mappingsTableEntry.w	DPLC_Tails_Extra_96
-	mappingsTableEntry.w	DPLC_Tails_Extra_97
-	mappingsTableEntry.w	DPLC_Tails_Extra_98
-	mappingsTableEntry.w	DPLC_Tails_Extra_99
-	mappingsTableEntry.w	DPLC_Tails_Extra_9A
-	mappingsTableEntry.w	DPLC_Tails_Extra_9B
+	mappingsTableEntry.w	DPLC_Tails_Swim0
+	mappingsTableEntry.w	DPLC_Tails_Swim1
+	mappingsTableEntry.w	DPLC_Tails_Swim2
+	mappingsTableEntry.w	DPLC_Tails_Swim3
+	mappingsTableEntry.w	DPLC_Tails_Swim4
+	mappingsTableEntry.w	DPLC_Tails_SwimCarry0
+	mappingsTableEntry.w	DPLC_Tails_SwimCarry1
+	mappingsTableEntry.w	DPLC_Tails_SwimTired0
+	mappingsTableEntry.w	DPLC_Tails_SwimTired1
+	mappingsTableEntry.w	DPLC_Tails_SwimTired2
 	mappingsTableEntry.w	DPLC_Tails_Victory0
 	mappingsTableEntry.w	DPLC_Tails_Victory1
 	mappingsTableEntry.w	DPLC_Tails_Transform0
@@ -820,54 +820,5 @@ DPLC_Tails_Extra_91:	dplcHeader
 	dplcEntry	16, $626
 DPLC_Tails_Extra_91_End
 
-DPLC_Tails_Extra_92:	dplcHeader
-	dplcEntry	16, $636
-	dplcEntry	4, $646
-DPLC_Tails_Extra_92_End
-
-DPLC_Tails_Extra_93:	dplcHeader
-	dplcEntry	16, $64A
-	dplcEntry	4, $65A
-DPLC_Tails_Extra_93_End
-
-DPLC_Tails_Extra_94:	dplcHeader
-	dplcEntry	16, $65E
-	dplcEntry	4, $66E
-DPLC_Tails_Extra_94_End
-
-DPLC_Tails_Extra_95:	dplcHeader
-	dplcEntry	16, $672
-	dplcEntry	4, $682
-DPLC_Tails_Extra_95_End
-
-DPLC_Tails_Extra_96:	dplcHeader
-	dplcEntry	16, $686
-	dplcEntry	4, $696
-DPLC_Tails_Extra_96_End
-
-DPLC_Tails_Extra_97:	dplcHeader
-	dplcEntry	16, $69A
-	dplcEntry	2, $6AA
-DPLC_Tails_Extra_97_End
-
-DPLC_Tails_Extra_98:	dplcHeader
-	dplcEntry	16, $6AC
-	dplcEntry	2, $6BC
-DPLC_Tails_Extra_98_End
-
-DPLC_Tails_Extra_99:	dplcHeader
-	dplcEntry	16, $6BE
-	dplcEntry	4, $6CE
-DPLC_Tails_Extra_99_End
-
-DPLC_Tails_Extra_9A:	dplcHeader
-	dplcEntry	16, $6D2
-	dplcEntry	4, $6E2
-DPLC_Tails_Extra_9A_End
-
-DPLC_Tails_Extra_9B:	dplcHeader
-	dplcEntry	16, $6E6
-	dplcEntry	4, $6F6
-DPLC_Tails_Extra_9B_End
 	even
 	include "mappings/spriteDPLC/Tails poses.asm"

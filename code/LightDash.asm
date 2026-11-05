@@ -91,7 +91,7 @@ LightDash_Start:
 	bset	#status.player.in_air,status(a0)
 	bclr	#status.player.on_object,status(a0)
 	bclr	#status.player.pushing,status(a0)
-	bsr.w	LightDash_SetAnim
+	move.b	#AniIDSonAni_Float,anim(a0)	; shared Sonic/Tails Float animation ID
 	clr.l	(LightDash_full_x).w		; and LightDash_full_y
 	bclr	#button_A,(Ctrl_1_Press_Logical).w
 	bsr.w	LightDash_Update
@@ -247,7 +247,7 @@ LightDash_Update:
 .stillAirborne:
 	move.w	(LightDash_full_y).w,y_vel(a0)
 .movementReady:
-	bsr.w	LightDash_SetAnim
+	move.b	#AniIDSonAni_Float,anim(a0)	; shared Sonic/Tails Float animation ID
 	bsr.w	LightDash_TargetDelta
 	; Touch_Rings' hitbox: 8 pixels either side and (y_radius - 3) above and
 	; below, against the ring's 6-pixel radius.
@@ -591,27 +591,23 @@ LightDash_LevelBound:
 	jmp	(Sonic_LevelBound).l
 +	jmp	(Tails_LevelBound).l
 
-LightDash_SetAnim:
-	move.b	#AniIDSonAni_Float,anim(a0)	; Sonic: the floating pose, turned by Player_LightDashPose
-	cmpi.b	#ObjID_Tails,id(a0)
-	bne.s	+
-	move.b	#AniIDTailsAni_Fly,anim(a0)	; Tails flies along the chain
-+
-	rts
-
 ; ---------------------------------------------------------------------------
-; Display-only eight-way pose for Sonic, after his animation ran. The angle
-; never goes into angle(a0), which belongs to the floor collision.
+; Display-only eight-way pose after the character's animation. Keep the
+; dash direction out of angle(a0), which belongs to floor collision.
 ; ---------------------------------------------------------------------------
 Player_LightDashPose:
-	tst.b	(LightDash_active).w		; (Obj01 runs in his own context)
-	beq.s	.return
-	bsr.w	LightDash_IsPlayer
-	beq.s	.return
-	cmpi.b	#ObjID_Sonic,id(a0)
-	bne.s	.return
 	cmpi.b	#AniIDSonAni_Float,anim(a0)
-	bne.s	.return
+	bne.w	.return
+	bsr.w	LightDash_IsPlayer
+	beq.w	.return
+	bsr.w	LightDash_NeedsSwap
+	bne.s	.otherPlayer
+	tst.b	(LightDash_active).w
+	bra.s	.checkActive
+.otherPlayer:
+	tst.b	(VS_LightDash_RAM_P2).w		; LightDash_active is the first byte
+.checkActive:
+	beq.w	.return
 	move.w	x_vel(a0),d1
 	move.w	y_vel(a0),d2
 	move.w	d1,d0
@@ -628,18 +624,24 @@ Player_LightDashPose:
 	moveq	#1,d1
 	and.b	anim_frame(a0),d1		; the floating pose's two-frame cadence
 	add.w	d1,d0
+	lea	.tailsFrames(pc),a1
+	cmpi.b	#ObjID_Tails,id(a0)
+	bne.s	.sonicOrKnuckles
+	eori.w	#1,d0				; the animation cursor points to the next frame
+	bra.s	.frameReady
+.sonicOrKnuckles:
 	lea	.normalFrames(pc),a1
 	if FeatureKnuckles
 	tst.b	(Main_character).w
 	beq.s	.sonic
 	lea	.knucklesFrames(pc),a1	; Knuckles has no Super frames
-	bra.s	+
+	bra.s	.frameReady
 .sonic:
 	endif
 	tst.b	(Super_Sonic_flag).w
-	beq.s	+
+	beq.s	.frameReady
 	lea	.superFrames(pc),a1
-+
+.frameReady:
 	move.b	(a1,d0.w),mapping_frame(a0)
 .return:
 	rts
@@ -649,6 +651,10 @@ Player_LightDashPose:
 .normalFrames:
 	dc.b	$54,$59, $39,$3A, $35,$36, $31,$32
 	dc.b	$54,$59, $39,$3A, $35,$36, $31,$32
+; The same original Tails frames used by the Sonic 1 port.
+.tailsFrames:
+	dc.b	$6E,$73, $40,$41, $3A,$3B, $34,$35
+	dc.b	$6E,$73, $40,$41, $3A,$3B, $34,$35
 .superFrames:
 	dc.b	$B5,$B9, $B8,$BC, $B7,$BB, $B6,$BA
 	dc.b	$B5,$B9, $B8,$BC, $B7,$BB, $B6,$BA
@@ -676,12 +682,7 @@ Player_CancelLightDash:
 	tst.b	obj_control(a0)
 	bne.w	.return
 	cmpi.b	#AniIDSonAni_Float,anim(a0)
-	beq.s	.dashPose
-	cmpi.b	#ObjID_Tails,id(a0)
 	bne.w	.return
-	cmpi.b	#AniIDTailsAni_Fly,anim(a0)
-	bne.w	.return
-.dashPose:
 	clr.w	y_vel(a0)			; never carry the dash lift into the fall
 	btst	#status.player.in_air,status(a0)
 	beq.s	.grounded

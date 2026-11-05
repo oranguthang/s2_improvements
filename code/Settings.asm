@@ -1,12 +1,13 @@
 ; ---------------------------------------------------------------------------
-; Settings SRAM (format 1), modelled on s1_improvements' "Settings SRAM.asm".
+; Settings SRAM (format 2), modelled on s1_improvements' "Settings SRAM.asm".
 ; Logical byte N sits at the odd address $200001+2*N (odd-byte backup RAM).
-; 00..03 "S2DV", 04 version, 05 payload length, 06..14 the settings in
-; Settings_Fields order, 15..16 additive big-endian checksum of bytes 00..14.
+; 00..03 "S2DV", 04 version, 05 payload length, then Settings_Fields
+; bytes and an additive big-endian checksum of all preceding bytes.
+; Version 1 retains its fields and defaults SUPER MUSIC to ON.
 ; Only configuration is saved: emeralds, lives and progress are not.
 ; A write invalidates the signature first and commits its first byte last.
 ; ---------------------------------------------------------------------------
-settings_sram_version = 1
+settings_sram_version = 2
 settings_sram_payload = (Settings_Fields_End-Settings_Fields)/2
 settings_sram_size = 6+settings_sram_payload+2
 
@@ -20,6 +21,7 @@ Settings_Defaults:
 	move.b	#50,(Cheat_super_rings).w
 	move.b	#1,(Cheat_ring_drain).w
 	clr.b	(Cheat_god_mode).w
+	move.b	#1,(Cheat_super_music).w
 	clr.b	(Cheats_menu_row).w
 	clr.w	(Player_option).w
 	clr.w	(Two_player_items).w
@@ -85,7 +87,7 @@ Settings_Normalize:
 
 Settings_BoolFields:
 	dc.w	Level_select_flag&$FFFF, Debug_options_flag&$FFFF
-	dc.w	Cheat_all_emeralds&$FFFF, Cheat_god_mode&$FFFF
+	dc.w	Cheat_all_emeralds&$FFFF, Cheat_god_mode&$FFFF, Cheat_super_music&$FFFF
 Settings_BoolFields_End:
 
 ; RAM byte of each saved setting, in record order. Append new fields at the end
@@ -103,12 +105,14 @@ Settings_Fields:
 	if FeatureKnuckles
 	dc.w	VS_player2&$FFFF		; Options: player 2's VS character
 	endif
+	dc.w	Cheat_super_music&$FFFF	; SUPER MUSIC
 Settings_Fields_End:
 
 ; d0.w = sum of the bytes before the checksum at a0. Clobbers d1/a0.
 Settings_Checksum:
 	moveq	#0,d0
 	moveq	#settings_sram_size-2-1,d1
+Settings_ChecksumLength:
 .loop:
 	add.b	(a0)+,d0
 	bcc.s	.next
@@ -138,20 +142,29 @@ Settings_Load:
 	move.w	(sp)+,sr
 	cmpi.l	#'S2DV',(sp)
 	bne.s	.done
-	cmpi.b	#settings_sram_version,4(sp)
+	moveq	#0,d2
+	move.b	5(sp),d2
+	cmpi.w	#(settings_sram_version<<8)|settings_sram_payload,4(sp)
+	beq.s	.check
+	cmpi.w	#(1<<8)|(settings_sram_payload-1),4(sp)
 	bne.s	.done
-	cmpi.b	#settings_sram_payload,5(sp)
-	bne.s	.done
+.check:
 	movea.l	sp,a0
-	bsr.w	Settings_Checksum
-	cmp.b	settings_sram_size-1(sp),d0
+	move.w	d2,d1
+	addq.w	#5,d1
+	moveq	#0,d0
+	bsr.w	Settings_ChecksumLength
+	lea	6(sp),a1
+	adda.w	d2,a1
+	cmp.b	1(a1),d0
 	bne.s	.done
 	lsr.w	#8,d0
-	cmp.b	settings_sram_size-2(sp),d0
+	cmp.b	(a1),d0
 	bne.s	.done
 	lea	6(sp),a0
 	lea	Settings_Fields(pc),a2
-	moveq	#settings_sram_payload-1,d1
+	move.w	d2,d1
+	subq.w	#1,d1
 .fields:
 	movea.w	(a2)+,a1
 	move.b	(a0)+,(a1)

@@ -799,12 +799,7 @@ Vint_SEGA:
 ; >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ;VintSub14
 Vint_PCM:
-	move.b	(Vint_runcount+3).w,d0
-
-	; makes it so the joypads are only read once every 16 frames
-	andi.w	#$F,d0
-	bne.s	+
-
+	; Read every frame so a short Start press can skip the chant.
 	if FeatureSoundDriver=SoundDriver_S3K
 	bsr.w	ReadJoypads	; stopping the Z80 would stall Flamedriver's chant
 	else
@@ -813,7 +808,6 @@ Vint_PCM:
 	startZ80
 	endif
 
-+
 	tst.w	(Demo_Time_left).w	; is there time left on the demo?
 	beq.w	+			; if not, return
 	subq.w	#1,(Demo_Time_left).w	; subtract 1 from time left in demo
@@ -3811,6 +3805,7 @@ PalPtr_SS_Knuckles:	palptr Pal_SS_Knuckles, 0
 PalPtr_BGND_SonicKnuckles:	palptr Pal_BGND_SonicKnuckles, 0	; 2P VS Sonic against Knuckles
 	endif
 
+
 ; ----------------------------------------------------------------------------
 ; This macro defines Pal_ABC and Pal_ABC_End, so palptr can compute the size of
 ; the palette automatically
@@ -4128,21 +4123,27 @@ Sega_WaitPalette:
 	move.b	#VintID_SEGA,(Vint_routine).w
 	bsr.w	WaitForVint
 	move.w	#3*60,(Demo_Time_left).w	; 3 seconds
+	bra.s	Sega_CheckEnd		; also accept Start on the frame that starts the chant
 ; loc_3940:
 Sega_WaitEnd:
 	move.b	#VintID_PCM,(Vint_routine).w
 	bsr.w	WaitForVint
+Sega_CheckEnd:
 	tst.w	(Demo_Time_left).w
 	beq.s	Sega_GotoTitle
 	move.b	(Ctrl_1_Press).w,d0	; is Start button pressed?
 	or.b	(Ctrl_2_Press).w,d0	; (either player)
 	andi.b	#button_start_mask,d0
 	beq.s	Sega_WaitEnd		; if not, branch
+	if FeatureSoundDriver=SoundDriver_S3K
+	jsr	(StopSegaPCM).l
+	else
+	stopZ80
+	move.b	#MusID_Stop,(Z80_RAM+zAbsVar+zVar.QueueToPlay).l ; the PCM loop checks this slot
+	startZ80
+	endif
 ; loc_395E:
 Sega_GotoTitle:
-	if FeatureSoundDriver=SoundDriver_S3K
-	jsr	(StopSegaPCM).l	; end the chant if Start cut it short
-	endif
 	clr.w	(SegaScr_PalDone_Flag).w
 	clr.w	(SegaScr_VInt_Subrout).w
 	move.b	#GameModeID_TitleScreen,(Game_Mode).w	; => TitleScreen
@@ -13457,7 +13458,7 @@ LevelSelect_MarkFields:
 	swap	d1
 	move.l	d1,4(a6)
 
-	moveq	#$D+FeatureSpecialStageSelect,d2	; one more for the Special Stage number
+	moveq	#$D,d2	; 14 tiles for the zone name
 -	move.w	(a1)+,d0
 	add.w	d3,d0
 	move.w	d0,(a6)
@@ -13503,25 +13504,17 @@ LevelSelect_DrawPlayerOption:
 	moveq	#0,d0
 .valid:
 	lsl.w	#2,d0
-	lea	LevelSelect_PlayerText(pc),a1
+	lea	off_92DE(pc),a1		; reuse the padded Tails-name labels from Options
 	movea.l	(a1,d0.w),a1
 	moveq	#0,d1
 	move.b	(a1)+,d1
 .loop:
 	moveq	#0,d0
 	move.b	(a1)+,d0
+	ori.w	#palette_line_3,d0	; same yellow as the selected level
 	move.w	d0,(a6)
 	dbf	d1,.loop
 	rts
-LevelSelect_PlayerText:	; one entry per PlayerOption_*
-	dc.l TextLevSel_SonicTails,TextLevSel_Sonic,TextLevSel_Tails
-	if FeatureKnuckles
-	dc.l TextLevSel_KnucklesTails,TextLevSel_Knuckles
-	endif
-LevelSelect_PlayerText_End:
-    if (LevelSelect_PlayerText_End-LevelSelect_PlayerText)<>(PlayerOption_Count*4)
-	error "LevelSelect_PlayerText needs one entry per player option"
-    endif
 
 LevelSelect_DrawSoundNumber:
 	move.l	#vdpComm(VRAM_Plane_A_Name_Table+planeLoc(64,34,18),VRAM,WRITE),(VDP_control_port).l
@@ -13633,7 +13626,11 @@ LevelSelect_MarkTable:	; 4 bytes per level select entry
 	dc.b   6,$2C,  0,  0
 	dc.b   9,$2C,  0,  0
 	dc.b  $C,$2C,  0,  0
+	if FeatureSpecialStageSelect
+	dc.b  $F,$2C, $F,$48	;$14 Special Stage number
+	else
 	dc.b  $F,$2C,  0,  0	;$14
+	endif
 	if FeatureTitleMenu=0
 	dc.b $1A,  6,  0,  0	;$15 CHEATS, below the player option
 	endif
@@ -13758,13 +13755,6 @@ TextOptScr_VSSonic:		menutxt "A 2P VS SONIC     "
 TextOptScr_VSKnuckles:		menutxt "A 2P VS KNUCKLES  "
 	endif
 TextOptScr_SoundTest:		menutxt	"*  SOUND TEST   *"	; byte_985E:
-TextLevSel_SonicTails:		menutxt "C PLAYER: SONIC TAILS"
-TextLevSel_Sonic:		menutxt "C PLAYER: SONIC      "
-TextLevSel_Tails:		menutxt "C PLAYER: TAILS      "
-	if FeatureKnuckles
-TextLevSel_KnucklesTails:	menutxt "C PLAYER: KNUX TAILS "
-TextLevSel_Knuckles:		menutxt "C PLAYER: KNUCKLES   "
-	endif
 TextOptScr_0:			menutxt	"      00       "	; byte_9870:
 
 	charset ; reset character set
@@ -13829,6 +13819,8 @@ EndingSequence:
 	move.w	(Hint_counter_reserve).w,(a6)
 	clr.b	(Super_Sonic_flag).w
 	clr.b	(Super_Sonic_palette).w	; no cycle left over from the last act
+	move.b	#-1,(Tails_LastLoadedDPLC).w
+	move.b	#-1,(TailsTails_LastLoadedDPLC).w	; ending uses the original art sheet
 	jsr	(HasAllEmeralds).l	; the ending is Super with the ALL EMERALDS cheat too
 	bne.s	+
 	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
@@ -22485,7 +22477,13 @@ LevEvents_MCZ2_Routine4:
 ; ===========================================================================
 ; loc_F26A:
 LevEvents_CNZ:
+	tst.w	(Two_player_mode).w
+	beq.s	.drawSlots
+	tst.b	(TitleCard_Zone+id).w	; VS reuses the title art's VRAM for the portrait layer
+	bne.s	.checkAct
+.drawSlots:
 	jsr	(SlotMachine).l
+.checkAct:
 	tst.b	(Current_Act).w
 	bne.s	LevEvents_CNZ2
 	rts			; no events for act 1
@@ -28313,8 +28311,8 @@ Obj0F_Init:
 	move.l	#Obj0F_MapUnc_13B70,mappings(a0)
 	move.w	#make_art_tile(ArtTile_VRAM_Start,0,0),art_tile(a0)
 	bsr.w	Adjust2PArtPointer
-	andi.b	#1,(Title_screen_option).w
-	move.b	(Title_screen_option).w,mapping_frame(a0)
+	clr.b	(Title_screen_option).w	; highlight 1 PLAYER on every title entry
+	clr.b	mapping_frame(a0)
 
 ; loc_13644:
 Obj0F_Main:
@@ -36236,6 +36234,11 @@ Obj0D_RingSparklePositions:
 Obj0D_Main_State3:
 	tst.w	(Debug_placement_mode).w
 	bne.w	return_194D0
+    if FeatureVictoryPoses
+	jsr	(Victory_Start).l	; stop where the player chose to finish
+	bne.w	return_194D0
+	move.b	#victory_pose_signpost,(Victory_pose).w
+    else
     if fixBugs
 	; This function's checks are a mess, creating an edgecase where it's
 	; possible for the player to avoid having their controls locked by
@@ -36249,12 +36252,7 @@ Obj0D_Main_State3:
 	btst	#status.player.in_air,(MainCharacter+status).w
 	bne.s	loc_19434
     endif
-	if FeatureVictoryPoses
-	jsr	(Victory_Start).l	; stay on screen and pose (Z=0 while still airborne)
-	bne.w	return_194D0
-	bra.s	loc_1944C
-	endif
-	move.b	#1,(Control_Locked).w
+	move.b	#1,(Control_Locked).w	; run offscreen after the signpost finishes spinning
 	move.w	#(button_right_mask<<8)|0,(Ctrl_1_Logical).w
     if ~~fixBugs
 loc_19434:
@@ -36267,14 +36265,12 @@ loc_19434:
 	addi.w	#$128,d1
 	cmp.w	d1,d0
 	blo.w	return_194D0
+    endif ; FeatureVictoryPoses
 
 loc_1944C:
 	move.b	#0,routine_secondary(a0) ; => Obj0D_Main_StateNull
 ;loc_19452:
 Load_EndOfAct:
-	if FeatureVictoryPoses
-	jsr	(Victory_Pose).l	; the player poses while the results come in
-	endif
 	lea	(MainCharacter).w,a1 ; a1=character
 	clr.b	status_secondary(a1)
 	clr.b	(Update_HUD_timer).w
@@ -39159,7 +39155,7 @@ Sonic_LevelBound:
 	tst.b	(Current_Boss_ID).w
 	bne.s	+
 	if FeatureVictoryPoses
-	tst.b	(Update_HUD_timer).w	; once the act is over the player stays on screen to pose
+	cmpi.b	#victory_pose_capsule,(Victory_pose).w
 	beq.s	+
 	endif
 	addi.w	#$40,d0
@@ -39532,8 +39528,7 @@ Sonic_TurnSuper:	; Knuckles_JumpHeight comes here for Super Knuckles
 	bset	#status_secondary.invincible,status_secondary(a0)	; make Sonic invincible
 	move.w	#SndID_SuperTransform,d0
 	jsr	(PlaySound).l	; Play transformation sound effect.
-	move.w	#MusID_SuperSonic,d0
-	jmp	(PlayMusic).l	; load the Super Sonic song and return
+	jmp	(Super_PlayMusic).l	; respect SUPER MUSIC
 
 ; ---------------------------------------------------------------------------
 return_1ABA4:
@@ -40366,18 +40361,16 @@ Sonic_HurtInstantRecover:
 
 ; loc_1B1E6: Obj_01_Sub_6:
 Obj01_Dead:
-	jsr	(Player_DebugInput).l
-	beq.s	+
-	move.w	#1,(Debug_placement_mode).w
-	clr.b	(Control_Locked).w
-	rts
-+
+	jsr	(Player_TryDebugRescue).l
+	bne.s	.return
 	bsr.w	CheckGameOver
 	jsr	(ObjectMoveAndFall).l
 	bsr.w	Sonic_RecordPos
 	bsr.w	Sonic_Animate
 	bsr.w	LoadSonicDynPLC
 	jmp	(DisplaySprite).l
+.return:
+	rts
 
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 
@@ -40502,12 +40495,16 @@ Obj01_Respawning:
 ; Sonic when he's drowning
 ; ---------------------------------------------------------------------------
 Obj01_Drowned:
+	jsr	(Player_TryDebugRescue).l
+	bne.s	.return
 	bsr.w	ObjectMove		; apply velocity
 	addi.w	#$10,y_vel(a0)		; apply gravity
 	bsr.w	Sonic_RecordPos		; record position for Tails to follow
 	bsr.w	Sonic_Animate		; animate Sonic
 	bsr.w	LoadSonicDynPLC		; load Sonic's DPLCs
 	bra.w	DisplaySprite		; display Sonic
+.return:
+	rts
 ; ---------------------------------------------------------------------------
     endif
 Sonic_Animate:
@@ -41216,6 +41213,10 @@ Obj02_Control_Joypad2:
 +
 	tst.w	(Two_player_mode).w
 	bne.s	Obj02_Control_Part2
+	if FeatureVictoryPoses
+	tst.b	(Victory_pose).w
+	bne.w	Obj02_CompanionVictory
+	endif
 	bsr.w	TailsCPU_Control
 ; loc_1B9EA:
 Obj02_Control_Part2:
@@ -41263,6 +41264,9 @@ Obj02_AfterMovement:
 	move.b	prev_anim(a0),anim(a0)
 +
 	bsr.w	Tails_Animate
+	if FeatureLightDash
+	jsr	(Player_LightDashPose).l
+	endif
 	tst.b	obj_control(a0)
 	bmi.s	+
 	jsr	(TouchResponse).l
@@ -41343,6 +41347,43 @@ Obj02_ExitChk:
 
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 
+	if FeatureVictoryPoses
+Obj02_CompanionVictory:
+	clr.w	(Ctrl_2_Logical).w		; ignore replay and pad input during the results
+	move.w	(Tails_CPU_routine).w,d0
+	cmpi.w	#2,d0
+	beq.s	.catchUp
+	cmpi.w	#4,d0
+	beq.s	.catchUp
+	clr.b	flying(a0)
+	clr.b	spindash_flag(a0)
+	cmpi.b	#victory_pose_signpost,(Victory_pose).w
+	bne.s	.stop
+	move.w	(Camera_Max_X_pos).w,d0
+	addi.w	#screen_width+24,d0
+	cmp.w	(MainCharacter+x_pos).w,d0
+	bhi.s	.stop			; the leader chose to stay on screen
+	subq.w	#8,d0			; the narrower Tails sprite clears it sooner
+	cmp.w	x_pos(a0),d0
+	bls.s	.stop
+	move.w	#button_right_mask<<8,(Ctrl_2_Logical).w
+	bra.w	Obj02_FreeMovement	; follow a voluntary exit before posing
+.stop:
+	clr.w	x_vel(a0)
+	clr.w	inertia(a0)
+	btst	#status.player.in_air,status(a0)
+	bne.w	Obj02_FreeMovement		; let normal gravity and collision land him
+	btst	#status.player.rolling,status(a0)
+	beq.s	.pose
+	bsr.w	Tails_ResetOnFloor_Part2
+.pose:
+	move.b	#AniIDTailsAni_Victory,anim(a0)
+	bra.w	Obj02_AfterMovement		; skip the idle/balance selection
+.catchUp:
+	bsr.w	TailsCPU_Control		; a missing companion can still return
+	bra.w	Obj02_AfterMovement
+	endif
+
 ; loc_1BAD4:
 TailsCPU_Control: ; a0=Tails
 	move.b	(Ctrl_2_Held).w,d0	; did the real player 2 hit something?
@@ -41351,6 +41392,18 @@ TailsCPU_Control: ; a0=Tails
 	move.w	#600,(Tails_control_counter).w ; give player 2 control for 10 seconds (minimum)
 +
 	lea	(MainCharacter).w,a1 ; a1=character ; a1=Sonic
+	if FeatureTailsFlight
+	cmpi.w	#$E,(Tails_CPU_routine).w
+	beq.s	.dispatch
+	cmpi.b	#AniIDSonAni_Drown,anim(a1)
+	bne.s	.dispatch
+	tst.w	(Tails_control_counter).w
+	bne.w	TailsCPU_Normal_HumanControl
+	cmpi.w	#2,(Tails_CPU_routine).w	; do not pull in a respawning Tails
+	beq.s	.dispatch
+	move.w	#$E,(Tails_CPU_routine).w
+.dispatch:
+	endif
 	move.w	(Tails_CPU_routine).w,d0
 	move.w	TailsCPU_States(pc,d0.w),d0
 	jmp	TailsCPU_States(pc,d0.w)
@@ -41364,6 +41417,7 @@ TailsCPU_States: offsetTable
 	offsetTableEntry.w TailsCPU_Panic	; 8
 	offsetTableEntry.w TailsCPU_Assist	; $A
 	offsetTableEntry.w TailsCPU_Carry	; $C
+	offsetTableEntry.w TailsCPU_EscapeDrowning ; $E
 
 ; ===========================================================================
 ; initial AI State
@@ -42676,7 +42730,7 @@ Tails_LevelBound:
 	tst.b	(Current_Boss_ID).w
 	bne.s	+
 	if FeatureVictoryPoses
-	tst.b	(Update_HUD_timer).w	; once the act is over the player stays on screen to pose
+	cmpi.b	#victory_pose_capsule,(Victory_pose).w
 	beq.s	+
 	endif
 	addi.w	#$40,d0
@@ -43578,6 +43632,7 @@ JmpTo2_KillCharacter ; JmpTo
 ; loc_1CC50:
 ; Debug placement always belongs to the main character, never the AI sidekick.
 Tails_TryEnterDebug:
+Player_TryDebugRescue:
 	jsr	(Player_DebugInput).l
 	beq.s	.noEntry
 	move.w	#1,(Debug_placement_mode).w
@@ -43739,6 +43794,8 @@ Obj02_Respawning:
 ; Tails when he's drowning
 ; ---------------------------------------------------------------------------
 Obj02_Drowned:
+	bsr.w	Tails_TryEnterDebug
+	bne.w	Obj02_DebugReturn
 	bsr.w	ObjectMove		; apply velocity
 	addi.w	#$10,y_vel(a0)		; apply gravity
 	bsr.w	Tails_RecordPos		; record position
@@ -44132,7 +44189,7 @@ TailsAni_SwimUp:		dc.b 3,$92,$93,$94,$95,$96,$FF
 	rev02even
 TailsAni_SwimCarry:	dc.b 4,$97,$98,$FF
 	rev02even
-TailsAni_SwimTired:	dc.b $B,$99,$9A,$9B,$9A,$FF
+TailsAni_SwimTired:	dc.b $B,$99,$9A,$9B,$FF	; S3K AniTails28
 	rev02even
 ; From Sonic 3 & Knuckles (AniTails13 and AniTails29), frames by tools/import_tails_poses.py
 TailsAni_Victory:	dc.b $F,$9C,$9D,$FE,1	; thumbs-up, then kneel
@@ -44163,6 +44220,7 @@ LoadTailsTailsDynPLC:
 	lea	(MapRUnc_Tails).l,a2			; load Tails' Tails DPLC table
 	move.w	#tiles_to_bytes(ArtTile_ArtUnc_Tails_Tails),d4	; starting VRAM tile
 	move.l	#ArtUnc_Tails,d6			; base Tails' Tails art pointer
+	jsr	(SoloTails_SelectArt).l
 	jmp	(LoadDynPLC).l				; load DPLC
 
 ; ---------------------------------------------------------------------------
@@ -44182,6 +44240,7 @@ LoadTailsDynPLC_Part2:
 	lea	(MapRUnc_Tails).l,a2		; load Tails DPLC table
 	move.w	#tiles_to_bytes(ArtTile_ArtUnc_Tails),d4	; starting VRAM tile
 	move.l	#ArtUnc_Tails,d6		; base Tails art pointer
+	jsr	(SoloTails_SelectArt).l
 	if FeatureKnuckles
 	cmpa.w	#MainCharacter,a0	; player 1 in VS: Sonic's VRAM
 	bne.s	.vram
@@ -44443,6 +44502,10 @@ Obj0A_Init:
 ; ===========================================================================
 
 loc_1D388:
+	cmpi.b	#small_breath_subtype,d0
+	bne.s	+
+	jsr	(Bubble_KeepLatest).l
++
 	move.b	d0,anim(a0)
 	move.w	x_pos(a0),obj0a_original_x_pos(a0)
 	move.w	#-$88,y_vel(a0)
@@ -44784,7 +44847,7 @@ Obj0A_MakeBubbleNow:
 	add.w	d0,x_pos(a1)
 	move.w	y_pos(a2),y_pos(a1)
 	move.l	obj0a_character(a0),obj0a_character(a1)
-	move.b	#6,subtype(a1)	; Small bubble?
+	move.b	#small_breath_subtype,subtype(a1)
 
 	tst.w	obj0a_time_until_freeze(a0)
 	beq.w	Obj0A_MakeNumberBubbleMaybe
@@ -44874,7 +44937,13 @@ ResumeMusic:
 +
 	tst.b	(Super_Sonic_flag).w
 	beq.w	+		; branch if it isn't Super Sonic
+	tst.b	(Cheat_super_music).w
+	bne.s	.superTheme
+	move.w	(Level_Music).w,d0
+	bra.s	.superSelected
+.superTheme:
 	move.w	#MusID_SuperSonic,d0	; prepare to play Super Sonic music
+.superSelected:
 +
 	jsr	(BossFightActive).l
 	beq.s	+		; branch if not in a boss fight
@@ -47924,6 +47993,10 @@ Obj24_Init:
 ; ===========================================================================
 
 loc_1F90A:
+	tst.b	d0
+	bne.s	+
+	jsr	(Bubble_KeepLatest).l
++
 	move.b	d0,anim(a0)
 	move.w	x_pos(a0),objoff_30(a0)
 	move.w	#-$88,y_vel(a0)
@@ -82186,6 +82259,7 @@ ObjB2_Main_WFZ_Start_load_smoke:
 ; ===========================================================================
 ; loc_3AF58:
 ObjB2_Animate_Pilot:
+	jsr (SoloTails_PreparePilot).l
 	subq.b	#1,objoff_37(a0)
 	bmi.s	+
 	rts
@@ -82208,7 +82282,7 @@ ObjB2_Animate_Pilot:
 	cmpi.w	#PlayerMode_TailsAlone,(Player_mode).w
 	bne.s	+
 	move.b	Sonic_pilot_frames(pc,d0.w),d0
-	jmpto	JmpTo_LoadSonicDynPLC_Part2
+	jmp (SoloTails_LoadPilot).l
 ; ===========================================================================
 + ; loc_3AF94:
 	move.b	Tails_pilot_frames(pc,d0.w),d0
@@ -86417,6 +86491,10 @@ ObjC7_CheckHit:
 	tst.b	collision_flags(a1)
 	bne.s	+++		; rts
 	clr.b	collision_flags(a0)
+	tst.b	collision_property(a1)	; a God Mode hit depleted the head's hit counter
+	bne.s	.headHit
+	move.b	#1,collision_property(a0)
+.headHit:
 	subq.b	#1,collision_property(a0)
 	beq.s	ObjC7_Beaten
 +
@@ -87688,6 +87766,7 @@ loc_3F406:
 	if FeatureVictoryPoses
 	jsr	(Victory_Start).l	; wait until the player has landed, then stop him
 	bne.s	+
+	jsr	(Victory_Pose).l
 	endif
 	jsr	(Load_EndOfAct).l
 	jmp	(DeleteObject).l
@@ -88086,7 +88165,14 @@ Touch_Enemy:
 	neg.w	y_vel(a0)
 +
 	move.b	#0,collision_flags(a1)
+	jsr	(Cheat_GodModePlayer).l
+	beq.s	.normalBossHit
+	move.b	#1,boss_hitcount2(a1)
+.normalBossHit:
 	subq.b	#1,boss_hitcount2(a1)
+	if FeatureKnuckles
+	jmp	(Knuckles_GlideBounce).l	; use the same hit reaction for multi-sprite bosses
+	endif
 
 return_3F7C6:
 	rts
@@ -88101,6 +88187,10 @@ Touch_Enemy_Part2:
 	neg.w	y_vel(a0)
 +
 	move.b	#0,collision_flags(a1)
+	jsr	(Cheat_GodModePlayer).l
+	beq.s	.normalHit
+	move.b	#1,collision_property(a1)
+.normalHit:
 	subq.b	#1,collision_property(a1)
 	if FeatureKnuckles
 	bne.s	+
@@ -88227,11 +88317,11 @@ Touch_Hurt:
 
 ; loc_3F878: HurtSonic:
 HurtCharacter:
+	jsr	(Cheat_GodModePlayer).l	; GOD MODE: no damage to the protected player
+	bne.w	Touch_NoHurt
 	if FeatureLightDash|FeaturePeelOut
 	jsr	(LightDash_PlayerHit).l	; a hit ends the Light Dash
 	endif
-	jsr	(Cheat_GodModePlayer).l	; GOD MODE: no damage to the protected player
-	bne.w	Touch_NoHurt
 	move.w	(Ring_count).w,d0
 	cmpa.w	#MainCharacter,a0
 	beq.s	loc_3F88C
@@ -88299,8 +88389,11 @@ Hurt_Sound:
 
 ; loc_3F926: KillSonic:
 KillCharacter:
+	cmpa.w	#MainCharacter,a0
+	bne.s	.checkGod
 	tst.w	(Debug_placement_mode).w
 	bne.w	++
+.checkGod:
 	jsr	(Cheat_GodModeKill).l	; GOD MODE: no death; pits bounce the player back up
 	bne.w	++
 	if FeatureLightDash|FeaturePeelOut
@@ -90880,6 +90973,8 @@ TimeOver0:
 ; ===========================================================================
 ; loc_4102A:
 TimeOver:
+	tst.w	(Debug_placement_mode).w
+	bne.s	.player2
 	jsr	(Cheat_GodModeActive).l
 	bne.s	.player2		; a VS countdown cannot time out protected P1
 	clr.b	(Update_HUD_timer).w
@@ -91358,6 +91453,24 @@ Debug_Index:	offsetTable
 ; ===========================================================================
 ; loc_41A8A: Debug_Main:
 Debug_Init:
+	cmpi.b	#6,routine(a0)
+	blo.s	.alive
+	lea	(Sonic_BreathingBubbles).w,a1
+	cmpa.l	obj0a_character(a1),a0
+	beq.s	.clearDrown
+	lea	(Tails_BreathingBubbles).w,a1
+	cmpa.l	obj0a_character(a1),a0
+	bne.s	.resume
+.clearDrown:
+	clr.w	obj0a_time_until_freeze(a1)
+.resume:
+	clr.b	(Deform_lock).w
+	move.b	#1,(Update_HUD_timer).w
+	tst.b	(Time_Over_flag).w
+	beq.s	.alive
+	clr.b	(Time_Over_flag).w
+	clr.l	(Timer).w
+.alive:
 	addq.b	#2,(Debug_placement_mode).w
 	move.w	(Camera_Min_Y_pos).w,(Camera_Min_Y_pos_Debug_Copy).w
 	move.w	(Camera_Max_Y_pos_target).w,(Camera_Max_Y_pos_Debug_Copy).w
@@ -93413,7 +93526,7 @@ ArtUnc_Sonic:			BINCLUDE	"art/uncompressed/Sonic's art.bin"
 	BINCLUDE	"art/uncompressed/Sonic victory.bin"	; frames $DB-$DC (tools/import_victory_poses.py)
 	align tiles_to_bytes(1)
 ArtUnc_Tails:			BINCLUDE	"art/uncompressed/Tails's art.bin"
-	BINCLUDE	"art/uncompressed/Tails poses.bin"	; frames $9C-$A0 (tools/import_tails_poses.py)
+	BINCLUDE	"art/uncompressed/Tails poses.bin"	; swim $92-$9B, victory/transform $9C-$A0 (tools/import_tails_poses.py)
 
 MapUnc_Sonic:			include		"mappings/sprite/Sonic.asm"
 
@@ -93668,7 +93781,7 @@ ArtNem_CPZTubeSpring:		BINCLUDE	"art/nemesis/CPZ spintube exit cover.nem"
 ;---------------------------------------------------------------------------------------
 ; ARZ Assets
 ;---------------------------------------------------------------------------------------
-ArtNem_WaterSurface2:		BINCLUDE	"art/nemesis/Top of water in ARZ.nem"
+ArtNem_WaterSurface2:		BINCLUDE	"art/nemesis/Top of water in ARZ neutral.nem" ; tools/neutral_water.py
 	even
 ArtNem_Leaves:			BINCLUDE	"art/nemesis/Leaves in ARZ.nem"
 	even
@@ -94905,6 +95018,7 @@ Sound70:	include "sound/sfx/F0 - Oil Slide.asm"
 	include "code/PeelOut.asm"
 	include "code/VictoryPoses.asm"
 	include "code/SuperTails.asm"
+	include "code/BubbleLimit.asm"
 	include "code/Knuckles.asm"
 	if FeatureKnuckles
 	include "code/KnucklesGlide.asm"
@@ -94916,6 +95030,18 @@ Sound70:	include "sound/sfx/F0 - Oil Slide.asm"
 	if FeatureSoundDriver=SoundDriver_S3K
 	include "sound/S3K Driver.asm"
 	endif
+
+	align 32
+ArtUnc_SoloTails: BINCLUDE "art/uncompressed/Tails solo protected.bin"
+ArtUnc_SoloTails_End:
+	include "mappings/spriteDPLC/Tails solo protected.asm"
+	align 32
+ArtUnc_SoloSonicPilot: BINCLUDE "art/uncompressed/Sonic pilot protected.bin"
+	include "mappings/spriteDPLC/Sonic pilot protected.asm"
+	include "mappings/sprite/Sonic pilot protected.asm"
+
+	align 256 ; keep both four-tile portrait transfers within one DMA source bank
+ArtUnc_SoloTailsLifePortraits: BINCLUDE "art/uncompressed/Tails solo life portraits.bin"
 
 ; end of 'ROM'
     if MDDebugger

@@ -145,16 +145,16 @@ Map_Tails:	mappingsTable
 	mappingsTableEntry.w	Map_Tails_Extra_8F
 	mappingsTableEntry.w	Map_Tails_Extra_90
 	mappingsTableEntry.w	Map_Tails_Extra_91
-	mappingsTableEntry.w	Map_Tails_Extra_92
-	mappingsTableEntry.w	Map_Tails_Extra_93
-	mappingsTableEntry.w	Map_Tails_Extra_94
-	mappingsTableEntry.w	Map_Tails_Extra_95
-	mappingsTableEntry.w	Map_Tails_Extra_96
-	mappingsTableEntry.w	Map_Tails_Extra_97
-	mappingsTableEntry.w	Map_Tails_Extra_98
-	mappingsTableEntry.w	Map_Tails_Extra_99
-	mappingsTableEntry.w	Map_Tails_Extra_9A
-	mappingsTableEntry.w	Map_Tails_Extra_9B
+	mappingsTableEntry.w	Map_Tails_Swim0
+	mappingsTableEntry.w	Map_Tails_Swim1
+	mappingsTableEntry.w	Map_Tails_Swim2
+	mappingsTableEntry.w	Map_Tails_Swim3
+	mappingsTableEntry.w	Map_Tails_Swim4
+	mappingsTableEntry.w	Map_Tails_SwimCarry0
+	mappingsTableEntry.w	Map_Tails_SwimCarry1
+	mappingsTableEntry.w	Map_Tails_SwimTired0
+	mappingsTableEntry.w	Map_Tails_SwimTired1
+	mappingsTableEntry.w	Map_Tails_SwimTired2
 	mappingsTableEntry.w	Map_Tails_Victory0	; $9C
 	mappingsTableEntry.w	Map_Tails_Victory1	; $9D
 	mappingsTableEntry.w	Map_Tails_Transform0	; $9E
@@ -871,54 +871,5 @@ Map_Tails_Extra_91:	spriteHeader
 	spritePiece	-15, -16, 4, 4, $0, 0, 0, 0, 0
 Map_Tails_Extra_91_End
 
-Map_Tails_Extra_92:	spriteHeader
-	spritePiece	-16, -16, 4, 4, $0, 0, 0, 0, 0
-	spritePiece	16, -16, 1, 4, $10, 0, 0, 0, 0
-Map_Tails_Extra_92_End
-
-Map_Tails_Extra_93:	spriteHeader
-	spritePiece	-17, -16, 4, 4, $0, 0, 0, 0, 0
-	spritePiece	15, -16, 1, 4, $10, 0, 0, 0, 0
-Map_Tails_Extra_93_End
-
-Map_Tails_Extra_94:	spriteHeader
-	spritePiece	-16, -16, 4, 4, $0, 0, 0, 0, 0
-	spritePiece	16, -16, 1, 4, $10, 0, 0, 0, 0
-Map_Tails_Extra_94_End
-
-Map_Tails_Extra_95:	spriteHeader
-	spritePiece	-16, -16, 4, 4, $0, 0, 0, 0, 0
-	spritePiece	16, -16, 1, 4, $10, 0, 0, 0, 0
-Map_Tails_Extra_95_End
-
-Map_Tails_Extra_96:	spriteHeader
-	spritePiece	-18, -16, 4, 4, $0, 0, 0, 0, 0
-	spritePiece	14, -16, 1, 4, $10, 0, 0, 0, 0
-Map_Tails_Extra_96_End
-
-Map_Tails_Extra_97:	spriteHeader
-	spritePiece	-12, -16, 3, 4, $0, 0, 0, 0, 0
-	spritePiece	-12, 16, 3, 2, $C, 0, 0, 0, 0
-Map_Tails_Extra_97_End
-
-Map_Tails_Extra_98:	spriteHeader
-	spritePiece	-12, -16, 3, 4, $0, 0, 0, 0, 0
-	spritePiece	-12, 16, 3, 2, $C, 0, 0, 0, 0
-Map_Tails_Extra_98_End
-
-Map_Tails_Extra_99:	spriteHeader
-	spritePiece	-19, -16, 4, 4, $0, 0, 0, 0, 0
-	spritePiece	13, -16, 1, 4, $10, 0, 0, 0, 0
-Map_Tails_Extra_99_End
-
-Map_Tails_Extra_9A:	spriteHeader
-	spritePiece	-17, -16, 4, 4, $0, 0, 0, 0, 0
-	spritePiece	15, -16, 1, 4, $10, 0, 0, 0, 0
-Map_Tails_Extra_9A_End
-
-Map_Tails_Extra_9B:	spriteHeader
-	spritePiece	-17, -16, 4, 4, $0, 0, 0, 0, 0
-	spritePiece	15, -16, 1, 4, $10, 0, 0, 0, 0
-Map_Tails_Extra_9B_End
 	even
 	include "mappings/sprite/Tails poses.asm"

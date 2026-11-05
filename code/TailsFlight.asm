@@ -424,3 +424,45 @@ TailsCPU_Carry:
 	ori.w #button_C_mask<<8|button_C_mask,(Ctrl_2_Logical).w
 .return:
 	rts
+
+; The leader is drowning. Swim toward the surface with the ordinary ceiling
+; collision, then wait there instead of replaying the leader's descent.
+TailsCPU_EscapeDrowning:
+	tst.w	(Tails_control_counter).w
+	bne.w	.release
+	cmpi.b	#AniIDSonAni_Drown,anim(a1)
+	beq.s	.escape
+	cmpi.b	#6,routine(a1)
+	blo.w	.release
+.escape:
+	clr.w	(Ctrl_2_Logical).w
+	btst	#status.player.underwater,status(a0)
+	beq.s	.dry
+	clr.w	x_vel(a0)
+	clr.w	inertia(a0)
+	bclr	#status.player.rolling,status(a0)
+	bset	#status.player.in_air,status(a0)
+	move.b	#$F,y_radius(a0)
+	move.b	#9,x_radius(a0)
+	move.b	#$81,obj_control(a0)
+	move.w	#-$180,y_vel(a0)
+	move.b	#AniIDTailsAni_SwimUp,anim(a0)
+	bra.s	.move
+.dry:
+	tst.b	obj_control(a0)
+	bpl.s	.return
+	move.w	y_pos(a0),d0
+	sub.w	(Camera_Y_pos).w,d0
+	cmpi.w	#-$20,d0			; keep flying until the sprite clears the screen
+	ble.s	.offscreen
+	move.w	#-$200,y_vel(a0)
+	move.b	#AniIDTailsAni_FlyUp,anim(a0)
+.move:
+	jsr	(ObjectMove).l
+	jmp	(Tails_DoLevelCollision).l
+.offscreen:
+	clr.w	y_vel(a0)
+.return:
+	rts
+.release:
+	jmp	(TailsCPU_Init).l

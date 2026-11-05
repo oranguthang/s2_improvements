@@ -99,6 +99,7 @@ Tails_ToggleSuper:
 	move.b	#$F,y_radius(a0)
 	move.b	#9,x_radius(a0)
 	move.b	#1,(Super_Sonic_palette).w
+	jsr (SoloTails_BeginPalette).l
 	move.b	#$F,(Palette_timer).w
 	move.w	#0,(Palette_frame).w
 	move.b	#1,(Super_Sonic_flag).w
@@ -112,8 +113,7 @@ Tails_ToggleSuper:
 	jsr	(ApplySpeedSettings).l
 	move.w	#SndID_SuperTransform,d0
 	jsr	(PlaySound).l
-	move.w	#MusID_SuperSonic,d0
-	jsr	(PlayMusic).l
+	jsr	(Super_PlayMusic).l
 .done:
 	andi	#~4,ccr				; Z=0
 	rts
@@ -219,6 +219,8 @@ Super_RevertForCutscene:
 	bsr.w	SuperTails_Player
 	beq.s	.notTails
 	bsr.w	Tails_RevertToNormal
+	clr.b (Super_Sonic_palette).w
+	jsr (SoloTails_EndPalette).l	; restore the pilot's blue before the plane arrives
 	bra.s	.done
 .notTails:
 	tst.b	(Main_character).w
@@ -233,7 +235,7 @@ Super_RevertForCutscene:
 ; ---------------------------------------------------------------------------
 ; Palette: called by PalCycle_SuperSonic when Tails is the player. Same states
 ; as Super Sonic's (1 = fade in, -1 = cycle, 2 = fade out); Tails' fur is in
-; colours 11, 15 and 14 of the first palette line.
+; protected colours 4, 3 and 2 of the first palette line.
 ; ---------------------------------------------------------------------------
 PalCycle_SuperTails:
 	move.b	(Super_Sonic_palette).w,d0
@@ -261,7 +263,7 @@ PalCycle_SuperTails:
 	bcc.s	.copy
 	move.w	#0,(Palette_frame).w
 	move.b	#0,(Super_Sonic_palette).w
-	bra.s	.copy
+	jmp (SoloTails_EndPalette).l
 .normal:
 	; S3K's Super Tails cycle: six frames of twelve game frames each
 	subq.b	#1,(Palette_timer).w
@@ -275,14 +277,12 @@ PalCycle_SuperTails:
 .copy:
 	lea	PalCycle_SuperTails_Colours(pc),a0
 	lea	(Normal_palette).w,a1
-	move.w	(a0,d0.w),11*2(a1)
-	move.w	2(a0,d0.w),15*2(a1)
-	move.w	4(a0,d0.w),14*2(a1)
+	bsr.w SuperTails_CopyCycle
 	if FeatureSuperTails
 	tst.b	(Water_flag).w
 	beq.s	.return
-	; below the water line: the zone's tinted colours (tools/super_water.py),
-	; written every frame so going in or out of the water changes nothing
+	; Use the zone's underwater table (tools/super_water.py). The pose
+	; and reversion keep the zone's normal Tails ramp.
 	lea	PalCycle_SuperTails_CPZ(pc),a0
 	cmpi.b	#chemical_plant_zone,(Current_Zone).w
 	beq.s	.water
@@ -292,9 +292,7 @@ PalCycle_SuperTails:
 	lea	PalCycle_SuperTails_ARZ(pc),a0
 .water:
 	lea	(Underwater_palette).w,a1
-	move.w	(a0,d0.w),11*2(a1)
-	move.w	2(a0,d0.w),15*2(a1)
-	move.w	4(a0,d0.w),14*2(a1)
+	bsr.w SuperTails_CopyCycle
 	endif
 .return:
 	rts
@@ -313,8 +311,180 @@ PalCycle_SuperTails_Colours:
 	dc.w	$046C, $04CE, $08CE, 0
 	dc.w	$046A, $02AE, $04CE, 0
 	if FeatureSuperTails
-; the same frames below the water line (tools/super_water.py)
+; underwater frames (tools/super_water.py)
 PalCycle_SuperTails_CPZ:	BINCLUDE	"art/palettes/Super Tails CPZ underwater.bin"
 PalCycle_SuperTails_ARZ:	BINCLUDE	"art/palettes/Super Tails ARZ underwater.bin"
 PalCycle_SuperTails_HPZ:	BINCLUDE	"art/palettes/Super Tails HPZ underwater.bin"
 	endif
+
+; Start a Super theme only when enabled; the current boss, level and 1-up
+; playback stays untouched when the user has disabled it.
+Super_PlayMusic:
+	tst.b	(Cheat_super_music).w
+	bne.s	.theme
+	cmpi.b	#MusID_Invincible,(Music_playing).w
+	bne.s	.return
+	move.w	(Level_Music).w,d0
+	jsr	(BossFightActive).l
+	beq.s	.restore
+	move.w	#MusID_Boss,d0
+.restore:
+	jmp	(PlayMusic_IfChanged).l
+.theme:
+	move.w	#MusID_SuperSonic,d0
+	jmp	(PlayMusic).l
+.return:
+	rts
+
+; Only Super gameplay uses the remapped sheet. Normal Tails, the ending,
+; co-op and VS retain their original art and palette layout.
+SoloTails_SelectArt:
+	if FeatureSuperTails
+	cmpi.w #PlayerMode_TailsAlone,(Player_mode).w
+	bne.s .return
+	tst.w (Two_player_mode).w
+	bne.s .return
+	tst.b (Super_Sonic_palette).w
+	beq.s .return
+	cmpi.b #GameModeID_Level,(Game_Mode).w
+	beq.s .level
+	cmpi.b #GameModeID_Level+$80,(Game_Mode).w
+	bne.s .return
+.level:
+	move.l #ArtUnc_SoloTails,d6
+	lea (MapRUnc_SoloTails).l,a2
+	endif
+.return:
+	rts
+
+SoloTails_BeginPalette:
+	movem.l a1,-(sp)
+	lea (Normal_palette).w,a1
+	bsr.s .copy
+	lea (Underwater_palette).w,a1
+	bsr.s .copy
+	bsr.w SoloTails_LoadLifePortrait
+	bra.s SoloTails_RefreshArt
+.copy:
+	move.w 11*2(a1),4*2(a1)
+	move.w 15*2(a1),3*2(a1)
+	move.w 14*2(a1),2*2(a1)
+	rts
+
+SoloTails_EndPalette:
+	movem.l a1,-(sp)
+	cmpi.b #GameModeID_EndingSequence,(Game_Mode).w
+	beq.s SoloTails_RefreshArt
+	move.l (Target_palette+4).w,(Normal_palette+4).w
+	move.w (Target_palette+8).w,(Normal_palette+8).w
+	move.l (Underwater_target_palette+4).w,(Underwater_palette+4).w
+	move.w (Underwater_target_palette+8).w,(Underwater_palette+8).w
+	bsr.s SoloTails_LoadLifePortrait
+	move.b #-1,(Tails_LastLoadedDPLC).w
+	move.b #-1,(TailsTails_LastLoadedDPLC).w
+	; PalCycle runs after objects. Queue the original pixels in this same
+	; frame as restoring blue, so the last fade frame cannot flash blue.
+	movem.l d0-d6/a0-a2,-(sp)
+	lea (MainCharacter).w,a0
+	jsr (LoadTailsDynPLC).l
+	lea (Tails_Tails).w,a0
+	jsr (LoadTailsTailsDynPLC).l
+	movem.l (sp)+,d0-d6/a0-a2
+	movem.l (sp)+,a1
+	rts
+SoloTails_RefreshArt:
+	move.b #-1,(Tails_LastLoadedDPLC).w
+	move.b #-1,(TailsTails_LastLoadedDPLC).w
+	movem.l (sp)+,a1
+	rts
+
+; Switch only the four life portrait tiles when switching fur palettes.
+SoloTails_LoadLifePortrait:
+	cmpi.b #GameModeID_Level,(Game_Mode).w
+	beq.s .level
+	cmpi.b #GameModeID_Level+$80,(Game_Mode).w
+	bne.s .return
+.level:
+	movem.l d0-d3/a1,-(sp)
+	move.l #ArtUnc_SoloTailsLifePortraits,d1
+	tst.b (Super_Sonic_palette).w
+	beq.s .queue
+	addi.l #tiles_to_bytes(4),d1
+.queue:
+	move.w #tiles_to_bytes(ArtTile_ArtNem_life_counter),d2
+	move.w #tiles_to_words(4),d3
+	jsr (QueueDMATransfer).l
+	movem.l (sp)+,d0-d3/a1
+.return:
+	rts
+
+; a0/d0 = cycle entry, a1 = palette. Levels use protected player colours.
+; The ending has a Sonic pilot and no enemies: keep its original layout.
+SuperTails_CopyCycle:
+	cmpi.b #GameModeID_EndingSequence,(Game_Mode).w
+	beq.s .ending
+	move.w (a0,d0.w),4*2(a1)
+	move.w 2(a0,d0.w),3*2(a1)
+	move.w 4(a0,d0.w),2*2(a1)
+	rts
+.ending:
+	move.w (a0,d0.w),11*2(a1)
+	move.w 2(a0,d0.w),15*2(a1)
+	move.w 4(a0,d0.w),14*2(a1)
+	rts
+
+; SCZ's Sonic pilot needs his own blue pixels while Super Tails owns the
+; first line's blue slots. SCZ uses neither sky colours 14/15 of line 2 nor
+; colour 15 of line 3. Two fur layers use those spare entries; his face,
+; red shoes and light-blue highlight stay on the original first line.
+SoloTails_PreparePilot:
+	if FeatureSuperTails
+	cmpi.w #PlayerMode_TailsAlone,(Player_mode).w
+	bne.w .return
+	cmpi.b #sky_chase_zone,(Current_Zone).w
+	bne.w .return
+	cmpi.b #GameModeID_Level,(Game_Mode).w
+	bne.w .return
+	cmpi.l #Map_SoloSonicPilot,mappings(a0)
+	beq.s .mapped
+	move.l #Map_SoloSonicPilot,mappings(a0)
+	clr.b objoff_37(a0)       ; load all layers on the first mapped frame
+.mapped:
+	movem.l a1,-(sp)
+	lea (Normal_palette+4).w,a1
+	tst.b (Super_Sonic_palette).w
+	beq.s .blue
+	lea (Target_palette+4).w,a1
+.blue:
+	move.w (a1),(Normal_palette+$5C).w
+	move.w 2(a1),(Normal_palette+$5E).w
+	move.w 4(a1),(Normal_palette+$7E).w
+	move.w (Target_palette+4).w,(Target_palette+$5C).w
+	move.w (Target_palette+6).w,(Target_palette+$5E).w
+	move.w (Target_palette+8).w,(Target_palette+$7E).w
+	movem.l (sp)+,a1
+	endif
+.return:
+	rts
+
+SoloTails_LoadPilot:
+	if FeatureSuperTails
+	cmpi.w #PlayerMode_TailsAlone,(Player_mode).w
+	bne.s .original
+	cmpi.b #sky_chase_zone,(Current_Zone).w
+	bne.s .original
+	cmpi.b #GameModeID_Level,(Game_Mode).w
+	bne.s .original
+	subi.b #$2D,d0
+	cmp.b (Sonic_LastLoadedDPLC).w,d0
+	beq.s .return
+	move.b d0,(Sonic_LastLoadedDPLC).w
+	lea (MapRUnc_SoloSonicPilot).l,a2
+	move.l #ArtUnc_SoloSonicPilot,d6
+	move.w #tiles_to_bytes(ArtTile_ArtUnc_Sonic),d4
+	jmp (LoadDynPLC).l
+	endif
+.original:
+	jmp (LoadSonicDynPLC_Part2).l
+.return:
+	rts

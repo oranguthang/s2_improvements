@@ -56,6 +56,7 @@ Other objects:
 | `$FE2A-$FE2E` | `SS_keep_level_state`, `SS_saved_shield(_2P)`, `SS_saved_extra_life_flags(_2P)` | Level state after a Special Stage |
 | `$FEDA-$FEDF` | `SS_saved_rings(_2P)`, `SS_saved_zone` | Level state after a Special Stage |
 | `$FF44-$FF47` | `SS_saved_perfect_rings`, `SS_saved_perfect_flag` | Level state after a Special Stage |
+| `$FF6F` | `Cheat_super_music` | SUPER MUSIC setting, saved in SRAM |
 | `$FF60-$FF64` | `Cheat_all_emeralds`, `Cheat_super_rings`, `Cheat_ring_drain`, `Cheat_god_mode`, `Cheats_menu_row` | CHEATS page (saved in SRAM) |
 | `$FF66` | `Title_unlock_entries` (word) | Title unlock code progress |
 | `$FF6B` | `Cheats_from_title` | CHEATS chosen on the title menu (FeatureTitleMenu): the Level Select opens on that page and returns to the title |
@@ -79,7 +80,7 @@ runs.
 | `$E740-$E7FF` | 192 | Before `Ring_Positions` |
 | `$FA82-$FAFF` | 126 | After the sprite table page bytes |
 | `$DF80-$DFFF` | 128 | Only if the sprite table can never overflow into it |
-| `$FEB0-$FEBF`, `$FEFA-$FF0F`, `$FF12-$FF1F`, `$FF6B-$FF6F` | 16, 22, 14, 5 | Persistent area (not cleared on level start) |
+| `$FEB0-$FEBF`, `$FEFA-$FF0F`, `$FF12-$FF1F`, `$FF6B-$FF6E` | 16, 22, 14, 4 | Persistent area (not cleared on level start) |
 | `$F79A-$F7A6`, `$F7B4-$F7BD`, `$F676-$F67F` | 13, 10, 10 | |
 
 Plus about 60 single bytes and small gaps marked "seems unused" in
@@ -98,3 +99,45 @@ layout: the build prints `Z80 free space before stack` (currently `$41C`), and
 the compressed program must fit `Size_of_Snd_driver_guess` (`$1400`; about
 `$11C6` used). The 68000 side uses no extra RAM: `Sound_Queue` is read by
 `SoundS3K_Input`.
+
+
+## Solo Tails palette protection
+
+During Super Tails gameplay, a second copy of the body/tails art remaps
+14/15/11 fur indices to player blue slots 2/3/4. Its DPLC stream
+preserves VRAM order and splits transfers at 128 KiB source-bank boundaries.
+Normal Tails retains the original sheet. Transformation copies his initial
+fur ramp into the blue slots; reversion restores blue from the target
+palettes and queues original body/tail art in the same frame, since palette
+cycling runs after objects. Shared enemy colours never cycle.
+
+Sky Chase's Sonic pilot must keep his own blues: his six original tiles are
+split into the original non-fur pixels and two fur layers. The layers use
+unused SCZ palette entries 2:E/F and 3:F for his three exact blue colours.
+No enemies/background blocks use those entries. The helper keeps their dry
+and target values in sync. Other modes/scenes use the original pilot art.
+Wing Fortress ends the protected form before the plane arrives; the ending
+retains its original palette layout. No extra RAM is used.
+
+ARZ water and shared-colour audit:
+`tools/neutral_water.py` generates a separate copy of ARZ's original water
+surface art with blue 2/3/4/5 remapped to grey 9/8/7/6. Shape, transparency,
+tile layout, animation, PLC size and all non-blue pixels are retained.
+`tools/super_water.py` supplies custom underwater ramps for Super Tails and
+Super Knuckles in Chemical Plant and for Super Knuckles in Aquatic Ruin.
+The other underwater Super cycles match their dry counterparts.
+Tails' normal transformation pose/reversion and Knuckles' reversion retain
+the zone's real normal underwater colours. `tests/check_super_water.py`
+checks the actual ROM art and dry/water cycle output against original values.
+
+Blue 2-5 are NOT globally exclusive character colours. Layout/chunk/block
+and dynamic-art checks found no blue-slot conflicts in active level scenery
+(including the HTZ/WFZ art and HTZ block overlays). Remaining shared sprites:
+Flicky (2-5), the lever spring's dark detail (2), ring and Eggpod highlights
+(5), and three Tornado pixels (3). Tails cycles 2-4; Knuckles cycles 2,3,5;
+Sonic cycles 2-5. Their original shared details can therefore still change
+colour; this patch does not desaturate those objects. Character portraits
+on signposts/1-up monitors deliberately share the character palette. The
+grey shield, invincibility stars/icons, splash/skid dust and bubble art
+do not use the cycled blue slots in this build. Many boss/badnik art sheets
+contain indices 2-5 but their relevant mapping pieces use other palette lines.

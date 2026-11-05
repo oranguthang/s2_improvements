@@ -667,7 +667,7 @@ def settings_sram(repo):
     return {'cold_defaults':True,'round_trip':True,'checksum_rejects_damage':True,'values_clamped':True}
 
 def god_mode(repo):
-    """GOD MODE: normal 1P protection, with only physical P1 protected in VS."""
+    """GOD MODE protects physical P1 in both 1P and VS."""
     def cpu(god=1,two_player=0,slot='MainCharacter',character='sonic'):
         c=CPU(repo); obj=c.s[slot]
         c.write(obj+c.s['id'],c.s['ObjID_Tails' if character=='tails' else 'ObjID_Sonic'])
@@ -705,6 +705,10 @@ def god_mode(repo):
                 if slot=='MainCharacter':
                     assert c.read('Ring_count',2)==5
                 vs_cases+=1
+    for action, expected in [('HurtCharacter', 4), ('KillCharacter', 6)]:
+        c,obj=cpu(slot='Sidekick',character='tails')
+        c.call(action,obj)
+        assert c.read(obj+c.s['routine'])==expected,(action,'1P companion protected')
     # P1 Tails' VS wrapper has exchanged the two sets of camera bounds.
     c,obj=cpu(two_player=1,character='tails')
     c.write('P2_context_active',1); c.write('Camera_Max_Y_pos',0x900,2)

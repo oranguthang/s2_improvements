@@ -1636,7 +1636,10 @@ Sonic_Look_delay_counter:	ds.w	1	; 2 bytes
 Tails_Look_delay_counter:	ds.w	1	; 2 bytes
 Super_Sonic_frame_count:	ds.w	1
 Camera_ARZ_BG_X_pos:		ds.l	1
-				ds.b	$A	; $FFFFF676-$FFFFF67F ; seems unused
+small_bubble_limit = 5
+small_breath_subtype = 6
+Small_bubble_fifo:		ds.w	small_bubble_limit
+Small_bubble_fifo_end:
 MiscLevelVariables_End
 
 Plc_Buffer:			ds.b	6*16	; Pattern load queue (each entry is 6 bytes)
@@ -2025,7 +2028,7 @@ Cheats_from_title:		ds.b	1	; CHEATS chosen on the title menu (FeatureTitleMenu)
 Title_skip_intro:		ds.b	1	; back to the title from a game or CHEATS: no intro text (FeatureTitleMenu)
 Music_playing:			ds.b	1	; the song the last music request started, 0 after a fade or stop (Music_Track)
 Boss_explosion_sound_time:	ds.b	1	; Vint_runcount's low byte when Obj58 last played its sound
-				ds.b	1	; $FFFFFF6F ; seems unused
+Cheat_super_music:		ds.b	1	; SUPER MUSIC (default ON)
 
 Player_mode:			ds.w	1	; 0 = Sonic and Tails, 1 = Sonic, 2 = Tails
 Player_option:			ds.w	1	; PlayerOption_*
