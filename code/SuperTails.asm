@@ -9,6 +9,12 @@
 ; Super_Sonic_palette, Palette_timer/frame and Super_Sonic_frame_count.
 ; ---------------------------------------------------------------------------
 
+; Z=0 only for the active Super Tails player.
+SuperTails_Active:
+	tst.b	(Super_Sonic_flag).w
+	bne.s	SuperTails_Player
+	rts
+
 ; Z=0 when a0 is Tails as the player of a 1P game (Tails Alone)
 SuperTails_Player:
 	cmpa.w	#MainCharacter,a0
@@ -137,9 +143,7 @@ Tails_Super:
 	if FeatureSuperTails=0
 	rts
 	endif
-	tst.b	(Super_Sonic_flag).w
-	beq.s	.return
-	bsr.w	SuperTails_Player
+	bsr.w	SuperTails_Active
 	beq.s	.return
 	cmpi.b	#1,(Super_Sonic_palette).w	; still transforming?
 	beq.s	.return

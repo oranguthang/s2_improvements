@@ -42239,6 +42239,12 @@ Obj02_ResetScr_Part2:
 ; ---------------------------------------------------------------------------
 ; loc_1C1E8:
 Obj02_UpdateSpeedOnGround:
+	if FeatureSuperTails
+	jsr	(SuperTails_Active).l
+	beq.s	.normalCoast
+	moveq	#$C,d5				; Super Tails keeps S3K's coasting friction
+.normalCoast:
+	endif
 	move.b	(Ctrl_2_Held_Logical).w,d0
 	andi.b	#button_left_mask|button_right_mask,d0		; is left/right pressed?
 	bne.s	Obj02_Traction	; if yes, branch
@@ -42486,6 +42492,15 @@ Tails_RollSpeed:
 	asr.w	#2,d4	; controlled roll deceleration...
 			; interestingly, Tails is much worse at this than Sonic when underwater
     endif
+	if FeatureSuperTails
+	jsr	(SuperTails_Active).l
+	beq.s	.normalFriction
+	moveq	#6,d5				; S3K's passive Super Tails roll friction
+	if ~~fixBugs
+	moveq	#$20,d4
+	endif
+.normalFriction:
+	endif
 	_btst	#status_secondary.sliding,status_secondary(a0)
 	_bne.w	Obj02_Roll_ResetScr
 	tst.w	move_lock(a0)
@@ -42983,6 +42998,12 @@ Tails_UpdateSpindash:
 	move.b	spindash_counter(a0),d0
 	add.w	d0,d0
 	move.w	Tails_SpindashSpeeds(pc,d0.w),inertia(a0)
+	if FeatureSuperTails
+	jsr	(SuperTails_Active).l
+	beq.s	.normalLaunch
+	addi.w	#$200,inertia(a0)		; S3K's Super launch bonus at every charge
+.normalLaunch:
+	endif
 
 	; Determine how long to lag the camera for.
 	; Notably, the faster Tails goes, the less the camera lags.
