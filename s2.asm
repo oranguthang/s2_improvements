@@ -64,6 +64,10 @@ debugTesting = 0
 ; Gameplay features added by this project. Each is 1 by default; 0 restores
 ; the original Sonic 2 behaviour. Disabled code stays assembled but is never
 ; entered, so data layouts and other features do not change.
+WaterSurfaceGradual = 1
+;	| 1: switch water colours over several scanlines, without surface sprites.
+;	| 0: use the original sprites and single palette transfer.
+
 FeatureAirRoll = 1
 ;	| Press A/B/C in the air to curl into a ball (Sonic and Tails)
 FeatureHomingAttack = 1
@@ -143,7 +147,7 @@ FeatureActMusic = 0
 ;	| If 1, act 2 of EHZ, MCZ and CNZ plays the track from 2P mode; the music table
 ;	| (MusicList) can give any act its own song
 
-	if (FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureCentiseconds|FeatureLightDash|FeaturePeelOut|FeatureVictoryPoses|FeatureSuperTails|FeatureKnuckles|FeatureSuperKnuckles|FeatureHTZVS|FeatureBurntDeath|FeatureTitleMenu|FeatureActMusic|FeatureS3KDrums|FeatureImprovedMusic|FeatureInfiniteLives|FeatureCDDrowning)&~1
+	if (WaterSurfaceGradual|FeatureAirRoll|FeatureHomingAttack|FeatureExtendedCamera|FeatureMomentum|FeatureRollJumpSteering|FeatureSuperToggle|FeatureInstantTally|FeatureLamppostRings|FeatureSpecialStageState|FeatureSpringPoses|FeatureTailsFlight|FeatureExtraLives|FeatureInvincibilityFlash|FeatureFastSoundTest|FeatureSpecialStageSelect|FeatureCentiseconds|FeatureLightDash|FeaturePeelOut|FeatureVictoryPoses|FeatureSuperTails|FeatureKnuckles|FeatureSuperKnuckles|FeatureHTZVS|FeatureBurntDeath|FeatureTitleMenu|FeatureActMusic|FeatureS3KDrums|FeatureImprovedMusic|FeatureInfiniteLives|FeatureCDDrowning)&~1
 		error "Feature options must be 0 or 1"
 	endif
 
@@ -715,7 +719,7 @@ Vint_Lag:
 
 ; loc_54A:
 .afterSetPalette:
-	move.w	(Hint_counter_reserve).w,(a5)
+	bsr.w	Water_LatchTransition
 	move.w	#$8200|(VRAM_Plane_A_Name_Table/$400),(VDP_control_port).l	; Set scroll A PNT base to $C000
 	bsr.w	sndDriverInput
 
@@ -889,7 +893,7 @@ Vint_Level:
 
 ; loc_748:
 .afterPaletteSetup:
-	move.w	(Hint_counter_reserve).w,(a5)
+	bsr.w	Water_LatchTransition
 	move.w	#$8200|(VRAM_Plane_A_Name_Table/$400),(VDP_control_port).l	; Set scroll A PNT base to $C000
 
 	dma68kToVDP Horiz_Scroll_Buf,VRAM_Horiz_Scroll_Table,VRAM_Horiz_Scroll_Table_Size,VRAM
@@ -1156,7 +1160,7 @@ loc_BB2:
 	dma68kToVDP Underwater_palette,$0000,palette_line_size*4,CRAM
 
 loc_BD6:
-	move.w	(Hint_counter_reserve).w,(a5)
+	bsr.w	Water_LatchTransition
 
 	dma68kToVDP Horiz_Scroll_Buf,VRAM_Horiz_Scroll_Table,VRAM_Horiz_Scroll_Table_Size,VRAM
 
@@ -1211,7 +1215,7 @@ Vint_Fade:
 	stopZ80
 	bsr.w	ProcessDMAQueue
 	startZ80
-	move.w	(Hint_counter_reserve).w,(a5)
+	bsr.w	Water_LatchTransition
 	bra.w	ProcessDPLC
 ; ===========================================================================
 ;VintSub18
@@ -1387,6 +1391,39 @@ H_Int_Done:
 PalToCRAM:
 	move	#$2700,sr
 	move.w	#0,(Hint_flag).w
+    if WaterSurfaceGradual
+	movem.l	d0-d2/a0-a2,-(sp)
+	lea	(VDP_data_port).l,a1
+	move.w	#$8A00|screen_height-1,4(a1)
+	move.w	(Water_transition_count).w,d1
+	bmi.s	.done
+	stopZ80
+	movea.l	(Water_transition_next).w,a2
+.nextGroup:
+	moveq	#0,d0
+	move.w	(a2)+,d0
+	lea	(Underwater_palette).w,a0
+	adda.w	d0,a0
+	addi.w	#$C000,d0
+	swap	d0
+
+	; Prepare the three colours first, then wait for a fresh HBlank.
+.waitActive:
+	move.w	4(a1),d2
+	btst	#2,d2
+	bne.s	.waitActive
+.waitHBlank:
+	move.w	4(a1),d2
+	btst	#2,d2
+	beq.s	.waitHBlank
+	move.l	d0,4(a1)
+	move.l	(a0)+,(a1)
+	move.w	(a0),(a1)
+	dbf	d1,.nextGroup
+	startZ80
+.done:
+	movem.l	(sp)+,d0-d2/a0-a2
+    else
 	movem.l	a0-a1,-(sp)
 	lea	(VDP_data_port).l,a1
 	lea	(Underwater_palette).w,a0 ; load palette from RAM
@@ -1396,6 +1433,7 @@ PalToCRAM:
     endm
 	move.w	#$8A00|223,VDP_control_port-VDP_data_port(a1)	; Write %1101 %1111 to register 10 (interrupt every 224th line)
 	movem.l	(sp)+,a0-a1
+    endif
 	tst.b	(Do_Updates_in_H_int).w
 	bne.s	loc_1072
 	rte
@@ -1407,6 +1445,92 @@ loc_1072:
 	bsr.w	Do_Updates
 	movem.l	(sp)+,d0-a6
 	rte
+
+Water_LatchTransition:
+	move.w	(Hint_counter_reserve).w,(a5)
+    if WaterSurfaceGradual
+	move.w	#-1,(Water_transition_count).w
+	tst.b	(Water_flag).w
+	beq.s	.notLevel
+	tst.b	(Water_fullscreen_flag).w
+	bne.s	.notLevel
+	move.b	(Game_Mode).w,d0
+	andi.b	#$7F,d0
+	cmpi.b	#GameModeID_Level,d0
+	beq.s	.inLevel
+	cmpi.b	#GameModeID_Demo,d0
+	beq.s	.inLevel
+    if FeatureTitleMenu
+	tst.b	(Title_skip_intro).w	; keep the frozen level's water during Pause+A
+	bne.s	.inLevel
+    endif
+.notLevel:
+	rts
+.inLevel:
+	moveq	#0,d0
+	move.b	(Hint_counter_reserve+1).w,d0
+	cmpi.w	#screen_height-4,d0
+	bhi.s	.return
+	moveq	#0,d2
+	move.b	(Water_transition_skip).w,d2
+	moveq	#WaterTransition_Count-1,d1
+	sub.w	d2,d1
+	neg.w	d0
+	addi.w	#screen_height-4,d0
+	cmp.w	d1,d0
+	bhs.s	.latch
+	move.w	d0,d1
+.latch:
+	move.w	d1,(Water_transition_count).w
+	lea	(WaterTransition).l,a2
+	cmpi.b	#chemical_plant_zone,(Current_Zone).w
+	bne.s	.checkARZ
+	lea	(WaterTransition_CPZ).l,a2
+	bra.s	.tableReady
+.checkARZ:
+	cmpi.b	#aquatic_ruin_zone,(Current_Zone).w
+	bne.s	.tableReady
+	lea	(WaterTransition_ARZ).l,a2
+.tableReady:
+	move.w	d2,d0
+	add.w	d0,d0
+	lea	(a2,d0.w),a3
+	move.l	a3,(Water_transition_next).w
+
+	; Colours belonging to rows above the viewport are already wet at line 0.
+	subq.w	#1,d2
+	bmi.s	.return
+.clipGroup:
+	moveq	#0,d0
+	move.w	(a2)+,d0
+	lea	(Underwater_palette).w,a0
+	adda.w	d0,a0
+	addi.w	#$C000,d0
+	swap	d0
+	move.l	d0,(a5)
+	move.l	(a0)+,(VDP_data_port).l
+	move.w	(a0),(VDP_data_port).l
+	dbf	d2,.clipGroup
+.return:
+    endif
+	rts
+
+    if WaterSurfaceGradual
+; Each row transfers three adjacent colours. Order the groups so the dominant
+; terrain colours change near the physical surface where the ripple starts.
+WaterTransition_Lead = 5
+WaterTransition:
+	dc.w $66,$42,$24,$6C,$48,$2A,$00,$06,$0C,$12,$18,$1E
+	dc.w $30,$36,$3C,$4E,$54,$5A,$60,$72,$78,$7A
+WaterTransition_End:
+WaterTransition_Count = (WaterTransition_End-WaterTransition)/2
+WaterTransition_CPZ:
+	dc.w $6C,$66,$42,$48,$60,$06,$0C,$4E,$72,$3C,$54
+	dc.w $5A,$78,$7A,$00,$12,$18,$1E,$24,$2A,$30,$36
+WaterTransition_ARZ:
+	dc.w $6C,$72,$76,$4E,$30,$54,$06,$0C,$66,$48,$2A
+	dc.w $42,$7A,$00,$12,$18,$1E,$24,$36,$3C,$5A,$60
+    endif
 
 	if FeatureSoundDriver=SoundDriver_Original	; Flamedriver: "sound/S3K Driver.asm"
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
@@ -5025,6 +5149,7 @@ Level_TtlCard:
 	move.b	#1,(Control_Locked_P2).w
 	move.b	#0,(Level_started_flag).w
 ; Level_ChkWater:
+    if WaterSurfaceGradual=0
 	tst.b	(Water_flag).w	; does level have water?
 	beq.s	+	; if not, branch
 	move.b	#ObjID_WaterSurface,(WaterSurface1+id).w ; load Obj04 (water surface) at $FFFFB380
@@ -5032,6 +5157,7 @@ Level_TtlCard:
 	move.b	#ObjID_WaterSurface,(WaterSurface2+id).w ; load Obj04 (water surface) at $FFFFB3C0
 	move.w	#$120,(WaterSurface2+x_pos).w ; set different horizontal offset
 +
+    endif
 	cmpi.b	#chemical_plant_zone,(Current_Zone).w	; check if zone == CPZ
 	bne.s	+			; branch if not
 	move.b	#ObjID_CPZPylon,(CPZPylon+id).w ; load Obj7C (CPZ pylon) at $FFFFB340
@@ -5167,6 +5293,10 @@ Level_FromCheckpoint:
 ; loc_4360:
 Level_MainLoop:
 	bsr.w	PauseGame
+	cmpi.b	#GameModeID_TitleScreen,(Game_Mode).w
+	bne.s	.resume
+	rts				; fade the last complete level frame
+.resume:
 	move.b	#VintID_Level,(Vint_routine).w
 	bsr.w	WaitForVint
 	addq.w	#1,(Level_frame_counter).w ; add 1 to level timer
@@ -5176,7 +5306,11 @@ Level_MainLoop:
 	tst.w	(Level_Inactive_flag).w
 	bne.w	Level
 	jsrto	JmpTo_DeformBgLayer
+    if WaterSurfaceGradual
+	bsr.w	Water_UpdateBoundary	; use the camera position of the displayed frame
+    else
 	bsr.w	UpdateWaterSurface
+    endif
 	jsr	(RingsManager).l
 	cmpi.b	#casino_night_zone,(Current_Zone).w	; is it CNZ?
 	bne.s	+			; if not, branch past jsr
@@ -5332,6 +5466,38 @@ InitPlayers_TailsAlone:
 
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 
+    if WaterSurfaceGradual
+Water_UpdateBoundary:
+	tst.b	(Water_flag).w
+	beq.s	.return
+	clr.b	(Water_fullscreen_flag).w
+	clr.b	(Water_transition_skip).w
+	move.w	(Water_Level_1).w,d0
+	sub.w	(Camera_Y_pos).w,d0
+	cmpi.b	#hidden_palace_zone,(Current_Zone).w
+	beq.s	.checkLine
+	subq.w	#WaterTransition_Lead,d0	; start the palette change around the surface
+.checkLine:
+	tst.w	d0
+	bpl.s	.visible
+	cmpi.w	#-WaterTransition_Count,d0
+	ble.s	.allUnderwater
+	neg.w	d0
+	move.b	d0,(Water_transition_skip).w
+	moveq	#0,d0
+	bra.s	.setLine
+.allUnderwater:
+	move.b	#1,(Water_fullscreen_flag).w
+	move.w	#screen_height-1,d0
+.visible:
+	cmpi.w	#screen_height-1,d0
+	bls.s	.setLine
+	move.w	#screen_height-1,d0
+.setLine:
+	move.b	d0,(Hint_counter_reserve+1).w
+.return:
+	rts
+    else
 ; sub_44E4:
 UpdateWaterSurface:
 	tst.b	(Water_flag).w
@@ -5360,6 +5526,7 @@ UpdateWaterSurface:
 +
 	rts
 ; End of function UpdateWaterSurface
+    endif
 
 
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
@@ -5378,7 +5545,9 @@ WaterEffects:
 	bsr.w	DynamicWater
 ; loc_4526: ; LZMoveWater:
 MoveWater:
+    if WaterSurfaceGradual=0
 	clr.b	(Water_fullscreen_flag).w
+    endif
 	moveq	#0,d0
 	cmpi.b	#aquatic_ruin_zone,(Current_Zone).w	; is level ARZ?
 	beq.s	+		; if yes, branch
@@ -5387,6 +5556,9 @@ MoveWater:
 +
 	add.w	(Water_Level_2).w,d0
 	move.w	d0,(Water_Level_1).w
+    if WaterSurfaceGradual
+	bsr.w	Water_UpdateBoundary
+    else
 		; calculate distance between water surface and top of screen
 	move.w	(Water_Level_1).w,d0
 	sub.w	(Camera_Y_pos).w,d0
@@ -5401,6 +5573,7 @@ MoveWater:
 	move.w	#screen_height-1,d0
 +
 	move.b	d0,(Hint_counter_reserve+1).w	; H-INT every d0 scanlines
+    endif
 ; loc_456A:
 NonWaterEffects:
 	cmpi.b	#oil_ocean_zone,(Current_Zone).w	; is the level OOZ?
@@ -38082,8 +38255,21 @@ Obj01_MdAir:
 	if FeatureLightDash
 	jsr	(Player_LightDashStart).l	; A near a ring chain
 	endif
+	if FeatureAirRoll&FeatureKnuckles
+	tst.b	(Main_character).w
+	bne.s	.knuckles
+	endif
 	bsr.w	AirRoll
-	bsr.w	Sonic_JumpHeight	; handle Sonic's jump height based on whether the jump button is still held
+	bsr.w	Sonic_JumpHeight
+	if FeatureAirRoll&FeatureKnuckles
+	bra.s	.move
+.knuckles:
+	bsr.w	Sonic_JumpHeight	; test for the ability before a new Air Roll
+	tst.b	obj_control(a0)
+	bne.s	.move
+	bsr.w	AirRoll
+.move:
+	endif
 	bsr.w	Sonic_ChgJumpDir	; handle midair direction adjustments while jumping
 	bsr.w	Sonic_LevelBound	; keep Sonic within level bounds and handle bottomless pits
 	jsr	(ObjectMoveAndFall).l	; apply gravity and update Sonic's position based on his current velocities
@@ -38164,6 +38350,12 @@ AirRoll:
 	move.b	#7,x_radius(a0)		; set hitbox width to ball size
 	move.b	#AniIDSonAni_Roll,anim(a0)	; enter roll animation
 	addq.w	#5,y_pos(a0)		; adjust Y for new height difference ($13-$E pixels)
+	if FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	.was_rolling
+	move.b	#2,jumping(a0)		; keep the launch speed when the button is released
+	rts
+	endif
 
 .was_rolling:
 	move.b	#1,jumping(a0)		; set jump state so height-cut applies if button released early
@@ -39345,6 +39537,15 @@ Sonic_RollJump:
 ; ===========================================================================
 ; loc_1AAF0:
 Sonic_JumpHeight:
+	if FeatureAirRoll&FeatureKnuckles
+	tst.b	(Main_character).w
+	beq.s	+
+	btst	#status.player.rolling,status(a0)
+	beq.s	+
+	cmpi.b	#1,jumping(a0)
+	bne.s	.knucklesAbility	; Air Roll or a roll off a ledge
++
+	endif
 	tst.b	jumping(a0)	; is Sonic jumping?
 	beq.w	Sonic_UpVelCap	; if not, branch
 
@@ -39363,6 +39564,7 @@ Sonic_JumpHeight:
 	if FeatureKnuckles
 	tst.b	(Main_character).w
 	beq.s	+
+.knucklesAbility:
 	jmp	(Knuckles_JumpHeight).l	; Knuckles glides (code/KnucklesGlide.asm)
 +
 	endif
@@ -41195,6 +41397,7 @@ Obj02_Control:
 	bra.s	Obj02_Control_Part2
 .tailsAlone:
 	endif
+	bsr.w	Sonic_PanCamera		; use the leader's horizontal camera pan
 	bsr.w	Tails_TryEnterDebug
 	tst.b	d0
 	bne.w	Obj02_DebugReturn
@@ -42003,8 +42206,13 @@ Obj02_MdAir:
 	endif
 	tst.b flying(a0)
 	bne.w Obj02_MdFly
+	bsr.w	Tails_JumpHeight	; test for the ability before a new Air Roll
+	if FeatureAirRoll
+	tst.b	obj_control(a0)
+	bne.s	+
 	bsr.w	Tails_AirRoll
-	bsr.w	Tails_JumpHeight
++
+	endif
 	bsr.w	Tails_ChgJumpDir
 	bsr.w	Tails_LevelBound
 	jsr	(ObjectMoveAndFall).l
@@ -42058,7 +42266,6 @@ Obj02_MdJump:
 	if FeatureLightDash
 	jsr	(Player_LightDashStart).l	; A near a ring chain
 	endif
-	bsr.w	Tails_AirRoll
 	bsr.w	Tails_JumpHeight
 	bsr.w	Tails_ChgJumpDir
 	bsr.w	Tails_LevelBound
@@ -42082,19 +42289,24 @@ Tails_AirRoll:
 	if FeatureAirRoll=0
 	rts				; Air Roll disabled
 	endif
+	tst.w	(Two_player_mode).w
+	bne.s	.human
+	cmpa.w	#Sidekick,a0
+	bne.s	.human
+	tst.w	(Tails_control_counter).w
+	beq.s	.return
+.human:
 	moveq	#button_A_mask|button_B_mask|button_C_mask,d0
 	and.b	(Ctrl_2_Press_Logical).w,d0	; is A, B, or C pressed?
 	beq.s	.return			; if not, branch
 
 	bset	#status.player.rolling,status(a0)	; set rolling flag (Z=1 if was clear)
-	bne.s	.was_rolling		; if already rolling, skip hitbox/position adjust
+	bne.s	.return			; already in a ball
 	move.b	#$E,y_radius(a0)	; set hitbox height to ball size
 	move.b	#7,x_radius(a0)		; set hitbox width to ball size
 	move.b	#AniIDSonAni_Roll,anim(a0)	; enter roll animation
 	addq.w	#1,y_pos(a0)		; adjust Y for new height difference ($F-$E pixels)
-
-.was_rolling:
-	move.b	#1,jumping(a0)		; set jump state so height-cut applies if button released early
+	move.b	#2,jumping(a0)		; keep the launch speed when the button is released
 
 .return:
 	rts
@@ -42908,11 +43120,23 @@ Tails_RollJump:
 ; ===========================================================================
 ; loc_1C6CC:
 Tails_JumpHeight:
+	if FeatureAirRoll
+	btst	#status.player.rolling,status(a0)
+	bne.s	.combo
+	endif
 	tst.b	jumping(a0)	; is Tails jumping?
 	beq.s	Tails_UpVelCap	; if not, branch
+.combo:
 	if FeatureSuperTails
 	jsr	(Tails_ToggleSuper).l	; A+B, A+C or B+C: Super Tails
 	bne.w	return_1C70C
+	endif
+	if FeatureAirRoll
+	cmpi.b	#1,jumping(a0)
+	bne.w	Tails_CheckFlying	; Air Roll or a roll off a ledge
+	move.b	(Ctrl_2_Press_Logical).w,d0
+	andi.b	#button_A_mask|button_B_mask|button_C_mask,d0
+	bne.w	Tails_CheckFlying	; a fresh press can fly during the ascent
 	endif
 
 	move.w	#-$400,d1
@@ -44787,6 +45011,10 @@ Obj0A_ReduceAir:
 	subq.b	#1,air_left(a2)		; subtract 1 from air remaining
 	bcc.w	BranchTo_Obj0A_MakeBubbleNow	; if air is above 0, branch
 	; Drown the player.
+	move.l	a0,-(sp)
+	movea.l	a2,a0
+	jsr	(Super_ResetOnDeath).l
+	movea.l	(sp)+,a0
 	move.b	#$81,obj_control(a2)	; lock controls
 	move.w	#SndID_Drown,d0
 	jsr	(PlaySound).l		; play drowning sound
@@ -88420,6 +88648,7 @@ KillCharacter:
 	if FeatureLightDash|FeaturePeelOut
 	jsr	(LightDash_PlayerHit).l	; and so does a death
 	endif
+	jsr	(Super_ResetOnDeath).l
 	clr.b	status_secondary(a0)
 	move.b	#6,routine(a0)
 	jsrto	JmpTo_Sonic_ResetOnFloor_Part2
@@ -92762,7 +92991,9 @@ PlrList_Cpz1: plrlistheader
 	plreq ArtTile_ArtNem_CPZElevator, ArtNem_CPZElevator
 	plreq ArtTile_ArtNem_CPZAnimatedBits, ArtNem_CPZAnimatedBits
 	plreq ArtTile_ArtNem_CPZTubeSpring, ArtNem_CPZTubeSpring
+    if WaterSurfaceGradual=0
 	plreq ArtTile_ArtNem_WaterSurface, ArtNem_WaterSurface
+    endif
 	plreq ArtTile_ArtNem_CPZStairBlock, ArtNem_CPZStairBlock
 	plreq ArtTile_ArtNem_CPZMetalBlock, ArtNem_CPZMetalBlock
 PlrList_Cpz1_End
@@ -92803,7 +93034,9 @@ PlrList_Dez2_End
 ;---------------------------------------------------------------------------------------
 PlrList_Arz1: plrlistheader
 	plreq ArtTile_ArtNem_ARZBarrierThing, ArtNem_ARZBarrierThing
+    if WaterSurfaceGradual=0
 	plreq ArtTile_ArtNem_WaterSurface, ArtNem_WaterSurface2
+    endif
 	plreq ArtTile_ArtNem_Leaves, ArtNem_Leaves
 	plreq ArtTile_ArtNem_ArrowAndShooter, ArtNem_ArrowAndShooter
 PlrList_Arz1_End

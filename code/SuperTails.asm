@@ -196,6 +196,49 @@ Super_RevertMusic:
 .return:
 	rts
 
+; End the form on the death frame, including when the air timer kills P1.
+; Preserve the caller's killer/bubble pointer in a2.
+Super_ResetOnDeath:
+	cmpa.w	#MainCharacter,a0
+	bne.s	.return
+	tst.b	(Super_Sonic_flag).w
+	bne.s	.reset
+	tst.b	(Super_Sonic_palette).w
+	beq.s	.return
+.reset:
+	movem.l	d0/a0-a2,-(sp)
+	clr.b	(Super_Sonic_flag).w
+	clr.w	(Super_Sonic_frame_count).w
+	clr.b	obj_control(a0)
+	bclr	#status_secondary.invincible,status_secondary(a0)
+	clr.w	invincibility_time(a0)
+	move.b	#-1,prev_anim(a0)
+	move.b	#-1,(Sonic_LastLoadedDPLC).w
+    if fixBugs
+	lea	(Sonic_top_speed).w,a2
+	cmpi.b	#ObjID_Tails,id(a0)
+	bne.s	.speed
+	lea	(Tails_top_speed).w,a2
+.speed:
+	jsr	(ApplySpeedSettings).l
+    endif
+	clr.w	(Palette_frame).w	; run the final restoration step immediately
+	clr.b	(Palette_timer).w
+	move.b	#2,(Super_Sonic_palette).w
+	jsr	(PalCycle_SuperSonic).l
+	cmpi.b	#MusID_SuperSonic,(Music_playing).w
+	bne.s	.done
+	move.w	(Level_Music).w,d0
+	jsr	(BossFightActive).l
+	beq.s	.music
+	move.w	#MusID_Boss,d0
+.music:
+	jsr	(PlayMusic_IfChanged).l
+.done:
+	movem.l	(sp)+,d0/a0-a2
+.return:
+	rts
+
 ; ---------------------------------------------------------------------------
 ; Speed shoes do not work on a Super player (Sonic, Tails, Knuckles): turning
 ; Super ends them and their faster tempo, and the monitor gives him none

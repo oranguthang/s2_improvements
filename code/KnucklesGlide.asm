@@ -10,7 +10,7 @@
 
 ; ---------------------------------------------------------------------------
 ; Sonic_JumpHeight jumps here for Knuckles once the jump height is handled:
-; a jump button press when he no longer rises fast starts a glide. With
+; a fresh jump button press while curled up starts a glide. With
 ; FeatureSuperToggle, an A+B, A+C or B+C combo turns him Super and back, as
 ; for Sonic (Sonic_ToggleSuper); a second button soon after the first ends a
 ; glide the first one started (Knuckles_GlideCombo).
@@ -28,13 +28,18 @@ Knuckles_JumpHeight:
 	cmp.b	(Super_Sonic_flag).w,d0
 	bne.s	.return			; the combo changed his form
 	endif
+	if FeatureAirRoll
+	btst	#status.player.rolling,status(a0)
+	beq.s	.return
+	else
 	move.w	#-$400,d1
 	btst	#status.player.underwater,status(a0)
 	beq.s	+
 	move.w	#-$200,d1
 +
-	cmp.w	y_vel(a0),d1	; still rising faster than that?
-	bgt.s	.return		; if yes, no glide yet
+	cmp.w	y_vel(a0),d1	; keep KiS2's timing when Air Roll is disabled
+	bgt.s	.return
+	endif
 	move.b	(Ctrl_1_Press_Logical).w,d0
 	andi.b	#button_A_mask|button_B_mask|button_C_mask,d0
 	beq.s	.return

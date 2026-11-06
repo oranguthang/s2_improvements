@@ -10,6 +10,10 @@ Tails_CheckFlying:
 	endif
 	tst.b	flying(a0)			; is Tails already flying?
 	bne.w	Tails_NoFlight			; if yes, branch
+	if FeatureAirRoll
+	btst	#status.player.rolling,status(a0)
+	beq.w	Tails_NoFlight
+	endif
 	tst.w	(Demo_mode_flag).w		; is a title demo playing?
 	beq.s	.notdemo			; if not, branch
 	jsr	(Demo_TailsAssistIndex).l	; only the Tails Flight Assist demos use flight
@@ -28,9 +32,12 @@ Tails_CheckFlying:
 
 Tails_StartFlight:
 	bclr	#status.player.rolling,status(a0)	; unset Tails' rolling flag
+	beq.s	.standingSize
+	subq.w	#1,y_pos(a0)			; undo the ball's height offset
+.standingSize:
+	bclr	#status.player.rolljumping,status(a0)
 	move.b	#$F,y_radius(a0)		; restore regular height...
 	move.b	#9,x_radius(a0)			; ...and width
-	addq.w	#1,y_pos(a0)			; adjust Y-position a bit
 	move.b	#1,flying(a0)			; set flying mode flag
 	move.b	#(8*60)/2,flying_timer(a0)	; set flying timer to 8 seconds (divided by 2)
 	bsr.w	Tails_FlyingAnimation
@@ -387,9 +394,8 @@ TailsCPU_Assist:
 	ori.w #button_C_mask<<8|button_C_mask,(Ctrl_2_Logical).w
 	rts
 .start:
-	; Start flying no faster than a released jump, as Tails_JumpHeight
-	; requires for the player; otherwise the AI keeps its full jump speed
-	; under the weak flight gravity and shoots far above Sonic.
+	; Limit the AI's takeoff speed so it stays close enough to carry the leader.
+	; A full jump under the weak flight gravity would send it too high.
 	move.w #-$400,d0
 	btst #status.player.underwater,status(a0)
 	beq.s +

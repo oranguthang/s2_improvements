@@ -1565,7 +1565,8 @@ Ctrl_1_Press_6B:		ds.b	1	; newly pressed extended buttons
 Ctrl_2_Held_6B:		ds.b	1
 Ctrl_2_Press_6B:		ds.b	1
 VDP_Reg1_val:			ds.w	1	; normal value of VDP register #1 when display is disabled
-				ds.b	6	; $FFFFF60E-$FFFFF613 ; seems unused
+Water_transition_next:		ds.l	1	; next colour group for the displayed frame
+Water_transition_count:		ds.w	1	; DBF count, or -1 when there is no visible transition
 Demo_Time_left:			ds.w	1	; 2 bytes
 
 Vscroll_Factor:
@@ -1584,7 +1585,7 @@ Palette_fade_length:		ds.b	1	; Number of entries to change in the palette fading
 
 MiscLevelVariables:
 VIntSubE_RunCount:		ds.b	1
-				ds.b	1	; $FFFFF629 ; seems unused
+Water_transition_skip:		ds.b	1	; groups above the screen to preload in VBlank
 Vint_routine:			ds.b	1	; was "Delay_Time" ; routine counter for V-int
 				ds.b	1	; $FFFFF62B ; seems unused
 Sprite_count:			ds.b	1	; the number of sprites drawn in the current frame
